@@ -1,0 +1,21 @@
+.home{
+    width: 100vw;
+    height: 100vh;
+    padding: 1rem;
+}
+
+.home-section button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: rgb(28, 25, 25);
+    color: rgb(255, 240, 240);
+    font-size: large;
+    font-family:monospace;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.home-section button:hover{
+    background-color: rgba(18, 18, 18, 0.883);
+}

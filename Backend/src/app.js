@@ -1,4 +1,5 @@
 import express from "express";
+import projectRoutes from "./routes/project.routes.js";
 
 const app = express();
 
@@ -9,4 +10,6 @@ app.get("/", (req, res) => {
   res.send("hello world");
 });
 
-export default  app;
+app.use("/projects", projectRoutes);
+
+export default app;

@@ -1,0 +1,89 @@
+.project-main{
+    height: 100vh;
+    width: 100vw;
+    padding: 1rem;
+    /* overflow: hidden; */
+}
+.project-section{
+    display: flex;
+    gap: 1rem;
+    /* padding: 0.5rem; */
+}
+
+.project-section>*{
+    height: 95vh;
+    flex: 1;
+    border-radius: 0.5rem;
+}
+
+.project-section .chat{
+    background-color: rgb(234, 234, 234);
+    position: relative;
+}
+
+.project-section .chat .messages{
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    width: 85%;
+    transform: translate(-50%);
+    left: 50%;
+    position: absolute;
+    top:0.5rem;
+    padding-bottom: 5rem;
+    overflow-y: auto;
+    height: 88%;
+}
+
+.project-section .chat .messages::-webkit-scrollbar{
+    display: none;
+}
+
+.project-section .chat .messages .message{
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    max-width: 85%;
+    width: fit-content;
+    color: white;
+    background-color: rgb(39, 39, 39);
+}
+
+.project-section .chat .input-area{
+    position: absolute;
+    width: 85%;
+    background-color: rgb(199, 199, 199);
+    transform: translate(-50%);
+    left: 50%;
+    border-radius: 0.7rem;
+    bottom: 1rem;
+    padding: 0.7rem;
+    display: flex;
+}
+.project-section .chat .input-area input{
+    padding: 0.5rem 0.5rem;
+    width: 100%;
+    background-color: transparent;
+    font-size: 0.9rem;
+    font-family:'Lucida Sans', sans-serif;
+    border: none;
+    outline: none;
+}
+.project-section .chat .input-area button{
+    padding: 0.4rem 0.5rem;
+    background-color: transparent;
+    /* border: none; */
+    border-radius: 1rem;
+    outline: none;
+    color: rgb(38, 38, 38);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+
+.project-section .code{
+    background-color: rgb(0, 0, 0);
+}
+.project-section .review{
+    background-color: rgb(255, 232, 232);
+}

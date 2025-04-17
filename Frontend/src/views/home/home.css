@@ -19,3 +19,15 @@
 .home-section button:hover{
     background-color: rgba(18, 18, 18, 0.883);
 }
+
+.home-section .projects{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.home-section .project{
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.938);
+    border-radius: 0.5rem;
+}

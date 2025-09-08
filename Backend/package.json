@@ -1,21 +1,41 @@
 {
-  "name": "workshop",
+  "name": "backend",
   "version": "1.0.0",
+  "description": "AI-powered codeX backend with Express, Mongoose, and Google GenAI",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "echo \"No tests specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "mongoose",
+    "ai",
+    "socket.io",
+    "genai"
+  ],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "dependencies": {
-    "@google/genai": "^0.7.0",
+    "@google/genai": "^0.8.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^5.1.0",
-    "mongoose": "^8.13.2",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.14.1",
+    "morgan": "^1.10.0",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-node": "^0.0.0",
+    "nodemon": "^1.15.1",
+    "prettier": "^3.3.3"
   }
 }

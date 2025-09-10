@@ -1,26 +1,22 @@
-
-import Button from '@/components/ui/Button';
-import { toast } from 'react-toastify';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Lock, User, UserPlus, Users } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../api/config';
+import Navigation from '../../components/layout/Navigation';
+import { useTheme } from '../../context/ThemeContext';
 
 const Register = () => {
-  const router = useRouter();
-  const { status } = useSession();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    teamName: '',
+    username: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/profile');
-    }
-  }, [status, router]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -28,159 +24,222 @@ const Register = () => {
     if (error) setError('');
   };
 
-  const SignupHandler = async e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(formData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        console.log('Registration successful:', result);
-        toast.success('Registration successful');
-        router.push('/login');
-      } else {
-        setError(result.message || 'Registration failed');
-        console.error('Registration failed:', result.message);
-        toast.error('Registration failed:');
+      const response = await api.post('/auth/register', formData);
+      if (response.data.success) {
+        navigate('/login');
       }
     } catch (error) {
-      setError('An unexpected error occurred');
-      console.error('Error:', error);
-      toast.warn('An unexpected error occurred');
+      setError(error.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Main */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r  to-teal-900 px-8 py-2 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+    <div
+      className={`min-h-screen transition-all duration-500 ${
+        isDarkMode
+          ? 'bg-gradient-to-br from-gray-900 via-gray-900/80 to-gray-900'
+          : 'bg-gradient-to-br from-gray-200 via-blue-50/30 to-gray-300'
+      }`}
+    >
+      <Navigation isDarkMode={isDarkMode} toggleTheme={toggleTheme} showUserActions={false} />
+
+      <div className="flex items-center justify-center px-2 py-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+          <div
+            className={`backdrop-blur-md rounded-2xl shadow-xl border overflow-hidden ${
+              isDarkMode ? 'bg-gray-800/40 border-gray-700/50' : 'bg-white/60 border-gray-200/50'
+            }`}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-gray-600 px-8 py-8 text-center">
+              <motion.div
+                className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
+                <UserPlus className="w-8 h-8 text-white" />
+              </motion.div>
+              <h1 className="text-2xl font-bold text-white mb-2">Create Your Team</h1>
+              <p className="text-emerald-100 text-sm">Start your coding journey with CodeX</p>
             </div>
-            <h1 className="text-2xl font-bold  mb-1">Create Account</h1>
-            <p className="text-emerald-900 text-sm">Sign up to get started</p>
-          </div>
 
-          {/* Form */}
-          <div className="p-6">
-            <form onSubmit={SignupHandler} className="space-y-3">
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 text-red-500 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <p className="text-red-700 text-sm">{error}</p>
+            {/* Form */}
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Error Message */}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-red-500/10 border border-red-500/20 rounded-lg p-4"
+                  >
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Username Field */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                    }`}
+                  >
+                    Admin Username
+                  </label>
+                  <div className="relative">
+                    <User
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                        isDarkMode ? 'text-gray-200' : 'text-gray-500'
+                      }`}
+                    />
+                    <input
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        isDarkMode
+                          ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      placeholder="Your admin username"
+                      required
+                    />
                   </div>
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-500'}`}>
+                    You'll be the team administrator
+                  </p>
                 </div>
-              )}
 
-              {/* Name  */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
-                  Full Name
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-all duration-200"
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  required
-                />
+                {/* Team Name Field */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                    }`}
+                  >
+                    Team Name
+                  </label>
+                  <div className="relative">
+                    <Users
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                        isDarkMode ? 'text-gray-200' : 'text-gray-500'
+                      }`}
+                    />
+                    <input
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        isDarkMode
+                          ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      type="text"
+                      name="teamName"
+                      value={formData.teamName}
+                      onChange={handleChange}
+                      placeholder="Choose a unique team name"
+                      required
+                    />
+                  </div>
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-500'}`}>
+                    This will be your team's unique identifier
+                  </p>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                    }`}
+                  >
+                    Team Password
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                        isDarkMode ? 'text-gray-200' : 'text-gray-500'
+                      }`}
+                    />
+                    <input
+                      className={`w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        isDarkMode
+                          ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Create a strong password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
+                        isDarkMode
+                          ? 'text-gray-400 hover:text-gray-300'
+                          : 'text-gray-500 hover:text-gray-600'
+                      }`}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                    Share this with your team members for access
+                  </p>
+                </div>
+
+                {/* Submit Button */}
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-gray-600 hover:from-gray-500 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Creating team...</span>
+                    </div>
+                  ) : (
+                    'Create Team'
+                  )}
+                </motion.button>
+              </form>
+
+              {/* Login Link */}
+              <div className="mt-6 text-center">
+                <p className={`text-sm ${isDarkMode ? 'text-gray-100' : 'text-gray-700'}`}>
+                  Already have a team?{' '}
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="text-blue-400 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    Sign in here
+                  </button>
+                </p>
               </div>
-
-              {/* Email  */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-all duration-200"
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-
-              {/* Password  */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
-                  Password
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-all duration-200"
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-
-              {/* Submit Button */}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Registering...' : 'Register'}
-              </Button>
-            </form>
-
-            {/* Login Link */}
-            <p className="mt-4 text-center text-sm text-slate-600">
-              Already have an account?{' '}
-              <a
-                href="/login"
-                className="text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
-              >
-                login here
-              </a>
-            </p>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -46,11 +46,9 @@ CodeX/
 │       │   └── config.jsx
 │       ├── components/
 │       │   ├── layout/
-│       │   │   ├── Header.js
 │       │   │   ├── Navigation.jsx
-│       │   │   └── Sidebar.js
-│       │   └── ui/
-│       │       └── Button.js
+│       │   │   ├── Layout.jsx
+│       │   │   └── Sidebar.jsx
 │       ├── routes/
 │       │   └── Routes.jsx
 │       └── views/
@@ -60,10 +58,14 @@ CodeX/
 │           │   └── Register.jsx
 │           ├── create-project/
 │           │   └── CreateProject.jsx
-│           └── home/
-│               ├── Home.jsx
-│               └── project/
-│                   └── Project.jsx
+│           |── home/
+│           |   ├── Home.jsx
+│           |   └── project/
+│           |        └── Project.jsx
+│           ├── Dashboard.jsx
+│           ├── Landing.jsx
+│           ├── NotFound.jsx
+
 ```
 
 ## 🛠️ Technology Stack
@@ -81,8 +83,8 @@ CodeX/
 
 - **React 19** - Modern React with latest features
 - **Vite** - Fast build tool and development server
-- **Tailwind CSS**  - Utility-first CSS framework
-- **Framer Motion**  - Animation library
+- **Tailwind CSS** - Utility-first CSS framework
+- **Framer Motion** - Animation library
 - **Monaco Editor** - Professional code editor (VS Code-like)
 - **Socket.io Client** - Real-time communication
 - **React Router DOM** - Client-side routing

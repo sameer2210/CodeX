@@ -1,14 +1,16 @@
-import mongoose from "mongoose";
-import config from "../config/config.js";
+import mongoose from 'mongoose';
 
-function connectToDb() {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-      console.log("connected to MongoDB");
-    })
-    .catch((error) => {
-      console.log("Error MongoDB not connected to DataBase ", error.message);
-    });
-}
+const connectToDb = async () => {
+  try {
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codex';
+
+    await mongoose.connect(mongoURI);
+
+    console.log('MongoDB Connected Successfully');
+  } catch (error) {
+    console.error('MongoDB Connection Error:', error.message);
+    process.exit(1);
+  }
+};
 
 export default connectToDb;

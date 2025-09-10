@@ -22,12 +22,14 @@
   "license": "MIT",
   "dependencies": {
     "@google/genai": "^0.8.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
-    "mongoose": "^8.14.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.1",
     "morgan": "^1.10.0",
     "socket.io": "^4.8.1"
   },

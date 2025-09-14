@@ -64,7 +64,7 @@ CodeX/
 │           |        └── Project.jsx
 │           ├── Dashboard.jsx
 │           ├── Landing.jsx
-│           ├── NotFound.jsx
+
 
 ```
 

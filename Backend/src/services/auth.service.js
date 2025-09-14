@@ -188,6 +188,21 @@ class AuthService {
       return false;
     }
   }
+
+  async getTeamMessages(teamName) {
+    try {
+      const messages = await Message.find({ teamName: teamName.toLowerCase() })
+        .sort({ timestamp: 1 })
+        .limit(100); // Last 100 for performance
+      return {
+        success: true,
+        teamName,
+        messages,
+      };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to get messages');
+    }
+  }
 }
 
 export default new AuthService();

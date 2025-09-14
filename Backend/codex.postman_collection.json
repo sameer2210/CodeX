@@ -1,0 +1,226 @@
+{
+  "info": {
+    "name": "CodeX API",
+    "_postman_id": "codex-api-collection",
+    "description": "Postman collection for testing CodeX MERN backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/",
+          "host": ["{{BASE_URL}}"],
+          "path": [""]
+        }
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamName\": \"teamA\",\n  \"username\": \"sam\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/register",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamName\": \"teamA\",\n  \"username\": \"sam\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Verify Token",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/verify",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/logout",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Get Team Members",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/team/teamA/members",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "team", "teamA", "members"]
+            }
+          }
+        },
+        {
+          "name": "Update Member Activity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/team/teamA/member/sam/activity",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "team", "teamA", "member", "sam", "activity"]
+            }
+          }
+        },
+        {
+          "name": "Get Team Messages",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/team/teamA/messages",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "team", "teamA", "messages"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"AI Editor\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/projects/create",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "projects", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get All Projects",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/projects/get-all",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "projects", "get-all"]
+            }
+          }
+        },
+        {
+          "name": "Get Project by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "projects", "{{PROJECT_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Project Code",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"console.log('Updated code');\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "projects", "{{PROJECT_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "AI Review Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}/review",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "projects", "{{PROJECT_ID}}", "review"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "JWT_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "PROJECT_ID",
+      "value": ""
+    }
+  ]
+}

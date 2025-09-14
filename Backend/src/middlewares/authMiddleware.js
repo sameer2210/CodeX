@@ -67,7 +67,7 @@ export const requireAdmin = (req, res, next) => {
 export const checkTeamAccess = (req, res, next) => {
   const { teamName } = req.params;
 
-  if (!req.user || req.user.teamName !== teamName) {
+  if (!req.user || req.user.teamName.toLowerCase() !== teamName.toLowerCase()) {
     return res.status(403).json({
       success: false,
       message: 'Access denied - not a member of this team',
@@ -82,14 +82,14 @@ const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const MAX_REQUESTS = 100; // Max requests per window
 
 export const rateLimiter = (req, res, next) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
+  const clientIP =
+    req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0]?.trim();
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW;
 
   if (!requestCounts.has(clientIP)) {
     requestCounts.set(clientIP, []);
   }
-
   const requests = requestCounts.get(clientIP);
 
   // Remove old requests

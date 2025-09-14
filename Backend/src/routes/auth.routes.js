@@ -8,7 +8,7 @@ router.use(rateLimiter);
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
-router.use(verifyToken); // Apply to all routes below
+router.use(verifyToken);
 
 router.get('/verify', authController.verifyToken);
 router.post('/logout', authController.logout);
@@ -19,5 +19,7 @@ router.put(
   checkTeamAccess,
   authController.updateMemberActivity
 );
+
+router.get('/team/:teamName/messages', checkTeamAccess, authController.getTeamMessages);
 
 export default router;

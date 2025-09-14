@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "codex-backend",
   "version": "1.0.0",
   "description": "AI-powered codeX backend with Express, Mongoose, and Google GenAI",
   "main": "server.js",

@@ -117,15 +117,21 @@ class AuthController {
       const { teamName, username } = req.params;
       const { isActive } = req.body;
 
+      const paramTeam = teamName.toLowerCase();
+      const paramUser = username.toLowerCase();
+
       // Verify user has access to this team
-      if (req.user.teamName !== teamName || req.user.username !== username) {
+      if (
+        req.user.teamName.toLowerCase() !== paramTeam ||
+        req.user.username.toLowerCase() !== paramUser
+      ) {
         return res.status(403).json({
           success: false,
           message: 'Access denied',
         });
       }
 
-      const result = await authService.updateMemberActivity(teamName, username, isActive);
+      const result = await authService.updateMemberActivity(paramTeam, paramUser, isActive);
 
       res.json({
         success: true,
@@ -178,6 +184,19 @@ class AuthController {
       res.json({
         success: true,
         message: 'Logged out successfully',
+      });
+    }
+  }
+  async getTeamMessages(req, res) {
+    try {
+      const { teamName } = req.params;
+      const result = await authService.getTeamMessages(teamName);
+      res.json(result);
+    } catch (error) {
+      console.error('Get messages error:', error.message);
+      res.status(500).json({
+        success: false,
+        message: error.message,
       });
     }
   }

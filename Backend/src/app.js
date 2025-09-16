@@ -1,10 +1,8 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import config from './config/config.js';
 
 import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
@@ -14,7 +12,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: config.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],

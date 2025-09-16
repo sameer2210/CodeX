@@ -1,10 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import config from '../config/config.js';
+import Message from '../models/message.model.js';
 import Team from '../models/team.model.js';
 
 class AuthService {
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    this.jwtSecret = config.JWT_SECRET;
     this.saltRounds = 10;
   }
 
@@ -200,6 +202,7 @@ class AuthService {
         messages,
       };
     } catch (error) {
+      console.error('getTeamMessages error:', error);
       throw new Error(error.message || 'Failed to get messages');
     }
   }

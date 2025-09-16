@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api/config';
 import Navigation from '../components/layout/Navigation';
 import Sidebar from '../components/layout/Sidebar';
 import { useTheme } from '../context/ThemeContext';
@@ -54,7 +54,7 @@ const Dashboard = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get('https://ai-jlvm.onrender.com/projects/get-all');
+      const response = await api.get('/projects/get-all');
       const projectData = response.data.data || [];
       setProjects(projectData);
       setStats({

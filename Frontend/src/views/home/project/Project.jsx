@@ -181,7 +181,7 @@
 //   };
 
 //   useEffect(() => {
-//     const io = SocketIo('https://ai-jlvm.onrender.com/', {
+//     const io = SocketIo('http://localhost:5000', {
 //       query: {
 //         project: params.id,
 //         user: currentUser,
@@ -503,10 +503,6 @@
 
 // export default Project;
 
-
-
-
-
 import Editor from '@monaco-editor/react';
 import { Code2, Copy, MessageSquare, Phone, RotateCcw, Send, Sparkles, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -529,11 +525,15 @@ const Project = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
 
   const [activeUsers, setActiveUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
     return (
-      localStorage.getItem('codex_username') || localStorage.getItem('username') || 'Anonymous'
+      localStorage.getItem('codex_username') ||
+      localStorage.getItem('username') ||
+      'User_' + Math.random().toString(36).substr(2, 5) // Generate random username if none exists
     );
   });
 
@@ -622,10 +622,7 @@ const Project = () => {
     }
   }
 
-
-
-
-
+  // Fixed handleUserMessage function
   function handleUserMessage() {
     if (!input.trim()) return;
 
@@ -634,34 +631,46 @@ const Project = () => {
       user: currentUser,
       timestamp: Date.now(),
       type: 'user',
+      id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
     };
 
-    setMessages(prev => [...prev, newMessage]);
-
-    if (socket && socket.connected) {
+    if (socket && socket.connected && connectionStatus === 'connected') {
+      // Only emit to server when connected - server will broadcast back
       socket.emit('chat-message', newMessage);
     } else {
-      // Mock offline message
+      // Add message locally when offline
+      setMessages(prev => [...prev, newMessage]);
+
+      // Show offline message
       setTimeout(() => {
         const offlineMsg = {
-          text: 'Server offline - message queued locally.',
+          text: 'Server offline - message stored locally.',
           user: 'System',
           timestamp: Date.now(),
           type: 'system',
+          id: 'offline_' + Date.now(),
         };
         setMessages(prev => [...prev, offlineMsg]);
-      }, 500);
+      }, 300);
     }
     setInput('');
   }
 
+  // Fixed handleMobileCodeSend function
   function handleMobileCodeSend() {
     if (!mobileInput.trim()) return;
+
     const updatedCode = code + '\n' + mobileInput;
-    setCode(updatedCode);
-    if (socket && socket.connected) {
+
+    if (socket && socket.connected && connectionStatus === 'connected') {
+      // Let server handle code updates
       socket.emit('code-change', updatedCode);
+    } else {
+      // Update locally when offline
+      setCode(updatedCode);
+      showToast('Code updated locally (offline)', 'warning');
     }
+
     setMobileInput('');
   }
 
@@ -670,14 +679,14 @@ const Project = () => {
       showToast('Please write some code first!', 'warning');
       return;
     }
-    if (socket && socket.connected) {
+    if (socket && socket.connected && connectionStatus === 'connected') {
       setReview('*Analyzing your code... Please wait.*');
-      socket.emit('get-review', code, language);
+      socket.emit('get-review', { code, language });
     } else {
       // Enhanced mock review for offline
-      const mockReview = `*Offline Review (Server Disconnected):\n\n**Strengths:**\n- Basic structure is present.\n- Syntax appears valid.\n\n**Suggestions:**\n- Add comments for clarity.\n- Test with real data.\n\n**Score:** 7/10\n\n*Reconnect to server for full AI analysis.*`;
+      const mockReview = `*Offline Review (Server Disconnected):\n\n**Code Analysis:**\n- Language: ${language}\n- Lines of code: ${code.split('\n').length}\n\n**Suggestions:**\n- Add comments for better readability\n- Consider error handling\n- Test your code thoroughly\n\n**Score:** 7/10\n\n*Connect to server for AI-powered analysis.*`;
       setReview(mockReview);
-      showToast('Server offline - using local mock review.', 'warning');
+      showToast('Using offline mock review', 'warning');
     }
   }
 
@@ -692,16 +701,13 @@ const Project = () => {
     localStorage.setItem('selectedLanguage', newLanguage);
   }
 
-  // Simple call button handlers (navigation placeholders)
   const handleVideoCall = () => {
     console.log('Navigating to video call page...');
-    // Replace with your navigation: e.g., navigate(`/video-call/${params.id}`);
     showToast('Opening video call...', 'info');
   };
 
   const handleAudioCall = () => {
     console.log('Navigating to audio call page...');
-    // Replace with your navigation: e.g., navigate(`/audio-call/${params.id}`);
     showToast('Opening audio call...', 'info');
   };
 
@@ -721,89 +727,155 @@ const Project = () => {
     showToast('Code reset to template', 'info');
   };
 
+  // Enhanced socket connection with better error handling
   useEffect(() => {
     if (!params.id) return;
 
-    const io = SocketIo('https://ai-jlvm.onrender.com/', {
+    setIsConnecting(true);
+    setConnectionStatus('connecting');
+
+    // Clean up previous connection
+    if (socket) {
+      socket.disconnect();
+    }
+
+    const socketOptions = {
       query: {
         project: params.id,
         user: currentUser,
       },
-      transports: ['websocket', 'polling'], // Prefer WS, fallback to polling
-      reconnectionAttempts: 5, // Limit retries to avoid spam
-      timeout: 20000, // 20s timeout
-    });
+      transports: ['polling', 'websocket'], // Try polling first, then websocket
+      upgrade: true,
+      rememberUpgrade: false,
+      timeout: 20000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      maxReconnectionAttempts: 5,
+      forceNew: true,
+    };
+
+    const io = SocketIo(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000', socketOptions);
 
     io.on('connect', () => {
-      console.log('Socket connected!');
+      console.log('Socket connected successfully!');
+      setConnectionStatus('connected');
+      setIsConnecting(false);
+
       io.emit('join-project', {
         user: currentUser,
         projectId: params.id,
       });
-      // Add connection status message
+
       const connectMsg = {
-        text: 'Connected to server!',
+        text: 'Successfully connected to server!',
         user: 'System',
         timestamp: Date.now(),
         type: 'system',
+        id: 'connect_' + Date.now(),
       };
       setMessages(prev => [...prev, connectMsg]);
+      showToast('Connected to server', 'success');
     });
 
     io.on('connect_error', error => {
       console.error('Socket connection error:', error);
+      setConnectionStatus('error');
+      setIsConnecting(false);
+
       const errorMsg = {
-        text: 'Connection failed - check server status.',
+        text: `Connection failed: ${error.message}. Working in offline mode.`,
         user: 'System',
         timestamp: Date.now(),
         type: 'error',
+        id: 'error_' + Date.now(),
       };
       setMessages(prev => [...prev, errorMsg]);
+      showToast('Connection failed - working offline', 'error');
     });
 
-    io.on('disconnect', () => {
-      console.log('Socket disconnected');
+    io.on('disconnect', reason => {
+      console.log('Socket disconnected:', reason);
+      setConnectionStatus('disconnected');
+
       const disconnectMsg = {
-        text: 'Server disconnected - retrying...',
+        text: `Disconnected: ${reason}. Attempting to reconnect...`,
         user: 'System',
         timestamp: Date.now(),
         type: 'error',
+        id: 'disconnect_' + Date.now(),
       };
       setMessages(prev => [...prev, disconnectMsg]);
     });
 
-    io.emit('chat-history');
+    io.on('reconnect', attemptNumber => {
+      console.log('Socket reconnected after', attemptNumber, 'attempts');
+      setConnectionStatus('connected');
+      showToast('Reconnected to server', 'success');
+    });
 
-    io.on('active-users', users => {
-      setActiveUsers(users.filter(user => user !== currentUser));
+    io.on('reconnect_error', error => {
+      console.error('Reconnection failed:', error);
+      setConnectionStatus('error');
     });
 
     // Socket event listeners
     io.on('chat-history', messages => {
-      setMessages(
-        messages.map(message => ({
+      if (Array.isArray(messages)) {
+        const formattedMessages = messages.map((message, index) => ({
           text: message.text || message,
           user: message.user || 'Anonymous',
-          timestamp: message.timestamp || Date.now(),
+          timestamp: message.timestamp || Date.now() - (messages.length - index) * 1000,
           type: message.type || 'user',
-        }))
-      );
+          id: message.id || 'history_' + index,
+        }));
+        setMessages(formattedMessages);
+      }
     });
 
     io.on('chat-message', message => {
-      setMessages(prev => [...prev, message]);
+      const formattedMessage = {
+        text: message.text,
+        user: message.user,
+        timestamp: message.timestamp || Date.now(),
+        type: message.type || 'user',
+        id: message.id || Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      };
+
+      setMessages(prev => {
+        // Prevent duplicate messages
+        const exists = prev.some(
+          msg =>
+            msg.id === formattedMessage.id ||
+            (msg.text === formattedMessage.text &&
+              msg.user === formattedMessage.user &&
+              Math.abs(msg.timestamp - formattedMessage.timestamp) < 2000)
+        );
+
+        return exists ? prev : [...prev, formattedMessage];
+      });
     });
 
-    io.on('code-change', code => {
-      setCode(code || '');
+    io.on('code-change', newCode => {
+      if (typeof newCode === 'string') {
+        setCode(newCode);
+      }
     });
 
-    io.on('project-code', code => {
-      setCode(code || '');
+    io.on('project-code', projectCode => {
+      if (typeof projectCode === 'string') {
+        setCode(projectCode);
+      }
     });
 
-    io.on('code-review', review => {
-      setReview(review || 'No review available');
+    io.on('code-review', reviewText => {
+      setReview(reviewText || 'No review available');
+    });
+
+    io.on('active-users', users => {
+      if (Array.isArray(users)) {
+        setActiveUsers(users.filter(user => user !== currentUser));
+      }
     });
 
     io.on('user-joined', user => {
@@ -812,6 +884,7 @@ const Project = () => {
         user: 'System',
         timestamp: Date.now(),
         type: 'system',
+        id: 'join_' + Date.now(),
       };
       setMessages(prev => [...prev, message]);
     });
@@ -822,11 +895,17 @@ const Project = () => {
         user: 'System',
         timestamp: Date.now(),
         type: 'system',
+        id: 'leave_' + Date.now(),
       };
       setMessages(prev => [...prev, message]);
     });
 
-    io.emit('get-project-code');
+    // Request initial data
+    setTimeout(() => {
+      io.emit('chat-history');
+      io.emit('get-project-code');
+    }, 1000);
+
     setSocket(io);
 
     return () => {
@@ -842,6 +921,34 @@ const Project = () => {
       setLanguage(savedLanguage);
     }
   }, []);
+
+  // Get connection status display
+  const getConnectionStatusDisplay = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return {
+          text: '● Connected',
+          className: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+        };
+      case 'connecting':
+        return {
+          text: '● Connecting...',
+          className: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+        };
+      case 'error':
+        return {
+          text: '● Connection Error',
+          className: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+        };
+      default:
+        return {
+          text: '● Offline',
+          className: 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200',
+        };
+    }
+  };
+
+  const statusDisplay = getConnectionStatusDisplay();
 
   return (
     <div
@@ -892,17 +999,11 @@ const Project = () => {
               <MessageSquare className="w-5 h-5 text-blue-500" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
               <div className="hidden md:flex items-center space-x-2 ml-4">
-                <span
-                  className={`px-3 py-1 text-sm rounded-full ${
-                    socket && socket.connected
-                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                  }`}
-                >
-                  {socket && socket.connected ? '● Connected' : '● Offline'}
+                <span className={`px-3 py-1 text-sm rounded-full ${statusDisplay.className}`}>
+                  {statusDisplay.text}
                 </span>
               </div>
-              {/* Simple Call Buttons */}
+              {/* Call Buttons */}
               <div className="flex items-center space-x-2 ml-auto">
                 <button
                   onClick={handleVideoCall}
@@ -922,11 +1023,11 @@ const Project = () => {
             </div>
           </div>
 
-          {/* Messages Area - Scrollbar Hidden */}
+          {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
             {messages.map((message, index) => (
               <div
-                key={index}
+                key={message.id || index}
                 className={`flex ${message.type === 'user' && message.user === currentUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
@@ -953,19 +1054,23 @@ const Project = () => {
             ))}
           </div>
 
+          {/* Message Input */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleUserMessage()}
+                onKeyPress={e => e.key === 'Enter' && !e.shiftKey && handleUserMessage()}
                 placeholder="Message to project..."
                 className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                disabled={isConnecting}
+                autoComplete="off"
               />
               <button
                 onClick={handleUserMessage}
-                className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                disabled={!input.trim() || isConnecting}
+                className="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -1032,7 +1137,7 @@ const Project = () => {
               onChange={handleEditorChange}
               theme="vs-dark"
               options={{
-                minimap: { enabled: true },
+                minimap: { enabled: window.innerWidth > 768 },
                 fontSize: 14,
                 wordWrap: 'on',
                 automaticLayout: true,
@@ -1050,14 +1155,17 @@ const Project = () => {
                 type="text"
                 value={mobileInput}
                 onChange={e => setMobileInput(e.target.value)}
-                placeholder="Write code here (mobile input)..."
+                onKeyPress={e => e.key === 'Enter' && handleMobileCodeSend()}
+                placeholder="Add code line..."
                 className="flex-1 px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white text-sm"
+                autoComplete="off"
               />
               <button
                 onClick={handleMobileCodeSend}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+                disabled={!mobileInput.trim()}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white text-sm rounded-lg transition-colors"
               >
-                Send Code
+                Add
               </button>
             </div>
           </div>

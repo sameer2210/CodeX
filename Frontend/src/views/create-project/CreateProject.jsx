@@ -1,8 +1,8 @@
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Code2, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../api/config';
 
 const CreateProject = () => {
   const [projectName, setProjectName] = useState('');
@@ -16,7 +16,7 @@ const CreateProject = () => {
 
     setIsLoading(true);
     try {
-      await axios.post('https://ai-jlvm.onrender.com/projects/create', {
+      await api.post('/projects/create', {
         projectName,
       });
       navigate('/');

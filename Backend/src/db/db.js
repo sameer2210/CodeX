@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
+import config from '../config/config.js';
 
 const connectToDb = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codex';
+    const mongoURI = config.MONGODB_URI;
 
     await mongoose.connect(mongoURI);
 

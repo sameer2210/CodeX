@@ -10,26 +10,32 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect , useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/config';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchProjects } from '../store/slices/projectSlice';
+import { toggleTheme } from '../store/slices/uiSlice';
 import Navigation from '../components/layout/Navigation';
 import Sidebar from '../components/layout/Sidebar';
-import { useTheme } from '../context/ThemeContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { isDarkMode, toggleTheme } = useTheme();
+  const dispatch = useAppDispatch();
+  
+  const { projects, stats, isLoading } = useAppSelector(state => state.projects);
+  const { isDarkMode } = useAppSelector(state => state.ui);
+  const { user } = useAppSelector(state => state.auth);
+
+  useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
+
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
-  const [projects, setProjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    activeProjects: 0,
-    teamMembers: 1,
-    completedTasks: 0,
-  });
 
   const teamName = localStorage.getItem('codex_team') || 'Your Team';
   const username = localStorage.getItem('codex_username') || 'User';
@@ -47,30 +53,6 @@ const Dashboard = () => {
     mediaQuery.addEventListener('change', handleMediaChange);
     return () => mediaQuery.removeEventListener('change', handleMediaChange);
   }, []);
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const response = await api.get('/projects/get-all');
-      const projectData = response.data.data || [];
-      setProjects(projectData);
-      setStats({
-        totalProjects: projectData.length,
-        activeProjects: projectData.filter(p => p.status !== 'completed').length,
-        teamMembers: 1,
-        completedTasks: projectData.filter(p => p.status === 'completed').length,
-      });
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      // Set empty array on error to prevent crashes
-      setProjects([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const formatDate = dateString => {
     if (!dateString) return 'Unknown';
@@ -120,7 +102,7 @@ const Dashboard = () => {
           : 'bg-gradient-to-br from-gray-100 via-stone-400 to-gray-200'
       }`}
     >
-      <Navigation isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+      <Navigation isDarkMode={isDarkMode} toggleTheme={handleThemeToggle} />
 
       {/* Desktop Sidebar */}
       <div

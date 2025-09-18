@@ -2,33 +2,30 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Code2, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/config';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { createProject } from '../../store/slices/projectSlice';
+import { toggleTheme } from '../../store/slices/uiSlice';
 
 const CreateProject = () => {
   const [projectName, setProjectName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  
+  const { isLoading } = useAppSelector(state => state.projects);
+  const { isDarkMode } = useAppSelector(state => state.ui);
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!projectName.trim()) return;
 
-    setIsLoading(true);
-    try {
-      await api.post('/projects/create', {
-        projectName,
-      });
+    const result = await dispatch(createProject({ projectName }));
+    if (result.type === 'projects/create/fulfilled') {
       navigate('/');
-    } catch (error) {
-      console.error('Error creating project:', error);
-    } finally {
-      setIsLoading(false);
     }
-  }
+  };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
   };
 
   const goBack = () => {
@@ -72,7 +69,7 @@ const CreateProject = () => {
           </div>
 
           <button
-            onClick={toggleTheme}
+            onClick={handleThemeToggle}
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
                 ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'

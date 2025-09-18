@@ -1,9 +1,9 @@
 import { Outlet } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
+import { useAppSelector } from '../../store/hooks';
 import Navigation from './Navigation';
 
 const Layout = () => {
-  const { isDarkMode } = useTheme();
+  const { isDarkMode } = useAppSelector(state => state.ui);
 
   return (
     <div

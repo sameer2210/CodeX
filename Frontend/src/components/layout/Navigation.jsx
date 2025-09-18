@@ -12,12 +12,15 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
+import { useState , useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { toggleTheme } from '../../store/slices/uiSlice';
+import { logout } from '../../store/slices/authSlice';
 
 const Navigation = ({ showUserActions = true }) => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useAppSelector(state => state.ui);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,6 +30,10 @@ const Navigation = ({ showUserActions = true }) => {
   const teamName = localStorage.getItem('codex_team');
   const username = localStorage.getItem('codex_username');
   const isAuthenticated = !!(localStorage.getItem('codex_token') && teamName && username);
+
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -175,7 +182,7 @@ const Navigation = ({ showUserActions = true }) => {
               {/* Theme Toggle */}
               <motion.button
                 variants={itemVariants}
-                onClick={toggleTheme}
+                onClick={handleThemeToggle}
                 className={`p-2.5 rounded-xl transition-all duration-300 ${
                   isDarkMode
                     ? 'bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-amber-400 shadow-lg'

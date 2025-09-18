@@ -12,10 +12,10 @@ import {
   Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import { useAppSelector } from '../store/hooks';
 
 const Landing = () => {
-  const { isDarkMode } = useTheme();
+  const { isDarkMode } = useAppSelector(state => state.ui);
   const navigate = useNavigate();
 
   const features = [

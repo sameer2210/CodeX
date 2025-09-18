@@ -12,10 +12,12 @@ import {
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { logout } from '../../store/slices/authSlice';
 
 const Sidebar = () => {
-  const { isDarkMode } = useTheme();
+  const { isDarkMode } = useAppSelector(state => state.ui);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -31,7 +33,7 @@ const Sidebar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
+    dispatch(logout());
     navigate('/login');
   };
 

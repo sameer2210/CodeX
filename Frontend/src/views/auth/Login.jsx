@@ -1,47 +1,48 @@
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/config';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { loginUser, clearError } from '../../store/slices/authSlice';
+import { toggleTheme } from '../../store/slices/uiSlice';
 import Navigation from '../../components/layout/Navigation';
-import { useTheme } from '../../context/ThemeContext';
 
 const Login = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const [formData, setFormData] = useState({ teamName: '', username: '', password: '' });
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    teamName: '',
-    username: '',
-    password: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const dispatch = useAppDispatch();
+  
+  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth);
+  const { isDarkMode } = useAppSelector(state => state.ui);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await dispatch(loginUser(formData));
+    if (result.type === 'auth/login/fulfilled') {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
 
   const handleChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await api.post('/auth/login', formData);
-      if (response.data.success) {
-        localStorage.setItem('codex_token', response.data.token);
-        localStorage.setItem('codex_team', response.data.user.teamName);
-        localStorage.setItem('codex_username', response.data.user.username);
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -52,7 +53,7 @@ const Login = () => {
           : 'bg-gradient-to-br from-gray-200 via-blue-50/30 to-gray-300'
       }`}
     >
-      <Navigation isDarkMode={isDarkMode} toggleTheme={toggleTheme} showUserActions={false} />
+      <Navigation isDarkMode={isDarkMode} toggleTheme={handleThemeToggle} showUserActions={false} />
 
       <div className="flex items-center justify-center px-2 py-4">
         <motion.div
@@ -177,7 +178,7 @@ const Login = () => {
                           ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
                           : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
                       }`}
-                      type={showPassword ? 'text' : 'password'}
+                      // type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
@@ -193,7 +194,7 @@ const Login = () => {
                           : 'text-gray-500 hover:text-gray-600'
                       }`}
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {/* {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />} */}
                     </button>
                   </div>
                 </div>

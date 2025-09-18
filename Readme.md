@@ -1,5 +1,5 @@
 # CodeX - Collaborative AI-Powered Code Editor
-
+ 
 ## 🚀 Project Overview
 
 CodeX is a real-time collaborative code editor with AI-powered code review capabilities. It allows multiple developers to work together on the same codebase simultaneously, with features like live chat, real-time code synchronization, and intelligent code analysis using Google's Gemini AI.

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
+import Routes from './routes/Routes';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { setTheme } from './store/slices/uiSlice';
-import Routes from './routes/Routes';
 
 const App = () => {
   const dispatch = useAppDispatch();
@@ -14,7 +14,7 @@ const App = () => {
       const theme = JSON.parse(savedTheme);
       dispatch(setTheme(theme));
     }
-    
+
     // Apply initial theme class
     if (isDarkMode) {
       document.documentElement.classList.add('dark');

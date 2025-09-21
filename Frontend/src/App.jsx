@@ -23,11 +23,12 @@ const App = () => {
     }
   }, [dispatch, isDarkMode]);
 
-  return (
-    <>
-      <Routes />
-    </>
-  );
+  // Initialize socket connection once
+  useEffect(() => {
+    dispatch({ type: 'socket/init' });
+  }, [dispatch]);
+
+  return <Routes />;
 };
 
 export default App;

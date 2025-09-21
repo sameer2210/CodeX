@@ -7,13 +7,12 @@ import { useParams } from 'react-router-dom';
 import { io as SocketIo } from 'socket.io-client';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { updateProjectCode, updateProjectReview } from '../../../store/slices/projectSlice';
-import { 
-  setConnectionStatus, 
-  setIsConnecting, 
-  addMessage, 
-  setMessages,
+import {
   addToast,
-  toggleTheme
+  setConnectionStatus,
+  setIsConnecting,
+  setMessages,
+  toggleTheme,
 } from '../../../store/slices/uiSlice';
 
 const Project = () => {
@@ -22,9 +21,11 @@ const Project = () => {
   const [socket, setSocket] = useState(null);
   const params = useParams();
   const dispatch = useAppDispatch();
-  
+
   const { currentProject } = useAppSelector(state => state.projects);
-  const { connectionStatus, isConnecting, messages, isDarkMode } = useAppSelector(state => state.ui);
+  const { connectionStatus, isConnecting, messages, isDarkMode } = useAppSelector(
+    state => state.ui
+  );
   const { user } = useAppSelector(state => state.auth);
 
   const handleThemeToggle = () => {
@@ -35,7 +36,7 @@ const Project = () => {
     dispatch(addToast({ message, type }));
   };
 
-  const handleEditorChange = (value) => {
+  const handleEditorChange = value => {
     setCode(value || '');
     dispatch(updateProjectCode(value || ''));
     if (socket && socket.connected) {

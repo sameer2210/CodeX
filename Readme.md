@@ -1,6 +1,6 @@
 # CodeX - Collaborative AI-Powered Code Editor
- 
-## 🚀 Project Overview
+
+##  Project Overview
 
 CodeX is a real-time collaborative code editor with AI-powered code review capabilities. It allows multiple developers to work together on the same codebase simultaneously, with features like live chat, real-time code synchronization, and intelligent code analysis using Google's Gemini AI.
 
@@ -51,6 +51,14 @@ CodeX/
 │       │   │   └── Sidebar.jsx
 │       ├── routes/
 │       │   └── Routes.jsx
+|       |── store/
+│       |        ├── store.js                # configureStore + middleware
+│       |        ├── socketMiddleware.js     # socket.io client + event handling
+│       |        └── slices/
+│       |              ├── socketSlice.js      # connection state (connected/error)
+│       |              ├── projectSlice.js     # project data + chat messages
+│       |              ├── authSlice.js
+│       |              └── uiSlice.js
 │       └── views/
 │           ├── NotFound.jsx
 │           ├── auth/
@@ -58,17 +66,20 @@ CodeX/
 │           │   └── Register.jsx
 │           ├── create-project/
 │           │   └── CreateProject.jsx
-│           |── home/
-│           |   ├── Home.jsx
-│           |   └── project/
-│           |        └── Project.jsx
+│           |──── home/
+|           |      └── project/
+|           |          ├── Project.jsx
+|           |          └── components/
+|           |              ├── ChatSection.jsx    # uses Redux (messages + socket actions)
+|           |              ├── CodeEditor.jsx
+|           |              └── ReviewPanel.jsx
 │           ├── Dashboard.jsx
 │           ├── Landing.jsx
 
 
 ```
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Backend Technologies
 

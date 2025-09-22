@@ -1,3 +1,10 @@
+// Updated projectSlice.js
+// Added reducers for messages, activeUsers, language.
+// Assuming code and review are stored in currentProject.
+// If currentProject is null when updating, we can initialize it, but for simplicity, assume it's set before.
+// Added setCode and setReview as aliases, but using updateProjectCode and updateProjectReview.
+// Moved messages here from uiSlice.
+
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/config';
 
@@ -37,6 +44,9 @@ const projectSlice = createSlice({
       teamMembers: 1,
       completedTasks: 0,
     },
+    messages: [],
+    activeUsers: [],
+    language: 'javascript',
     isLoading: false,
     error: null,
   },
@@ -54,13 +64,25 @@ const projectSlice = createSlice({
         state.currentProject.review = action.payload;
       }
     },
-    clearError: (state) => {
+    addChatMessage: (state, action) => {
+      state.messages.push(action.payload);
+    },
+    setChatMessages: (state, action) => {
+      state.messages = action.payload;
+    },
+    setActiveUsers: (state, action) => {
+      state.activeUsers = action.payload;
+    },
+    setLanguage: (state, action) => {
+      state.language = action.payload;
+    },
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchProjects.pending, (state) => {
+      .addCase(fetchProjects.pending, state => {
         state.isLoading = true;
         state.error = null;
       })
@@ -79,7 +101,7 @@ const projectSlice = createSlice({
         state.error = action.payload;
         state.projects = [];
       })
-      .addCase(createProject.pending, (state) => {
+      .addCase(createProject.pending, state => {
         state.isLoading = true;
         state.error = null;
       })
@@ -94,5 +116,14 @@ const projectSlice = createSlice({
   },
 });
 
-export const { setCurrentProject, updateProjectCode, updateProjectReview, clearError } = projectSlice.actions;
+export const {
+  setCurrentProject,
+  updateProjectCode,
+  updateProjectReview,
+  addChatMessage,
+  setChatMessages,
+  setActiveUsers,
+  setLanguage,
+  clearError,
+} = projectSlice.actions;
 export default projectSlice.reducer;

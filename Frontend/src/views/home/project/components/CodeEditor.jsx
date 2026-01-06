@@ -1,18 +1,27 @@
-// New: Frontend/src/views/home/project/components/CodeEditor.jsx
 import Editor from '@monaco-editor/react';
 import { Code2, Copy, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { setLanguage, updateProjectCode } from '../../../../store/slices/projectSlice';
+import {
+  setLanguage,
+  updateProjectCode,
+  selectCurrentProjectCode,
+  selectCurrentProjectLanguage,
+} from '../../../../store/slices/projectSlice';
 import { addToast } from '../../../../store/slices/uiSlice';
 
-const CodeEditor = ({ activeSection, handleThemeToggle }) => {
+const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
-  const code = useAppSelector(state => state.projects.currentProject?.code || '');
-  const language = useAppSelector(state => state.projects.language);
+
+  // Selectors - Using project-specific selectors
+  const code = useAppSelector(selectCurrentProjectCode);
+  const language = useAppSelector(selectCurrentProjectLanguage);
   const isDarkMode = useAppSelector(state => state.ui.isDarkMode);
-  const connected = useAppSelector(state => state.socket.connected);
+  const socketConnected = useAppSelector(state => state.socket.connected);
+
+  // Local state
   const [mobileInput, setMobileInput] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const languages = [
     {
@@ -74,145 +83,198 @@ const CodeEditor = ({ activeSection, handleThemeToggle }) => {
     },
   ];
 
-  const handleEditorChange = value => {
-    const newCode = value || '';
-    dispatch(updateProjectCode(newCode));
-    if (connected) {
-      dispatch({ type: 'socket/codeChange', payload: newCode });
+  /* ========== INITIALIZE LANGUAGE ========== */
+  useEffect(() => {
+    if (!isInitialized) {
+      const savedLanguage = localStorage.getItem('selectedLanguage');
+      if (savedLanguage && languages.find(l => l.value === savedLanguage)) {
+        dispatch(setLanguage({ projectId, language: savedLanguage }));
+      }
+      setIsInitialized(true);
     }
-  };
+  }, [isInitialized, projectId, dispatch]);
 
-  const changeLanguage = newLanguage => {
-    dispatch(setLanguage(newLanguage));
-    const langConfig = languages.find(l => l.value === newLanguage);
-    if (code.trim() === '' || code.includes('Write your code here')) {
-      dispatch(updateProjectCode(langConfig?.template || '// Write your code here...'));
-    }
-    localStorage.setItem('selectedLanguage', newLanguage);
-  };
+  /* ========== CODE CHANGE HANDLER ========== */
+  const handleEditorChange = useCallback(
+    value => {
+      const newCode = value || '';
 
-  const copyCode = async () => {
+      // Update local state
+      dispatch(updateProjectCode({ projectId, code: newCode }));
+
+      // Broadcast to other users via socket
+      if (socketConnected) {
+        dispatch({
+          type: 'socket/codeChange',
+          payload: {
+            projectId,
+            code: newCode,
+          },
+        });
+      }
+    },
+    [dispatch, projectId, socketConnected]
+  );
+
+  /* ========== LANGUAGE CHANGE HANDLER ========== */
+  const changeLanguage = useCallback(
+    newLanguage => {
+      dispatch(setLanguage({ projectId, language: newLanguage }));
+
+      const langConfig = languages.find(l => l.value === newLanguage);
+
+      // Only set template if code is empty or has placeholder
+      if (!code.trim() || code.includes('Write your code here') || code.includes('Write your')) {
+        const templateCode = langConfig?.template || '// Write your code here...';
+        dispatch(updateProjectCode({ projectId, code: templateCode }));
+
+        if (socketConnected) {
+          dispatch({
+            type: 'socket/codeChange',
+            payload: {
+              projectId,
+              code: templateCode,
+            },
+          });
+        }
+      }
+
+      localStorage.setItem('selectedLanguage', newLanguage);
+    },
+    [dispatch, projectId, code, socketConnected]
+  );
+
+  /* ========== COPY CODE ========== */
+  const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
-      dispatch(addToast({ message: 'Code copied to clipboard!', type: 'success' }));
+      dispatch(
+        addToast({
+          message: 'Code copied to clipboard!',
+          type: 'success',
+        })
+      );
     } catch (error) {
-      dispatch(addToast({ message: 'Failed to copy code', type: 'error' }));
+      dispatch(
+        addToast({
+          message: 'Failed to copy code',
+          type: 'error',
+        })
+      );
     }
-  };
+  }, [code, dispatch]);
 
-  const resetCode = () => {
+  /* ========== RESET CODE ========== */
+  const resetCode = useCallback(() => {
     const langConfig = languages.find(l => l.value === language);
-    dispatch(updateProjectCode(langConfig?.template || '// Write your code here...'));
-    dispatch(addToast({ message: 'Code reset to template', type: 'info' }));
-  };
+    const templateCode = langConfig?.template || '// Write your code here...';
 
-  const handleMobileCodeSend = () => {
+    dispatch(updateProjectCode({ projectId, code: templateCode }));
+
+    if (socketConnected) {
+      dispatch({
+        type: 'socket/codeChange',
+        payload: {
+          projectId,
+          code: templateCode,
+        },
+      });
+    }
+
+    dispatch(
+      addToast({
+        message: 'Code reset to template',
+        type: 'info',
+      })
+    );
+  }, [dispatch, projectId, language, socketConnected]);
+
+  /* ========== MOBILE CODE INPUT ========== */
+  const handleMobileCodeSend = useCallback(() => {
     if (!mobileInput.trim()) return;
+
     const updatedCode = code + '\n' + mobileInput;
-    dispatch(updateProjectCode(updatedCode));
-    if (connected) {
-      dispatch({ type: 'socket/codeChange', payload: updatedCode });
+    dispatch(updateProjectCode({ projectId, code: updatedCode }));
+
+    if (socketConnected) {
+      dispatch({
+        type: 'socket/codeChange',
+        payload: {
+          projectId,
+          code: updatedCode,
+        },
+      });
     } else {
-      dispatch(addToast({ message: 'Code updated locally (offline)', type: 'warning' }));
+      dispatch(
+        addToast({
+          message: 'Code updated locally (offline)',
+          type: 'warning',
+        })
+      );
     }
+
     setMobileInput('');
-  };
+  }, [mobileInput, code, dispatch, projectId, socketConnected]);
 
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('selectedLanguage');
-    if (savedLanguage && languages.find(l => l.value === savedLanguage)) {
-      changeLanguage(savedLanguage);
-    }
-  }, []);
-
-  // const handleEditorChange = value => {
-  //   const newCode = value || '';
-  //   dispatch(setCode(newCode));
-  //   if (connected) {
-  //     dispatch({ type: 'socket/codeChange', payload: newCode });
-  //   }
-  // };
-
-  // const changeLanguage = newLanguage => {
-  //   dispatch(setLanguage(newLanguage));
-  //   const langConfig = languages.find(l => l.value === newLanguage);
-  //   if (code.trim() === '' || code.includes('Write your code here')) {
-  //     dispatch(setCode(langConfig?.template || '// Write your code here...'));
-  //   }
-  //   localStorage.setItem('selectedLanguage', newLanguage);
-  // };
-
-  // const copyCode = async () => {
-  //   try {
-  //     await navigator.clipboard.writeText(code);
-  //     dispatch(addToast({ message: 'Code copied to clipboard!', type: 'success' }));
-  //   } catch (error) {
-  //     dispatch(addToast({ message: 'Failed to copy code', type: 'error' }));
-  //   }
-  // };
-
-  // const resetCode = () => {
-  //   const langConfig = languages.find(l => l.value === language);
-  //   dispatch(setCode(langConfig?.template || '// Write your code here...'));
-  //   dispatch(addToast({ message: 'Code reset to template', type: 'info' }));
-  // };
-
-  // const handleMobileCodeSend = () => {
-  //   if (!mobileInput.trim()) return;
-  //   const updatedCode = code + '\n' + mobileInput;
-  //   dispatch(setCode(updatedCode));
-  //   if (connected) {
-  //     dispatch({ type: 'socket/codeChange', payload: updatedCode });
-  //   } else {
-  //     dispatch(addToast({ message: 'Code updated locally (offline)', type: 'warning' }));
-  //   }
-  //   setMobileInput('');
-  // };
-
-  // useEffect(() => {
-  //   const savedLanguage = localStorage.getItem('selectedLanguage');
-  //   if (savedLanguage && languages.find(l => l.value === savedLanguage)) {
-  //     changeLanguage(savedLanguage);
-  //   }
-  // }, []);
-
+  /* ========== RENDER ========== */
   return (
     <div
-      className={`${
-        activeSection === 'code' || window.innerWidth >= 1024 ? 'flex' : 'hidden'
-      } lg:flex w-full lg:w-1/2 bg-gray-900 flex-col`}
+      className={`flex flex-col h-full rounded-lg overflow-hidden border ${
+        isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+      }`}
     >
-      <div className="p-4 border-b border-gray-700 flex-shrink-0">
+      {/* Header */}
+      <div
+        className={`p-4 border-b flex-shrink-0 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
+      >
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center space-x-2">
-            <Code2 className="w-5 h-5 text-green-400" />
-            <h2 className="text-lg font-semibold text-white">Code Editor</h2>
+            <Code2 className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Code Editor
+            </h2>
+            {!socketConnected && (
+              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-600">
+                Offline
+              </span>
+            )}
           </div>
+
           <div className="flex items-center space-x-2">
             <button
               onClick={copyCode}
-              className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
               title="Copy code"
             >
               <Copy className="w-4 h-4" />
             </button>
-            <button
-              onClick={handleThemeToggle}
-              className="px-3 py-2 text-sm rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
-            >
-              {isDarkMode ? 'Light' : 'Dark'}
-            </button>
+
             <button
               onClick={resetCode}
-              className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
               title="Reset code"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
+
             <select
               value={language}
               onChange={e => changeLanguage(e.target.value)}
-              className="px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 text-sm"
+              className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                isDarkMode
+                  ? 'bg-gray-800 border-gray-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               {languages.map(lang => (
                 <option key={lang.value} value={lang.value}>
@@ -223,6 +285,8 @@ const CodeEditor = ({ activeSection, handleThemeToggle }) => {
           </div>
         </div>
       </div>
+
+      {/* Editor */}
       <div className="flex-1 relative">
         <Editor
           height="100%"
@@ -230,7 +294,7 @@ const CodeEditor = ({ activeSection, handleThemeToggle }) => {
           language={language}
           value={code}
           onChange={handleEditorChange}
-          theme="vs-dark"
+          theme={isDarkMode ? 'vs-dark' : 'light'}
           options={{
             minimap: { enabled: window.innerWidth > 768 },
             fontSize: 14,
@@ -239,10 +303,20 @@ const CodeEditor = ({ activeSection, handleThemeToggle }) => {
             formatOnType: true,
             formatOnPaste: true,
             cursorBlinking: 'smooth',
+            scrollBeyondLastLine: false,
+            renderLineHighlight: 'all',
+            smoothScrolling: true,
+            padding: { top: 10, bottom: 10 },
           }}
         />
       </div>
-      <div className="lg:hidden p-4 border-t border-gray-700 flex-shrink-0">
+
+      {/* Mobile Input */}
+      <div
+        className={`lg:hidden p-4 border-t flex-shrink-0 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
+      >
         <div className="flex space-x-2">
           <input
             type="text"
@@ -250,13 +324,17 @@ const CodeEditor = ({ activeSection, handleThemeToggle }) => {
             onChange={e => setMobileInput(e.target.value)}
             onKeyPress={e => e.key === 'Enter' && handleMobileCodeSend()}
             placeholder="Add code line..."
-            className="flex-1 px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white text-sm"
+            className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            }`}
             autoComplete="off"
           />
           <button
             onClick={handleMobileCodeSend}
             disabled={!mobileInput.trim()}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white text-sm rounded-lg transition-colors"
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
           >
             Add
           </button>

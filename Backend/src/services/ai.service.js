@@ -1,113 +1,90 @@
-// import { GoogleGenAI } from '@google/genai';
-// import config from '../config/config.js';
-
-// const ai = new GoogleGenAI({ apiKey: config.GOOGLE_API_KEY });
-
-// export async function getCodeReview(code) {
-//   if (!code || typeof code !== 'string') {
-//     throw new Error('Invalid input: code must be a non-empty string.');
-//   }
-
-//   try {
-//     console.log(' Reviewing code:\n', code);
-
-//     const response = await ai.models.generateContent({
-//       model: 'gemini-2.0-flash-thinking-exp-01-21',
-//       contents: code,
-//       config: {
-//         systemInstruction: `
-//                               Role:
-//                               You are an expert Full-Stack Developer (MERN + DevOps). Review the given code and return clear, short, and actionable feedback.
-//                               ⸻
-//                               Review Strategy:
-//                               1. Keep it short & focused
-//                                  - Use bullets, not long paragraphs
-//                                  - Prioritize top 2–4 issues only
-//                               2. Lead with positivity
-//                                  - Start with quick praises
-//                               3. Point out mistakes
-//                                  - Be specific with 1-liner reasons
-//                               4. Suggest improvements
-//                                  - Show a corrected version of the code
-//                                  - Add best practices (error handling, modularity, naming)
-//                               5. Close warmly
-//                                  - End with quick motivation
-//                               ⸻
-//                               Output Format
-
-//                               ###  What’s Good
-//                               - [positive points]
-
-//                               ###  Needs Improvement
-//                               - [issues]
-
-//                               ---
-//                               ###  Suggested Improved Version
-//                               \`\`\`js
-//                               // corrected code here
-//                               \`\`\`
-//                               ⸻
-//                                Final Thought
-//                               [encouraging closure]
-//                            `,
-//       },
-//     });
-
-//     return response.text;
-//   } catch (err) {
-//     console.error(' AI review failed:', err.message);
-//     throw new Error('AI review service unavailable. Please try again.');
-//   }
-// }
-// services/ai.service.js
-
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config/config.js';
 
-const ai = new GoogleGenAI({ apiKey: config.GOOGLE_API_KEY });
+const genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
 
-export class AIService {
+class AIService {
   async reviewCode(code, language = 'javascript') {
     if (!code || typeof code !== 'string') {
       throw new Error('Invalid input: code must be a non-empty string.');
     }
 
     try {
-      console.log(`Reviewing ${language} code...`);
+      console.log(`🤖 Reviewing ${language} code...`);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-thinking-exp-01-21',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: `
-You are an expert Full-Stack Developer (MERN + DevOps).
-Review this ${language} code and provide feedback.
-
-### Guidelines
-1. Keep feedback concise & constructive.
-2. Use bullets for clarity.
-3. Highlight top 2–4 key issues.
-4. Suggest fixes with a short improved snippet.
-5. End with encouragement.
-
---- CODE TO REVIEW ---
-${code}
-                `,
-              },
-            ],
-          },
-        ],
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-pro',
       });
 
-      // Google GenAI gives text in response
-      return response.response.candidates[0].content.parts[0].text;
+      const prompt = `You are an expert Full-Stack Developer specializing in code reviews.
+
+Review this ${language} code and provide constructive feedback.
+
+**Guidelines:**
+1. Keep feedback concise & actionable
+2. Use markdown formatting with headers (##, ###)
+3. Highlight 2-4 key issues maximum
+4. Provide specific code improvements
+5. End with encouragement
+
+**Code to Review:**
+\`\`\`${language}
+${code}
+\`\`\`
+
+**Format your response like this:**
+##  What's Good
+- [positive points]
+
+##  Needs Improvement
+- [specific issues]
+
+##  Suggested Improvements
+\`\`\`${language}
+// Your improved version
+\`\`\`
+
+##  Final Thoughts
+[encouraging message]`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      console.log(' Review generated successfully');
+      return text;
     } catch (err) {
-      console.error('AI review failed:', err.message);
-      throw new Error('AI review service unavailable. Please try again.');
+      console.error(' AI review failed:', err.message);
+
+      // Return fallback review
+      return this.getFallbackReview(code, language);
     }
+  }
+
+  getFallbackReview(code, language) {
+    const lines = code.split('\n').length;
+
+    return `## 📊 Code Analysis (Fallback Mode)
+
+**Note:** AI service temporarily unavailable. Here's a basic analysis:
+
+### ✅ What's Good
+- Code is ${lines} lines long
+- Language: ${language}
+
+### ⚠️ General Suggestions
+- Ensure proper error handling
+- Add comments for complex logic
+- Follow ${language} best practices
+- Write unit tests
+
+### 💡 Next Steps
+- Review for edge cases
+- Optimize performance if needed
+- Check security considerations
+
+### 🎯 Keep Coding!
+Great work on writing code! Keep practicing and improving.`;
   }
 }
 

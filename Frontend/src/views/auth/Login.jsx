@@ -1,50 +1,100 @@
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/uiSlice';
 import Navigation from '../../components/layout/Navigation';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ teamName: '', username: '', password: '' });
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
-  
+
+  // Form state
+  const [formData, setFormData] = useState({
+    teamName: '',
+    username: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Redux state
   const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth);
   const { isDarkMode } = useAppSelector(state => state.ui);
 
+  /* ========== REDIRECT AUTHENTICATED USERS ========== */
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
+    // Only redirect if we're actually on the login page AND authenticated
+    if (isAuthenticated && location.pathname === '/login') {
+      // Use replace to prevent back button issues
+      navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location.pathname]);
 
+  /* ========== CLEAR ERRORS ON MOUNT ========== */
   useEffect(() => {
+    dispatch(clearError());
+
+    // Cleanup on unmount
     return () => {
       dispatch(clearError());
     };
   }, [dispatch]);
 
-  const handleSubmit = async (e) => {
+  /* ========== HANDLE FORM SUBMIT ========== */
+  const handleSubmit = async e => {
     e.preventDefault();
-    const result = await dispatch(loginUser(formData));
-    if (result.type === 'auth/login/fulfilled') {
-      navigate('/dashboard');
+
+    // Validate form
+    if (!formData.username.trim() || !formData.teamName.trim() || !formData.password) {
+      dispatch(clearError());
+      return;
+    }
+
+    try {
+      // Dispatch login action
+      const result = await dispatch(loginUser(formData)).unwrap();
+
+      // On success, navigate will happen via useEffect above
+      console.log('✅ Login successful:', result);
+    } catch (err) {
+      // Error is handled by Redux
+      console.error('❌ Login failed:', err);
     }
   };
 
+  /* ========== HANDLE INPUT CHANGE ========== */
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear error when user types
+    if (error) {
+      dispatch(clearError());
+    }
+  };
+
+  /* ========== HANDLE THEME TOGGLE ========== */
   const handleThemeToggle = () => {
     dispatch(toggleTheme());
   };
 
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) setError('');
-  };
+  /* ========== PREVENT RENDER IF AUTHENTICATED ========== */
+  // Don't render login form if already authenticated
+  if (isAuthenticated && location.pathname === '/login') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
+  /* ========== RENDER ========== */
   return (
     <div
       className={`min-h-screen transition-all duration-500 ${
@@ -55,7 +105,7 @@ const Login = () => {
     >
       <Navigation isDarkMode={isDarkMode} toggleTheme={handleThemeToggle} showUserActions={false} />
 
-      <div className="flex items-center justify-center px-2 py-4">
+      <div className="flex items-center justify-center px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -68,7 +118,7 @@ const Login = () => {
             }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-gray-600 px-8 py-8 text-center">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-8 text-center">
               <motion.div
                 className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center"
                 whileHover={{ scale: 1.1, rotate: 5 }}
@@ -124,9 +174,11 @@ const Login = () => {
                       onChange={handleChange}
                       placeholder="Enter your username"
                       required
+                      autoComplete="username"
                     />
                   </div>
                 </div>
+
                 {/* Team Name Field */}
                 <div>
                   <label
@@ -154,9 +206,11 @@ const Login = () => {
                       onChange={handleChange}
                       placeholder="Enter your team name"
                       required
+                      autoComplete="organization"
                     />
                   </div>
                 </div>
+
                 {/* Password Field */}
                 <div>
                   <label
@@ -178,12 +232,13 @@ const Login = () => {
                           ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
                           : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
                       }`}
-                      // type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="Enter your password"
                       required
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -194,7 +249,7 @@ const Login = () => {
                           : 'text-gray-500 hover:text-gray-600'
                       }`}
                     >
-                      {/* {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />} */}
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -203,9 +258,9 @@ const Login = () => {
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-gray-600 hover:from-gray-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                  whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -218,18 +273,18 @@ const Login = () => {
                 </motion.button>
               </form>
 
-              {/* Demo Credentials Box */}
+              {/* Demo Credentials */}
               <div className="mt-6 p-4 border rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-600/10">
                 <h3
                   className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
                 >
-                  Use these demo credentials to login:
+                  Demo Credentials:
                 </h3>
                 <ul
                   className={`text-sm space-y-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-600'}`}
                 >
                   <li>
-                    <strong>Username:</strong> your name
+                    <strong>Username:</strong> john
                   </li>
                   <li>
                     <strong>Team Name:</strong> Alpha
@@ -245,6 +300,7 @@ const Login = () => {
                 <p className={`text-sm ${isDarkMode ? 'text-gray-100' : 'text-gray-700'}`}>
                   Don't have a team yet?{' '}
                   <button
+                    type="button"
                     onClick={() => navigate('/register')}
                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   >

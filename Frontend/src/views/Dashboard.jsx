@@ -10,7 +10,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useEffect , useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjects } from '../store/slices/projectSlice';
@@ -21,27 +21,35 @@ import Sidebar from '../components/layout/Sidebar';
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
+  // Selectors
   const { projects, stats, isLoading } = useAppSelector(state => state.projects);
+  const { isAuthenticated } = useAppSelector(state => state.auth);
   const { isDarkMode } = useAppSelector(state => state.ui);
   const { user } = useAppSelector(state => state.auth);
 
-  useEffect(() => {
-    dispatch(fetchProjects());
-  }, [dispatch]);
-
-  const handleThemeToggle = () => {
-    dispatch(toggleTheme());
-  };
-
+  // Local state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
 
   const teamName = localStorage.getItem('codex_team') || 'Your Team';
   const username = localStorage.getItem('codex_username') || 'User';
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  /* ========== SOCKET INITIALIZATION ========== */
+  // Initialize socket connection when authenticated
+  // This only sets up the connection, doesn't join any project rooms
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch({ type: 'socket/init' });
+    }
+  }, [isAuthenticated, dispatch]);
 
+  /* ========== FETCH PROJECTS ========== */
+  useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
+
+  /* ========== RESPONSIVE SIDEBAR ========== */
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
     setIsLargeScreen(mediaQuery.matches);
@@ -54,6 +62,14 @@ const Dashboard = () => {
     return () => mediaQuery.removeEventListener('change', handleMediaChange);
   }, []);
 
+  /* ========== HANDLERS ========== */
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
+
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+
+  /* ========== UTILITY FUNCTIONS ========== */
   const formatDate = dateString => {
     if (!dateString) return 'Unknown';
     try {
@@ -83,6 +99,7 @@ const Dashboard = () => {
     return colors[language] || 'from-gray-400 to-gray-600';
   };
 
+  /* ========== MOCK DATA ========== */
   const recentActivities = [
     { action: 'Created new project', project: 'AI Chat App', time: '2 hours ago', icon: Plus },
     { action: 'Updated code', project: 'Web Dashboard', time: '4 hours ago', icon: Code2 },
@@ -94,6 +111,7 @@ const Dashboard = () => {
     },
   ];
 
+  /* ========== RENDER ========== */
   return (
     <div
       className={`min-h-screen transition-all duration-500 ${
@@ -272,8 +290,9 @@ const Dashboard = () => {
                         }`}
                       >
                         <div
-                          className={`w-10 h-10 bg-gradient-to-r
-                            ${getLanguageColor(project.language || 'Unknown')} rounded-lg flex items-center justify-center shadow-md`}
+                          className={`w-10 h-10 bg-gradient-to-r ${getLanguageColor(
+                            project.language || 'Unknown'
+                          )} rounded-lg flex items-center justify-center shadow-md`}
                         >
                           <Code2 className="w-5 h-5 text-white" />
                         </div>

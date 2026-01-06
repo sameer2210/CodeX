@@ -1,54 +1,50 @@
-// import mongoose from 'mongoose';
-
-// const messageSchema = new mongoose.Schema(
-//   {
-//     project: {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: 'Project',
-//       required: [true, 'porject is required'],
-//     },
-//     text: {
-//       type: String,
-//       required: [true, 'Message text is required'],
-//     },
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// const messageModel = mongoose.model('Message', messageSchema);
-// export default messageModel;
-
-
 import mongoose from 'mongoose';
 
-const messageSchema = new mongoose.Schema({
-  teamName: {
-    type: String,
-    required: true,
-    lowercase: true,
+const messageSchema = new mongoose.Schema(
+  {
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      required: true,
+      index: true,
+    },
+    teamName: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    username: {
+      type: String,
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 5000,
+    },
+    type: {
+      type: String,
+      enum: ['user', 'system', 'notification'],
+      default: 'user',
+    },
+    metadata: {
+      edited: { type: Boolean, default: false },
+      editedAt: Date,
+      replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+    },
   },
-  projectId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project',
-    default: null,
-  },
-  username: {
-    type: String,
-    required: true,
-  },
-  message: {
-    type: String,
-    required: true,
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now,
-  },
+  {
+    timestamps: true,
+  }
+);
+
+// Compound index for efficient queries
+messageSchema.index({ teamName: 1, projectId: 1, createdAt: -1 });
+
+// Virtual for message age
+messageSchema.virtual('age').get(function () {
+  return Date.now() - this.createdAt.getTime();
 });
 
-const Message = mongoose.model('Message', messageSchema);
-
-export default Message;
-
+export default mongoose.model('Message', messageSchema);

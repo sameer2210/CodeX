@@ -1,21 +1,21 @@
 import { io } from 'socket.io-client';
 
 import {
-  socketConnecting,
+  addChatMessage,
+  addTypingUser,
+  removeTypingUser,
+  setActiveUsers,
+  setChatMessages,
+  setProjectJoined,
+  updateProjectCode,
+  updateProjectReview,
+} from './slices/projectSlice';
+import {
   socketConnected,
+  socketConnecting,
   socketDisconnected,
   socketError,
 } from './slices/socketSlice';
-import {
-  addChatMessage,
-  setChatMessages,
-  updateProjectCode,
-  updateProjectReview,
-  setActiveUsers,
-  addTypingUser,
-  removeTypingUser,
-  setProjectJoined,
-} from './slices/projectSlice';
 import { addToast } from './slices/uiSlice';
 
 let socket = null;
@@ -56,12 +56,7 @@ export const socketMiddleware = store => next => action => {
     socket.on('connect', () => {
       reconnectAttempts = 0;
       store.dispatch(socketConnected());
-      store.dispatch(
-        addToast({
-          message: 'Connected to server',
-          type: 'success',
-        })
-      );
+      store.dispatch(addToast({ message: 'Connected to server', type: 'success' }));
       console.log('🔌 Socket connected:', socket.id);
     });
 
@@ -71,10 +66,7 @@ export const socketMiddleware = store => next => action => {
 
       if (reason === 'io server disconnect') {
         store.dispatch(
-          addToast({
-            message: 'Disconnected by server. Please refresh.',
-            type: 'error',
-          })
+          addToast({ message: 'Disconnected by server. Please refresh.', type: 'error' })
         );
       }
     });
@@ -86,10 +78,7 @@ export const socketMiddleware = store => next => action => {
 
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         store.dispatch(
-          addToast({
-            message: 'Unable to connect. Please check your connection.',
-            type: 'error',
-          })
+          addToast({ message: 'Unable to connect. Please check your connection.', type: 'error' })
         );
       }
     });
@@ -98,31 +87,20 @@ export const socketMiddleware = store => next => action => {
       reconnectAttempts = 0;
       store.dispatch(socketConnected());
       store.dispatch(
-        addToast({
-          message: `Reconnected after ${attemptNumber} attempts`,
-          type: 'success',
-        })
+        addToast({ message: `Reconnected after ${attemptNumber} attempts`, type: 'success' })
       );
       console.log('🔄 Reconnected');
     });
 
     socket.on('reconnect_failed', () => {
       store.dispatch(
-        addToast({
-          message: 'Failed to reconnect. Please refresh the page.',
-          type: 'error',
-        })
+        addToast({ message: 'Failed to reconnect. Please refresh the page.', type: 'error' })
       );
     });
 
     socket.on('error', err => {
       store.dispatch(socketError(err.message || 'Socket error'));
-      store.dispatch(
-        addToast({
-          message: err.message || 'An error occurred',
-          type: 'error',
-        })
-      );
+      store.dispatch(addToast({ message: err.message || 'An error occurred', type: 'error' }));
     });
 
     /* ===== PROJECT ROOM EVENTS ===== */
@@ -131,6 +109,12 @@ export const socketMiddleware = store => next => action => {
       if (success) {
         store.dispatch(setProjectJoined({ projectId, joined: true }));
         console.log('✅ Joined project:', projectId);
+
+        // Request chat history after joining
+        socket.emit('get-chat-history', { projectId });
+
+        // Request project code
+        socket.emit('get-project-code', { projectId });
       }
     });
 
@@ -142,11 +126,11 @@ export const socketMiddleware = store => next => action => {
           addChatMessage({
             projectId,
             message: {
-              _id: `system_${Date.now()}`,
+              _id: `system_${Date.now()}_${Math.random()}`,
               username: 'System',
               message: `${username} joined the project`,
               type: 'system',
-              createdAt: new Date(timestamp).toISOString(),
+              createdAt: timestamp || new Date().toISOString(),
             },
           })
         );
@@ -161,7 +145,7 @@ export const socketMiddleware = store => next => action => {
           addChatMessage({
             projectId,
             message: {
-              _id: `system_${Date.now()}`,
+              _id: `system_${Date.now()}_${Math.random()}`,
               username: 'System',
               message: `${username} left the project`,
               type: 'system',
@@ -183,13 +167,30 @@ export const socketMiddleware = store => next => action => {
 
     socket.on('chat-history', ({ projectId, messages }) => {
       if (Array.isArray(messages)) {
-        store.dispatch(setChatMessages({ projectId, messages }));
+        // Transform messages to include proper format
+        const formattedMessages = messages.map(msg => ({
+          ...msg,
+          _id: msg._id || `msg_${Date.now()}_${Math.random()}`,
+          username: msg.username || 'Unknown',
+          message: msg.text || msg.message || '',
+          createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
+        }));
+
+        store.dispatch(setChatMessages({ projectId, messages: formattedMessages }));
         console.log(`📜 Loaded ${messages.length} messages for project ${projectId}`);
       }
     });
 
     socket.on('chat-message', ({ projectId, message }) => {
-      store.dispatch(addChatMessage({ projectId, message }));
+      // Ensure message has proper format
+      const formattedMessage = {
+        ...message,
+        _id: message._id || `msg_${Date.now()}_${Math.random()}`,
+        message: message.text || message.message || '',
+        createdAt: message.createdAt || message.timestamp || new Date().toISOString(),
+      };
+
+      store.dispatch(addChatMessage({ projectId, message: formattedMessage }));
     });
 
     socket.on('user-typing', ({ projectId, username, isTyping }) => {
@@ -211,63 +212,95 @@ export const socketMiddleware = store => next => action => {
 
       if (username !== currentUser) {
         store.dispatch(updateProjectCode({ projectId, code, delta, cursorPos, username }));
+        console.log(`📝 Code updated by ${username}`);
       }
     });
 
     socket.on('project-code', ({ projectId, code }) => {
       store.dispatch(updateProjectCode({ projectId, code }));
+      console.log(`📝 Project code loaded for ${projectId}`);
     });
 
-    socket.on('code-review', ({ projectId, review }) => {
-      store.dispatch(updateProjectReview({ projectId, review }));
-      store.dispatch(
-        addToast({
-          message: 'AI review completed!',
-          type: 'success',
-        })
-      );
+    // FIXED: AI Code Review Event Handler
+    socket.on('code-review', ({ projectId, review, success, error }) => {
+      console.log('🤖 AI Review received:', {
+        projectId,
+        success,
+        review: review?.substring(0, 100),
+      });
+
+      if (success && review) {
+        store.dispatch(updateProjectReview({ projectId, review }));
+        store.dispatch(addToast({ message: 'AI review completed!', type: 'success' }));
+      } else if (error) {
+        const errorReview = `❌ **AI Review Failed**\n\n${error}\n\nPlease check:\n- Your API key is configured correctly\n- The backend service is running\n- Try again in a moment`;
+        store.dispatch(updateProjectReview({ projectId, review: errorReview }));
+        store.dispatch(addToast({ message: 'AI review failed', type: 'error' }));
+      } else {
+        const fallbackReview =
+          '⚠️ **No Review Generated**\n\nThe AI service returned an empty response. Please try again.';
+        store.dispatch(updateProjectReview({ projectId, review: fallbackReview }));
+        store.dispatch(addToast({ message: 'No review generated', type: 'warning' }));
+      }
+    });
+
+    socket.on('review-error', ({ projectId, error, message }) => {
+      console.error('❌ Review error:', error, message);
+      const errorReview = `❌ **AI Review Error**\n\n${message || error || 'An unknown error occurred'}\n\nTroubleshooting:\n- Check if GOOGLE_API_KEY is set in backend .env\n- Verify Gemini API is accessible\n- Check backend logs for details`;
+      store.dispatch(updateProjectReview({ projectId, review: errorReview }));
+      store.dispatch(addToast({ message: 'Review generation failed', type: 'error' }));
     });
 
     /* ===== CALL EVENTS ===== */
 
     socket.on('incoming-call', ({ from, offer, type, callerSocket }) => {
-      store.dispatch(
-        addToast({
-          message: `Incoming ${type} call from ${from}`,
-          type: 'info',
+      store.dispatch(addToast({ message: `Incoming ${type} call from ${from}`, type: 'info' }));
+      // Dispatch to a custom slice or handle in component
+      window.dispatchEvent(
+        new CustomEvent('incoming-call', {
+          detail: { from, offer, type, callerSocket },
         })
       );
-      // Handle call UI here
     });
 
-    socket.on('call-accepted', ({ answer }) => {
-      // Handle call acceptance
+    socket.on('call-accepted', ({ answer, from }) => {
+      console.log('📞 Call accepted by', from);
+      window.dispatchEvent(
+        new CustomEvent('call-accepted', {
+          detail: { answer, from },
+        })
+      );
     });
 
-    socket.on('call-rejected', () => {
-      store.dispatch(
-        addToast({
-          message: 'Call was rejected',
-          type: 'warning',
+    socket.on('call-rejected', ({ from }) => {
+      store.dispatch(addToast({ message: `${from} rejected the call`, type: 'warning' }));
+      window.dispatchEvent(
+        new CustomEvent('call-rejected', {
+          detail: { from },
         })
       );
     });
 
     socket.on('call-failed', ({ message }) => {
-      store.dispatch(
-        addToast({
-          message: message || 'Call failed',
-          type: 'error',
+      store.dispatch(addToast({ message: message || 'Call failed', type: 'error' }));
+    });
+
+    socket.on('end-call', ({ from }) => {
+      console.log('📞 Call ended by', from);
+      window.dispatchEvent(
+        new CustomEvent('end-call', {
+          detail: { from },
         })
       );
     });
 
-    socket.on('end-call', () => {
-      // Handle call end
-    });
-
-    socket.on('ice-candidate', ({ candidate }) => {
-      // Handle ICE candidate
+    socket.on('ice-candidate', ({ candidate, from }) => {
+      console.log('🧊 ICE candidate from', from);
+      window.dispatchEvent(
+        new CustomEvent('ice-candidate', {
+          detail: { candidate, from },
+        })
+      );
     });
 
     /* ===== TEAM EVENTS ===== */
@@ -286,12 +319,14 @@ export const socketMiddleware = store => next => action => {
   if (socket?.connected && action.type.startsWith('socket/')) {
     switch (action.type) {
       case 'socket/joinProject':
+        console.log('🚀 Joining project:', action.payload.projectId);
         socket.emit('join-project', {
           projectId: action.payload.projectId || action.payload,
         });
         break;
 
       case 'socket/leaveProject':
+        console.log('👋 Leaving project:', action.payload.projectId);
         socket.emit('leave-project', {
           projectId: action.payload.projectId || action.payload,
         });
@@ -319,15 +354,18 @@ export const socketMiddleware = store => next => action => {
       case 'socket/codeChange':
         socket.emit('code-change', {
           projectId: action.payload.projectId,
-          delta: action.payload.delta,
           code: action.payload.code,
+          delta: action.payload.delta,
           cursorPos: action.payload.cursorPos,
         });
         break;
 
       case 'socket/getReview':
+        console.log('🤖 Requesting AI review for project:', action.payload.projectId);
         socket.emit('get-review', {
           projectId: action.payload.projectId,
+          code: action.payload.code,
+          language: action.payload.language,
         });
         break;
 
@@ -375,6 +413,9 @@ export const socketMiddleware = store => next => action => {
       default:
         break;
     }
+  } else if (action.type.startsWith('socket/') && action.type !== 'socket/init') {
+    // Socket not connected, queue or warn
+    console.warn('⚠️ Socket not connected for action:', action.type);
   }
 
   return next(action);

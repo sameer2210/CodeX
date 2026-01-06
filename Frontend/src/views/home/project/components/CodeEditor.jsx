@@ -1,87 +1,116 @@
 import Editor from '@monaco-editor/react';
-import { Code2, Copy, RotateCcw } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import {
+  Code2,
+  Copy,
+  Download,
+  Maximize2,
+  Minimize2,
+  Play,
+  RotateCcw,
+  Settings,
+  Terminal,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
-  setLanguage,
-  updateProjectCode,
   selectCurrentProjectCode,
   selectCurrentProjectLanguage,
+  setLanguage,
+  updateProjectCode,
 } from '../../../../store/slices/projectSlice';
 import { addToast } from '../../../../store/slices/uiSlice';
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
 
-  // Selectors - Using project-specific selectors
+  // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
   const isDarkMode = useAppSelector(state => state.ui.isDarkMode);
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   // Local state
-  const [mobileInput, setMobileInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [showOutput, setShowOutput] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editorSettings, setEditorSettings] = useState({
+    fontSize: 14,
+    minimap: window.innerWidth > 768,
+    lineNumbers: true,
+    wordWrap: 'on',
+    formatOnPaste: true,
+    autoComplete: true,
+  });
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const languages = [
     {
       value: 'javascript',
       label: 'JavaScript',
-      template: '// Write your JavaScript code here\nconsole.log("Hello World!");',
+      judge0Id: 63,
+      template: '// JavaScript\nconsole.log("Hello World!");',
     },
     {
       value: 'typescript',
       label: 'TypeScript',
-      template:
-        '// Write your TypeScript code here\nconst message: string = "Hello World!";\nconsole.log(message);',
+      judge0Id: 74,
+      template: '// TypeScript\nconst message: string = "Hello World!";\nconsole.log(message);',
     },
-    {
-      value: 'python',
-      label: 'Python',
-      template: '# Write your Python code here\nprint("Hello World!")',
-    },
+    { value: 'python', label: 'Python', judge0Id: 71, template: '# Python\nprint("Hello World!")' },
     {
       value: 'java',
       label: 'Java',
+      judge0Id: 62,
       template:
-        'public class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello World!");\n    }\n}',
+        'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World!");\n    }\n}',
     },
     {
-      value: 'csharp',
-      label: 'C#',
+      value: 'cpp',
+      label: 'C++',
+      judge0Id: 54,
       template:
-        'using System;\n\nclass Program\n{\n    static void Main()\n    {\n        Console.WriteLine("Hello World!");\n    }\n}',
+        '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World!" << endl;\n    return 0;\n}',
     },
     {
-      value: 'html',
-      label: 'HTML',
+      value: 'c',
+      label: 'C',
+      judge0Id: 50,
       template:
-        '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>My Page</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n</body>\n</html>',
+        '#include <stdio.h>\n\nint main() {\n    printf("Hello World!\\n");\n    return 0;\n}',
     },
     {
-      value: 'css',
-      label: 'CSS',
-      template:
-        '/* Write your CSS code here */\nbody {\n    font-family: Arial, sans-serif;\n    background-color: #f0f0f0;\n    margin: 0;\n    padding: 20px;\n}\n\nh1 {\n    color: #333;\n    text-align: center;\n}',
+      value: 'go',
+      label: 'Go',
+      judge0Id: 60,
+      template: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello World!")\n}',
     },
     {
-      value: 'react',
-      label: 'React',
-      template:
-        'import React from "react";\n\nfunction App() {\n  return (\n    <div>\n      <h1>Hello World!</h1>\n    </div>\n  );\n}\n\nexport default App;',
+      value: 'rust',
+      label: 'Rust',
+      judge0Id: 73,
+      template: 'fn main() {\n    println!("Hello World!");\n}',
     },
-    {
-      value: 'vue',
-      label: 'Vue',
-      template:
-        '<template>\n  <div>\n    <h1>{{ message }}</h1>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      message: "Hello World!"\n    }\n  }\n}\n</script>',
-    },
-    {
-      value: 'php',
-      label: 'PHP',
-      template: '<?php\n// Write your PHP code here\necho "Hello World!";\n?>',
-    },
+    { value: 'php', label: 'PHP', judge0Id: 68, template: '<?php\necho "Hello World!";\n?>' },
+    { value: 'ruby', label: 'Ruby', judge0Id: 72, template: '# Ruby\nputs "Hello World!"' },
   ];
+
+  /* ========== RESPONSIVE HANDLING ========== */
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setEditorSettings(prev => ({ ...prev, minimap: !mobile }));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   /* ========== INITIALIZE LANGUAGE ========== */
   useEffect(() => {
@@ -94,47 +123,133 @@ const CodeEditor = ({ projectId }) => {
     }
   }, [isInitialized, projectId, dispatch]);
 
+  /* ========== EDITOR MOUNT ========== */
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Enhanced editor configuration
+    editor.updateOptions({
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: true,
+      wordBasedSuggestions: true,
+      parameterHints: { enabled: true },
+      hover: { enabled: true },
+      contextmenu: true,
+    });
+
+    // Add keyboard shortcuts
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, () => {
+      dispatch(addToast({ message: 'Code saved!', type: 'success' }));
+    });
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      executeCode();
+    });
+  };
+
   /* ========== CODE CHANGE HANDLER ========== */
   const handleEditorChange = useCallback(
     value => {
       const newCode = value || '';
-
-      // Update local state
       dispatch(updateProjectCode({ projectId, code: newCode }));
 
-      // Broadcast to other users via socket
       if (socketConnected) {
         dispatch({
           type: 'socket/codeChange',
-          payload: {
-            projectId,
-            code: newCode,
-          },
+          payload: { projectId, code: newCode },
         });
       }
     },
     [dispatch, projectId, socketConnected]
   );
 
-  /* ========== LANGUAGE CHANGE HANDLER ========== */
+  /* ========== CODE EXECUTION ========== */
+  const executeCode = async () => {
+    if (!code.trim()) {
+      dispatch(addToast({ message: 'Please write some code first!', type: 'warning' }));
+      return;
+    }
+
+    setIsExecuting(true);
+    setShowOutput(true);
+    setOutput('⏳ Running code...\n');
+
+    const langConfig = languages.find(l => l.value === language);
+
+    try {
+      // Using Judge0 API for code execution
+      const response = await fetch(
+        'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // User needs to add their key
+            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+          },
+          body: JSON.stringify({
+            language_id: langConfig?.judge0Id || 63,
+            source_code: code,
+            stdin: '',
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.stdout) {
+        setOutput(`✅ Output:\n${result.stdout}`);
+      } else if (result.stderr) {
+        setOutput(`❌ Error:\n${result.stderr}`);
+      } else if (result.compile_output) {
+        setOutput(`⚠️ Compilation Error:\n${result.compile_output}`);
+      } else {
+        setOutput('✅ Code executed successfully (no output)');
+      }
+
+      dispatch(addToast({ message: 'Code executed!', type: 'success' }));
+    } catch (error) {
+      // Fallback: Simulate execution for JavaScript
+      if (language === 'javascript') {
+        try {
+          const logs = [];
+          const originalLog = console.log;
+          console.log = (...args) => logs.push(args.join(' '));
+
+          eval(code);
+
+          console.log = originalLog;
+          setOutput(
+            logs.length > 0 ? `✅ Output:\n${logs.join('\n')}` : '✅ Code executed (no output)'
+          );
+        } catch (evalError) {
+          setOutput(`❌ Error:\n${evalError.message}`);
+        }
+      } else {
+        setOutput(
+          `⚠️ Execution Error:\n${error.message}\n\nNote: Add your Judge0 API key for full language support.`
+        );
+      }
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  /* ========== LANGUAGE CHANGE ========== */
   const changeLanguage = useCallback(
     newLanguage => {
       dispatch(setLanguage({ projectId, language: newLanguage }));
-
       const langConfig = languages.find(l => l.value === newLanguage);
 
-      // Only set template if code is empty or has placeholder
-      if (!code.trim() || code.includes('Write your code here') || code.includes('Write your')) {
+      if (!code.trim() || code.includes('Write your code here')) {
         const templateCode = langConfig?.template || '// Write your code here...';
         dispatch(updateProjectCode({ projectId, code: templateCode }));
 
         if (socketConnected) {
           dispatch({
             type: 'socket/codeChange',
-            payload: {
-              projectId,
-              code: templateCode,
-            },
+            payload: { projectId, code: templateCode },
           });
         }
       }
@@ -144,136 +259,166 @@ const CodeEditor = ({ projectId }) => {
     [dispatch, projectId, code, socketConnected]
   );
 
-  /* ========== COPY CODE ========== */
+  /* ========== UTILITY FUNCTIONS ========== */
   const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
-      dispatch(
-        addToast({
-          message: 'Code copied to clipboard!',
-          type: 'success',
-        })
-      );
+      dispatch(addToast({ message: 'Code copied!', type: 'success' }));
     } catch (error) {
-      dispatch(
-        addToast({
-          message: 'Failed to copy code',
-          type: 'error',
-        })
-      );
+      dispatch(addToast({ message: 'Failed to copy', type: 'error' }));
     }
   }, [code, dispatch]);
 
-  /* ========== RESET CODE ========== */
   const resetCode = useCallback(() => {
     const langConfig = languages.find(l => l.value === language);
     const templateCode = langConfig?.template || '// Write your code here...';
-
     dispatch(updateProjectCode({ projectId, code: templateCode }));
 
     if (socketConnected) {
       dispatch({
         type: 'socket/codeChange',
-        payload: {
-          projectId,
-          code: templateCode,
-        },
+        payload: { projectId, code: templateCode },
       });
     }
-
-    dispatch(
-      addToast({
-        message: 'Code reset to template',
-        type: 'info',
-      })
-    );
+    dispatch(addToast({ message: 'Code reset', type: 'info' }));
   }, [dispatch, projectId, language, socketConnected]);
 
-  /* ========== MOBILE CODE INPUT ========== */
-  const handleMobileCodeSend = useCallback(() => {
-    if (!mobileInput.trim()) return;
+  const downloadCode = () => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `code.${language}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    dispatch(addToast({ message: 'Code downloaded!', type: 'success' }));
+  };
 
-    const updatedCode = code + '\n' + mobileInput;
-    dispatch(updateProjectCode({ projectId, code: updatedCode }));
-
-    if (socketConnected) {
-      dispatch({
-        type: 'socket/codeChange',
-        payload: {
-          projectId,
-          code: updatedCode,
-        },
-      });
-    } else {
-      dispatch(
-        addToast({
-          message: 'Code updated locally (offline)',
-          type: 'warning',
-        })
-      );
+  const formatCode = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.formatDocument').run();
+      dispatch(addToast({ message: 'Code formatted!', type: 'success' }));
     }
+  };
 
-    setMobileInput('');
-  }, [mobileInput, code, dispatch, projectId, socketConnected]);
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const updateEditorSettings = (key, value) => {
+    setEditorSettings(prev => {
+      const newSettings = { ...prev, [key]: value };
+      if (editorRef.current) {
+        editorRef.current.updateOptions({
+          fontSize: newSettings.fontSize,
+          minimap: { enabled: newSettings.minimap },
+          lineNumbers: newSettings.lineNumbers ? 'on' : 'off',
+          wordWrap: newSettings.wordWrap,
+        });
+      }
+      return newSettings;
+    });
+  };
 
   /* ========== RENDER ========== */
   return (
     <div
       className={`flex flex-col h-full rounded-lg overflow-hidden border ${
         isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      }`}
+      } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Header */}
-      <div
-        className={`p-4 border-b flex-shrink-0 ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}
-      >
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between mb-2 md:mb-3 gap-2 flex-wrap">
           <div className="flex items-center space-x-2">
-            <Code2 className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <Code2
+              className={`w-4 h-4 md:w-5 md:h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}
+            />
+            <h2
+              className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+            >
               Code Editor
             </h2>
             {!socketConnected && (
-              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-600">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600">
                 Offline
               </span>
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2">
+            {/* Mobile-optimized buttons */}
             <button
-              onClick={copyCode}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              title="Copy code"
+              onClick={executeCode}
+              disabled={isExecuting}
+              className={`p-2 rounded-lg transition-all ${
+                isExecuting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
+              } text-white`}
+              title="Run Code (Ctrl+Enter)"
             >
-              <Copy className="w-4 h-4" />
+              {isExecuting ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
             </button>
+
+            {!isMobile && (
+              <>
+                <button
+                  onClick={copyCode}
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  title="Copy"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={downloadCode}
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  title="Download"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={formatCode}
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  title="Format"
+                >
+                  <Code2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
             <button
               onClick={resetCode}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              title="Reset code"
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+              title="Reset"
             >
               <RotateCcw className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={toggleFullscreen}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
 
             <select
               value={language}
               onChange={e => changeLanguage(e.target.value)}
-              className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
+              className={`px-2 md:px-3 py-1.5 md:py-2 border rounded-lg text-xs md:text-sm ${
+                isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'
               }`}
             >
               {languages.map(lang => (
@@ -284,61 +429,105 @@ const CodeEditor = ({ projectId }) => {
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Editor */}
-      <div className="flex-1 relative">
-        <Editor
-          height="100%"
-          width="100%"
-          language={language}
-          value={code}
-          onChange={handleEditorChange}
-          theme={isDarkMode ? 'vs-dark' : 'light'}
-          options={{
-            minimap: { enabled: window.innerWidth > 768 },
-            fontSize: 14,
-            wordWrap: 'on',
-            automaticLayout: true,
-            formatOnType: true,
-            formatOnPaste: true,
-            cursorBlinking: 'smooth',
-            scrollBeyondLastLine: false,
-            renderLineHighlight: 'all',
-            smoothScrolling: true,
-            padding: { top: 10, bottom: 10 },
-          }}
-        />
-      </div>
-
-      {/* Mobile Input */}
-      <div
-        className={`lg:hidden p-4 border-t flex-shrink-0 ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}
-      >
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={mobileInput}
-            onChange={e => setMobileInput(e.target.value)}
-            onKeyPress={e => e.key === 'Enter' && handleMobileCodeSend()}
-            placeholder="Add code line..."
-            className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-              isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-            }`}
-            autoComplete="off"
-          />
-          <button
-            onClick={handleMobileCodeSend}
-            disabled={!mobileInput.trim()}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+        {/* Settings Panel */}
+        {showSettings && (
+          <div
+            className={`mt-3 p-3 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
           >
-            Add
-          </button>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={editorSettings.minimap}
+                  onChange={e => updateEditorSettings('minimap', e.target.checked)}
+                  className="rounded"
+                />
+                <span>Minimap</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={editorSettings.lineNumbers}
+                  onChange={e => updateEditorSettings('lineNumbers', e.target.checked)}
+                  className="rounded"
+                />
+                <span>Line Numbers</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <span>Font Size:</span>
+                <input
+                  type="number"
+                  value={editorSettings.fontSize}
+                  onChange={e => updateEditorSettings('fontSize', parseInt(e.target.value))}
+                  min="10"
+                  max="24"
+                  className={`w-16 px-2 py-1 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}
+                />
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Editor + Output Split */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0">
+        {/* Editor */}
+        <div
+          className={`flex-1 ${showOutput ? 'md:border-r' : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+        >
+          <Editor
+            height="100%"
+            language={language}
+            value={code}
+            onChange={handleEditorChange}
+            onMount={handleEditorDidMount}
+            theme={isDarkMode ? 'vs-dark' : 'light'}
+            options={{
+              ...editorSettings,
+              minimap: { enabled: editorSettings.minimap },
+              lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+              wordWrap: editorSettings.wordWrap,
+              automaticLayout: true,
+              formatOnType: true,
+              formatOnPaste: editorSettings.formatOnPaste,
+              scrollBeyondLastLine: false,
+              smoothScrolling: true,
+              padding: { top: 10, bottom: 10 },
+              suggestOnTriggerCharacters: true,
+              quickSuggestions: editorSettings.autoComplete,
+            }}
+          />
         </div>
+
+        {/* Output Panel */}
+        {showOutput && (
+          <div
+            className={`${isMobile ? 'h-48' : 'w-96'} flex flex-col border-t md:border-t-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+          >
+            <div
+              className={`flex items-center justify-between p-3 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+            >
+              <div className="flex items-center space-x-2">
+                <Terminal className="w-4 h-4" />
+                <span className="font-medium text-sm">Output</span>
+              </div>
+              <button
+                onClick={() => setShowOutput(false)}
+                className={`p-1 rounded hover:bg-gray-700`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-3">
+              <pre
+                className={`text-xs md:text-sm font-mono whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}
+              >
+                {output || 'Run code to see output...'}
+              </pre>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -213,10 +213,10 @@ const Project = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)]">
+      <div className="container mx-auto px-4 py-6 ">
+        <div className="flex gap-6 h-[calc(100vh-180px)] overflow-hidden">
           {/* Left: Code Editor & Review (2 columns) */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="flex-[2] flex flex-col min-h-0">
             {/* Tabs */}
             <div className="flex space-x-2">
               <button
@@ -262,7 +262,7 @@ const Project = () => {
           </div>
 
           {/* Right: Chat Section (1 column) */}
-          <div className="lg:col-span-1">
+          <div className="flex-[1] min-h-0">
             <ChatSection projectId={currentProject._id} />
           </div>
         </div>

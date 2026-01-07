@@ -106,10 +106,10 @@ io.use((socket, next) => {
       userId: decoded.userId,
     };
 
-    console.log(`✅ User authenticated: ${decoded.username} (Team: ${decoded.teamName})`);
+    console.log(`User authenticated: ${decoded.username} (Team: ${decoded.teamName})`);
     next();
   } catch (err) {
-    console.error('❌ Socket auth failed:', err.message);
+    console.error('Socket auth failed:', err.message);
     next(new Error('Invalid token'));
   }
 });
@@ -166,7 +166,7 @@ io.on('connection', socket => {
       socket.join(projectRoom);
       roomManager.updateCurrentProject(socket.id, projectId);
 
-      console.log(`📂 ${username} joined project: ${projectId}`);
+      console.log(`${username} joined project: ${projectId}`);
 
       // Send chat history
       const messages = await messageService.getProjectMessages(teamName, projectId, {
@@ -226,7 +226,7 @@ io.on('connection', socket => {
       users: activeUsers.map(u => u.username),
     });
 
-    console.log(`📂 ${username} left project: ${projectId}`);
+    console.log(`${username} left project: ${projectId}`);
   });
 
   /* ========== CHAT MESSAGING ========== */
@@ -261,7 +261,7 @@ io.on('connection', socket => {
         },
       });
 
-      console.log(`💬 Message in project ${projectId}: ${username}: ${text.substring(0, 50)}`);
+      console.log(`Message in project ${projectId}: ${username}: ${text.substring(0, 50)}`);
     } catch (error) {
       console.error('Chat message error:', error);
       socket.emit('error', {
@@ -352,7 +352,7 @@ io.on('connection', socket => {
     }
 
     try {
-      console.log(`🤖 Generating AI review for project ${projectId}`);
+      console.log(`Generating AI review for project ${projectId}`);
 
       // Import AI service
       const { default: AIService } = await import('./src/services/ai.service.js');
@@ -368,7 +368,7 @@ io.on('connection', socket => {
         review,
       });
 
-      console.log(`✅ Review sent to project ${projectId}`);
+      console.log(`Review sent to project ${projectId}`);
     } catch (error) {
       console.error('AI review error:', error);
       socket.emit('error', {
@@ -377,7 +377,7 @@ io.on('connection', socket => {
       });
     }
   });
-  
+
   /* ========== DISCONNECT ========== */
 
   socket.on('disconnect', reason => {
@@ -424,8 +424,7 @@ io.on('connection', socket => {
 /* -------------------- START SERVER -------------------- */
 
 server.listen(config.PORT, () => {
-  console.log(`🚀 Server running on port ${config.PORT}`);
-  console.log(`🌍 Environment: ${config.NODE_ENV}`);
+  console.log(`Server running on port => ${config.PORT}`);
 });
 
 export { io, roomManager };

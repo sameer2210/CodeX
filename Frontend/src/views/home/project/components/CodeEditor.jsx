@@ -20,11 +20,15 @@ import {
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
 import { addToast } from '../../../../store/slices/uiSlice';
+import { saveProjectCode } from '../../../../api/project.api';
+
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
+  const saveTimeoutRef = useRef(null);
+
 
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
@@ -36,6 +40,7 @@ const CodeEditor = ({ projectId }) => {
   const [output, setOutput] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editorSettings, setEditorSettings] = useState({
@@ -149,20 +154,40 @@ const CodeEditor = ({ projectId }) => {
   };
 
   /* ========== CODE CHANGE HANDLER ========== */
-  const handleEditorChange = useCallback(
-    value => {
-      const newCode = value || '';
-      dispatch(updateProjectCode({ projectId, code: newCode }));
+const handleEditorChange = useCallback(
+  value => {
+    const newCode = value || '';
 
-      if (socketConnected) {
-        dispatch({
-          type: 'socket/codeChange',
-          payload: { projectId, code: newCode },
-        });
+    // 1. Instant UI update (Redux)
+    dispatch(updateProjectCode({ projectId, code: newCode }));
+
+    // 2. Real-time collaboration
+    if (socketConnected) {
+      dispatch({
+        type: 'socket/codeChange',
+        payload: { projectId, code: newCode },
+      });
+    }
+
+    // 3. Debounced DB autosave
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsSaving(true);
+        await saveProjectCode(projectId, newCode);
+        setIsSaving(false);
+        console.log('💾 Auto-saved');
+      } catch (err) {
+        setIsSaving(false);
+        console.error('Auto-save failed', err);
       }
-    },
-    [dispatch, projectId, socketConnected]
-  );
+    }, 1000); // ⏱ saves after 1s idle
+  },
+  [dispatch, projectId, socketConnected]
+);
 
   /* ========== CODE EXECUTION ========== */
   const executeCode = async () => {
@@ -199,13 +224,13 @@ const CodeEditor = ({ projectId }) => {
       const result = await response.json();
 
       if (result.stdout) {
-        setOutput(`✅ Output:\n${result.stdout}`);
+        setOutput(`Output:\n${result.stdout}`);
       } else if (result.stderr) {
-        setOutput(`❌ Error:\n${result.stderr}`);
+        setOutput(` Error:\n${result.stderr}`);
       } else if (result.compile_output) {
-        setOutput(`⚠️ Compilation Error:\n${result.compile_output}`);
+        setOutput(` Compilation Error:\n${result.compile_output}`);
       } else {
-        setOutput('✅ Code executed successfully (no output)');
+        setOutput(' Code executed successfully (no output)');
       }
 
       dispatch(addToast({ message: 'Code executed!', type: 'success' }));
@@ -221,14 +246,14 @@ const CodeEditor = ({ projectId }) => {
 
           console.log = originalLog;
           setOutput(
-            logs.length > 0 ? `✅ Output:\n${logs.join('\n')}` : '✅ Code executed (no output)'
+            logs.length > 0 ? ` Output:\n${logs.join('\n')}` : ' Code executed (no output)'
           );
         } catch (evalError) {
-          setOutput(`❌ Error:\n${evalError.message}`);
+          setOutput(` Error:\n${evalError.message}`);
         }
       } else {
         setOutput(
-          `⚠️ Execution Error:\n${error.message}\n\nNote: Add your Judge0 API key for full language support.`
+          ` Execution Error:\n${error.message}\n\nNote: Add your Judge0 API key for full language support.`
         );
       }
     } finally {
@@ -339,6 +364,7 @@ const CodeEditor = ({ projectId }) => {
             >
               Code Editor
             </h2>
+            {isSaving && <span className="text-xs text-yellow-400 ml-2">Saving…</span>}
             {!socketConnected && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600">
                 Offline

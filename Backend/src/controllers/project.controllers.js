@@ -45,7 +45,7 @@ export async function getAllProjectsController(req, res) {
   }
 }
 
-// New: Get project by ID
+// Get project by ID
 export async function getProjectController(req, res) {
   try {
     const { id } = req.params;
@@ -68,7 +68,7 @@ export async function getProjectController(req, res) {
   }
 }
 
-// New: Update project (e.g., code)
+//  Update project (e.g., code)
 export async function updateProjectController(req, res) {
   try {
     const { id } = req.params;
@@ -93,7 +93,7 @@ export async function updateProjectController(req, res) {
   }
 }
 
-// New: AI Review
+// AI Review
 export async function reviewProjectController(req, res) {
   try {
     const { id } = req.params;
@@ -102,6 +102,32 @@ export async function reviewProjectController(req, res) {
       success: true,
       message: 'Review completed',
       data: { review },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function executeProjectCodeController(req, res) {
+  try {
+    const { id } = req.params;
+    const { source_code, language } = req.body;
+
+    if (language !== 'javascript') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only JavaScript execution is supported currently',
+      });
+    }
+
+    const result = await executeLocalJavaScript(source_code);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     return res.status(500).json({

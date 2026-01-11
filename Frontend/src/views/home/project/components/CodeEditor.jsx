@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { saveProjectCode } from '../../../../api/project.api';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
   selectCurrentProjectCode,
@@ -20,15 +21,12 @@ import {
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
 import { addToast } from '../../../../store/slices/uiSlice';
-import { saveProjectCode } from '../../../../api/project.api';
-
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const saveTimeoutRef = useRef(null);
-
 
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
@@ -58,51 +56,44 @@ const CodeEditor = ({ projectId }) => {
     {
       value: 'javascript',
       label: 'JavaScript',
-      judge0Id: 63,
       template: '// JavaScript\nconsole.log("Hello World!");',
     },
     {
       value: 'typescript',
       label: 'TypeScript',
-      judge0Id: 74,
       template: '// TypeScript\nconst message: string = "Hello World!";\nconsole.log(message);',
     },
-    { value: 'python', label: 'Python', judge0Id: 71, template: '# Python\nprint("Hello World!")' },
+    { value: 'python', label: 'Python', template: '# Python\nprint("Hello World!")' },
     {
       value: 'java',
       label: 'Java',
-      judge0Id: 62,
       template:
         'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World!");\n    }\n}',
     },
     {
       value: 'cpp',
       label: 'C++',
-      judge0Id: 54,
       template:
         '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World!" << endl;\n    return 0;\n}',
     },
     {
       value: 'c',
       label: 'C',
-      judge0Id: 50,
       template:
         '#include <stdio.h>\n\nint main() {\n    printf("Hello World!\\n");\n    return 0;\n}',
     },
     {
       value: 'go',
       label: 'Go',
-      judge0Id: 60,
       template: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello World!")\n}',
     },
     {
       value: 'rust',
       label: 'Rust',
-      judge0Id: 73,
       template: 'fn main() {\n    println!("Hello World!");\n}',
     },
-    { value: 'php', label: 'PHP', judge0Id: 68, template: '<?php\necho "Hello World!";\n?>' },
-    { value: 'ruby', label: 'Ruby', judge0Id: 72, template: '# Ruby\nputs "Hello World!"' },
+    { value: 'php', label: 'PHP', template: '<?php\necho "Hello World!";\n?>' },
+    { value: 'ruby', label: 'Ruby', template: '# Ruby\nputs "Hello World!"' },
   ];
 
   /* ========== RESPONSIVE HANDLING ========== */
@@ -117,16 +108,36 @@ const CodeEditor = ({ projectId }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  /* ========== INITIALIZE LANGUAGE ========== */
+  /* ========== INITIALIZE LANGUAGE + CODE (ONE TIME) ========== */
   useEffect(() => {
-    if (!isInitialized) {
-      const savedLanguage = localStorage.getItem('selectedLanguage');
-      if (savedLanguage && languages.find(l => l.value === savedLanguage)) {
-        dispatch(setLanguage({ projectId, language: savedLanguage }));
+    if (isInitialized) return;
+
+    const defaultLang = localStorage.getItem('selectedLanguage') || 'javascript';
+    const langConfig = languages.find(l => l.value === defaultLang);
+
+    dispatch(setLanguage({ projectId, language: defaultLang }));
+
+    if (!code?.trim()) {
+      dispatch(
+        updateProjectCode({
+          projectId,
+          code: langConfig?.template || '// Write your code here...',
+        })
+      );
+
+      if (socketConnected) {
+        dispatch({
+          type: 'socket/codeChange',
+          payload: {
+            projectId,
+            code: langConfig?.template || '',
+          },
+        });
       }
-      setIsInitialized(true);
     }
-  }, [isInitialized, projectId, dispatch]);
+
+    setIsInitialized(true);
+  }, [isInitialized, projectId, dispatch, code, socketConnected]);
 
   /* ========== EDITOR MOUNT ========== */
   const handleEditorDidMount = (editor, monaco) => {
@@ -154,43 +165,54 @@ const CodeEditor = ({ projectId }) => {
   };
 
   /* ========== CODE CHANGE HANDLER ========== */
-const handleEditorChange = useCallback(
-  value => {
-    const newCode = value || '';
+  const handleEditorChange = useCallback(
+    value => {
+      const newCode = value || '';
 
-    // 1. Instant UI update (Redux)
-    dispatch(updateProjectCode({ projectId, code: newCode }));
+      // 1. Instant UI update (Redux)
+      dispatch(updateProjectCode({ projectId, code: newCode }));
 
-    // 2. Real-time collaboration
-    if (socketConnected) {
-      dispatch({
-        type: 'socket/codeChange',
-        payload: { projectId, code: newCode },
-      });
-    }
-
-    // 3. Debounced DB autosave
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        setIsSaving(true);
-        await saveProjectCode(projectId, newCode);
-        setIsSaving(false);
-        console.log('💾 Auto-saved');
-      } catch (err) {
-        setIsSaving(false);
-        console.error('Auto-save failed', err);
+      // 2. Real-time collaboration
+      if (socketConnected) {
+        dispatch({
+          type: 'socket/codeChange',
+          payload: { projectId, code: newCode },
+        });
       }
-    }, 1000); // ⏱ saves after 1s idle
-  },
-  [dispatch, projectId, socketConnected]
-);
+
+      // 3. Debounced DB autosave
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          setIsSaving(true);
+          await saveProjectCode(projectId, newCode);
+          setIsSaving(false);
+          console.log(' Auto-saved');
+        } catch (err) {
+          setIsSaving(false);
+          console.error('Auto-save failed', err);
+        }
+      }, 1000);
+    },
+    [dispatch, projectId, socketConnected]
+  );
 
   /* ========== CODE EXECUTION ========== */
+
   const executeCode = async () => {
+    if (language !== 'javascript') {
+      dispatch(
+        addToast({
+          type: 'warning',
+          message: 'Only JavaScript execution is supported currently',
+        })
+      );
+      return;
+    }
+
     if (!code.trim()) {
       dispatch(addToast({ message: 'Please write some code first!', type: 'warning' }));
       return;
@@ -198,64 +220,20 @@ const handleEditorChange = useCallback(
 
     setIsExecuting(true);
     setShowOutput(true);
-    setOutput('⏳ Running code...\n');
-
-    const langConfig = languages.find(l => l.value === language);
+    setOutput('Running code...\n');
 
     try {
-      // Using Judge0 API for code execution
-      const response = await fetch(
-        'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true',
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // User needs to add their key
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-          },
-          body: JSON.stringify({
-            language_id: langConfig?.judge0Id || 63,
-            source_code: code,
-            stdin: '',
-          }),
-        }
-      );
+      const logs = [];
+      const originalLog = console.log;
 
-      const result = await response.json();
+      console.log = (...args) => logs.push(args.join(' '));
+      eval(code);
+      console.log = originalLog;
 
-      if (result.stdout) {
-        setOutput(`Output:\n${result.stdout}`);
-      } else if (result.stderr) {
-        setOutput(` Error:\n${result.stderr}`);
-      } else if (result.compile_output) {
-        setOutput(` Compilation Error:\n${result.compile_output}`);
-      } else {
-        setOutput(' Code executed successfully (no output)');
-      }
-
+      setOutput(logs.length ? `Output:\n${logs.join('\n')}` : 'Code executed (no output)');
       dispatch(addToast({ message: 'Code executed!', type: 'success' }));
-    } catch (error) {
-      // Fallback: Simulate execution for JavaScript
-      if (language === 'javascript') {
-        try {
-          const logs = [];
-          const originalLog = console.log;
-          console.log = (...args) => logs.push(args.join(' '));
-
-          eval(code);
-
-          console.log = originalLog;
-          setOutput(
-            logs.length > 0 ? ` Output:\n${logs.join('\n')}` : ' Code executed (no output)'
-          );
-        } catch (evalError) {
-          setOutput(` Error:\n${evalError.message}`);
-        }
-      } else {
-        setOutput(
-          ` Execution Error:\n${error.message}\n\nNote: Add your Judge0 API key for full language support.`
-        );
-      }
+    } catch (err) {
+      setOutput(`Error:\n${err.message}`);
     } finally {
       setIsExecuting(false);
     }
@@ -264,24 +242,22 @@ const handleEditorChange = useCallback(
   /* ========== LANGUAGE CHANGE ========== */
   const changeLanguage = useCallback(
     newLanguage => {
-      dispatch(setLanguage({ projectId, language: newLanguage }));
       const langConfig = languages.find(l => l.value === newLanguage);
+      dispatch(setLanguage({ projectId, language: newLanguage }));
 
-      if (!code.trim() || code.includes('Write your code here')) {
-        const templateCode = langConfig?.template || '// Write your code here...';
-        dispatch(updateProjectCode({ projectId, code: templateCode }));
+      const templateCode = langConfig?.template || '// Write your code here...';
+      dispatch(updateProjectCode({ projectId, code: templateCode }));
 
-        if (socketConnected) {
-          dispatch({
-            type: 'socket/codeChange',
-            payload: { projectId, code: templateCode },
-          });
-        }
+      if (socketConnected) {
+        dispatch({
+          type: 'socket/codeChange',
+          payload: { projectId, code: templateCode },
+        });
       }
 
       localStorage.setItem('selectedLanguage', newLanguage);
     },
-    [dispatch, projectId, code, socketConnected]
+    [dispatch, projectId, socketConnected]
   );
 
   /* ========== UTILITY FUNCTIONS ========== */
@@ -319,10 +295,16 @@ const handleEditorChange = useCallback(
     dispatch(addToast({ message: 'Code downloaded!', type: 'success' }));
   };
 
-  const formatCode = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction('editor.action.formatDocument').run();
-      dispatch(addToast({ message: 'Code formatted!', type: 'success' }));
+  const formatCode = async () => {
+    if (!editorRef.current) return;
+    await editorRef.current.getAction('editor.action.formatDocument').run();
+    dispatch(updateProjectCode({ projectId, code: '' }));
+
+    try {
+      await saveProjectCode(projectId, '');
+      dispatch(addToast({ message: 'Code formatted & backend cleared', type: 'success' }));
+    } catch (err) {
+      dispatch(addToast({ message: 'Backend clear failed', type: 'error', err }));
     }
   };
 
@@ -376,7 +358,7 @@ const handleEditorChange = useCallback(
             {/* Mobile-optimized buttons */}
             <button
               onClick={executeCode}
-              disabled={isExecuting}
+              disabled={isExecuting || language !== 'javascript'}
               className={`p-2 rounded-lg transition-all ${
                 isExecuting
                   ? 'bg-gray-400 cursor-not-allowed'

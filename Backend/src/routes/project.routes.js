@@ -6,6 +6,7 @@ import {
   getProjectController,
   reviewProjectController,
   updateProjectController,
+  executeProjectCodeController,
 } from '../controllers/project.controllers.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
@@ -17,6 +18,7 @@ router.get('/get-all', getAllProjectsController);
 
 router.get('/:id', getProjectController);
 router.put('/:id', updateProjectController);
+router.post('/:id/execute', executeProjectCodeController);
 router.post('/:id/review', reviewProjectController);
 
 export default router;

@@ -14,12 +14,12 @@ const server = http.createServer(app);
 
 const io = new SocketServer(server, {
   cors: {
-    origin: config.FRONTEND_URL || '*',
-    methods: ['GET', 'POST'],
+    origin: ['http://localhost:5173', 'https://code-x-hazel.vercel.app'],
     credentials: true,
+    methods: ['GET', 'POST'],
   },
-  pingTimeout: 60000,
   pingInterval: 25000,
+  pingTimeout: 60000,
 });
 
 /* -------------------- SOCKET ROOM MANAGER -------------------- */

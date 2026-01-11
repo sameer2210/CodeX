@@ -11,14 +11,25 @@ import messageRoutes from './routes/message.routes.js';
 const app = express();
 app.use(helmet());
 
+const allowedOrigins = ['http://localhost:5173', 'https://code-x-hazel.vercel.app'];
+
 app.use(
   cors({
-    origin: config.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('CORS not allowed'));
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.options('*', cors());
 
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));

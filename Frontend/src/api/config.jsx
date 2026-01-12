@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
   withCredentials: true,
 });
 
-// Request interceptor: Attach token
+// Attach token
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('codex_token');
@@ -17,7 +17,7 @@ api.interceptors.request.use(
   error => Promise.reject(error)
 );
 
-// Response interceptor: Handle 401 (logout)
+// Handle 401
 api.interceptors.response.use(
   response => response,
   error => {
@@ -30,5 +30,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-

@@ -356,24 +356,26 @@ io.on('connection', socket => {
 
       // Import AI service
       const { default: AIService } = await import('./src/services/ai.service.js');
-
-      // Generate review
-      const review = await AIService.reviewCode(code, language);
-
+      const result = await AIService.reviewCode(code, language);
       const projectRoom = roomManager.getProjectRoomId(teamName, projectId);
 
-      // Send review to all users in project
       io.to(projectRoom).emit('code-review', {
         projectId,
-        review,
+        success: result.success,
+        review: result.review,
+        reason: result.reason,
       });
 
-      console.log(`Review sent to project ${projectId}`);
+      console.log(`Review sent to project ${projectId} | success=${result.success}`);
     } catch (error) {
       console.error('AI review error:', error);
-      socket.emit('error', {
-        message: 'Failed to generate review',
-        error: error.message,
+
+      const projectRoom = roomManager.getProjectRoomId(teamName, projectId);
+      io.to(projectRoom).emit('code-review', {
+        projectId,
+        success: false,
+        review: '⚠️ AI review unavailable. Using offline analysis.',
+        reason: 'AI_FAILED',
       });
     }
   });

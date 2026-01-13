@@ -1,12 +1,12 @@
-import { Sparkles, RefreshCw, Download, Copy } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { Copy, Download, RefreshCw, Sparkles } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
-  updateProjectReview,
   selectCurrentProjectCode,
-  selectCurrentProjectReview,
   selectCurrentProjectLanguage,
+  selectCurrentProjectReview,
+  updateProjectReview,
 } from '../../../../store/slices/projectSlice';
 import { addToast } from '../../../../store/slices/uiSlice';
 
@@ -101,37 +101,37 @@ const ReviewPanel = ({ projectId }) => {
 
     const qualityScore = Math.min(Math.max(complexityScore, 3), 10);
 
-    return `## 📊 Code Analysis Report
+    return `##  Code Analysis Report
 
-**⚠️ Server Disconnected** - Using basic offline analysis
+** Server Disconnected** - Using basic offline analysis
 
-### 📝 Code Statistics
+### Code Statistics
 - **Language:** ${lang.charAt(0).toUpperCase() + lang.slice(1)}
 - **Lines of Code:** ${lines}
 - **Characters:** ${chars}
-- **Has Comments:** ${hasComments ? '✅ Yes' : '❌ No'}
-- **Has Functions:** ${hasFunctions ? '✅ Yes' : '❌ No'}
-- **Has Loops:** ${hasLoops ? '✅ Yes' : '❌ No'}
-- **Has Conditionals:** ${hasConditionals ? '✅ Yes' : '❌ No'}
+- **Has Comments:** ${hasComments ? 'Yes' : 'No'}
+- **Has Functions:** ${hasFunctions ? 'Yes' : 'No'}
+- **Has Loops:** ${hasLoops ? 'Yes' : '❌ No'}
+- **Has Conditionals:** ${hasConditionals ? 'Yes' : 'No'}
 
-### ✅ Strengths
-${hasComments ? '- ✅ Good: Code includes comments for clarity' : ''}
-${hasFunctions ? '- ✅ Good: Code is modular with functions' : ''}
-${hasLoops ? '- ✅ Good: Uses iteration constructs' : ''}
-${hasConditionals ? '- ✅ Good: Includes conditional logic' : ''}
+### Strengths
+${hasComments ? '- Good: Code includes comments for clarity' : ''}
+${hasFunctions ? '- Good: Code is modular with functions' : ''}
+${hasLoops ? '- Good: Uses iteration constructs' : ''}
+${hasConditionals ? '- Good: Includes conditional logic' : ''}
 
-### ⚠️ Suggestions
-${!hasComments ? '- ⚠️ Add comments to explain complex logic' : ''}
-${!hasFunctions ? '- ⚠️ Consider breaking code into reusable functions' : ''}
-- 🔒 Implement error handling and input validation
-- 📝 Add documentation for better maintainability
-- 🧪 Consider writing unit tests
-- 🎯 Follow ${lang} best practices and style guides
+### Suggestions
+${!hasComments ? '- Add comments to explain complex logic' : ''}
+${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
+- Implement error handling and input validation
+- Add documentation for better maintainability
+- Consider writing ut tests
+- Follow ${lang} best practices and style guides
 
-### 🎯 Quality Score
+### Quality Score
 **${qualityScore}/10** - ${qualityScore >= 7 ? 'Good' : qualityScore >= 5 ? 'Fair' : 'Needs Improvement'}
 
-### 📚 Resources
+### Resources
 - Review ${lang} best practices
 - Consider code linting tools
 - Add comprehensive error handling

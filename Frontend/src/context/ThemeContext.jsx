@@ -1,38 +1,67 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+// import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const ThemeContext = createContext();
+// const ThemeContext = createContext(null);
+
+// export const useTheme = () => {
+//   const ctx = useContext(ThemeContext);
+//   if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
+//   return ctx;
+// };
+
+// export const ThemeProvider = ({ children }) => {
+//   const [isDarkMode, setIsDarkMode] = useState(() => {
+//     try {
+//       return JSON.parse(localStorage.getItem('codex_theme')) ?? true;
+//     } catch {
+//       return true;
+//     }
+//   });
+
+//   useEffect(() => {
+//     document.documentElement.classList.toggle('dark', isDarkMode);
+//     localStorage.setItem('codex_theme', JSON.stringify(isDarkMode));
+//   }, [isDarkMode]);
+
+//   const value = useMemo(
+//     () => ({ isDarkMode, useTheme: () => setIsDarkMode(p => !p) }),
+//     [isDarkMode]
+//   );
+
+//   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+// };
+
+
+
+// // import { useTheme } from '../../context/ThemeContext';
+
+
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+const ThemeContext = createContext(null);
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
+  return ctx;
 };
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('codex_theme');
-    return savedTheme ? JSON.parse(savedTheme) : true;
+    try {
+      return JSON.parse(localStorage.getItem('codex_theme')) ?? true;
+    } catch {
+      return true;
+    }
   });
 
   useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('codex_theme', JSON.stringify(isDarkMode));
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
+  const toggleTheme = () => setIsDarkMode(p => !p);
 
-  const value = {
-    isDarkMode,
-    toggleTheme,
-  };
+  const value = useMemo(() => ({ isDarkMode, toggleTheme }), [isDarkMode]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

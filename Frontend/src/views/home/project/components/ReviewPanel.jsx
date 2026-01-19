@@ -8,7 +8,7 @@ import {
   selectCurrentProjectReview,
   updateProjectReview,
 } from '../../../../store/slices/projectSlice';
-import { addToast } from '../../../../store/slices/uiSlice';
+// import { addToast } from '../../../../store/slices/uiSlice';
 
 const ReviewPanel = ({ projectId }) => {
   const dispatch = useAppDispatch();

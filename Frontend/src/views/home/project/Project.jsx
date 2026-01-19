@@ -8,7 +8,7 @@ import {
   fetchProject,
   setCurrentProject,
 } from '../../../store/slices/projectSlice';
-import { addToast } from '../../../store/slices/uiSlice';
+// import { addToast } from '../../../store/slices/uiSlice';
 import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import ReviewPanel from './components/ReviewPanel';

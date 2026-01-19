@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { createProject } from '../../store/slices/projectSlice';
-import { toggleTheme } from '../../store/slices/uiSlice';
+import { useTheme } from '../../context/ThemeContext';
 
 const CreateProject = () => {
   const [projectName, setProjectName] = useState('');
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
   const { isLoading } = useAppSelector(state => state.projects);
   const { isDarkMode } = useAppSelector(state => state.ui);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!projectName.trim()) return;
 
@@ -25,7 +25,7 @@ const CreateProject = () => {
   };
 
   const handleThemeToggle = () => {
-    dispatch(toggleTheme());
+    dispatch(useTheme());
   };
 
   const goBack = () => {

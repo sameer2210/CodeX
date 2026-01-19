@@ -6,12 +6,15 @@ import {
   Menu,
   Moon,
   Shield,
+  Sun,
   Terminal,
   Twitter,
   Users,
   Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { notify } from '../lib/notify';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -41,12 +44,28 @@ const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const isDarkMode = true; // Hardcoded for this demo, usually from Redux
+  const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const welcomed = sessionStorage.getItem('codex_welcomed');
+
+    if (!welcomed) {
+      // toast.success('Welcome to CodeX', {
+      //   description: 'Your collaborative workspace is ready.',
+      // });
+
+      notify('Welcome to CodeX', 'success', {
+        description: 'Your collaborative workspace is ready.',
+      });
+
+      sessionStorage.setItem('codex_welcomed', 'true');
+    }
   }, []);
 
   const navItems = [
@@ -87,8 +106,11 @@ const Navigation = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-4">
-          <button className="p-2.5 rounded-xl border border-white/5 hover:border-white/20 transition-all bg-white/5 text-white/60 hover:text-white">
-            <Moon className="w-4 h-4" />
+          <button
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl border border-white/5 hover:border-white/20 transition-all bg-white/5 text-white/60 hover:text-white"
+          >
+            {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
 
           <button className="hidden md:block bg-white text-black text-[11px] font-black uppercase tracking-[0.15em] px-8 py-3 rounded-full hover:bg-[#17E1FF] transition-all">
@@ -457,14 +479,8 @@ const Footer = () => {
 // --- Main View ---
 
 const Landing = () => {
-  // Theme initialization logic from App.jsx snippet
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-    // We assume the background is handled by index.css or Tailwind classes below
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#0B0E11] text-[#E6E8E5] font-['Inter',_sans-serif] selection:bg-[#17E1FF] selection:text-black">
+    <div className="min-h-screen bg-white text-black dark:bg-[#0B0E11] dark:text-[#E6E8E5] font-['Inter',_sans-serif] selection:bg-[#17E1FF] selection:text-black">
       {/* Noise Texture Overlay */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.03] z-[9999]"
@@ -516,3 +532,34 @@ const Landing = () => {
 };
 
 export default Landing;
+
+// import { useEffect } from 'react';
+// import { useTheme } from '../context/ThemeContext';
+// import { notify } from '../lib/notify';
+
+// const Landing = () => {
+//   const { isDarkMode, toggleTheme } = useTheme();
+
+//   useEffect(() => {
+//     notify('Welcome to CodeX', 'success');
+//   }, []);
+
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center gap-6
+//                     bg-white text-black dark:bg-black dark:text-white transition-colors">
+
+//       <h1 className="text-4xl font-bold">Basic Landing Page</h1>
+
+//       <p>Theme is currently: <b>{isDarkMode ? 'Dark' : 'Light'}</b></p>
+
+//       <button
+//         onClick={toggleTheme}
+//         className="px-6 py-3 rounded bg-black text-white dark:bg-white dark:text-black"
+//       >
+//         Toggle Theme
+//       </button>
+//     </div>
+//   );
+// };
+
+// export default Landing;

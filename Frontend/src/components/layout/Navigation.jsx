@@ -12,14 +12,13 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { useState , useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { toggleTheme } from '../../store/slices/uiSlice';
-import { logout } from '../../store/slices/authSlice';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../../store/hooks';
+import { useTheme } from '../../context/ThemeContext';
 
 const Navigation = ({ showUserActions = true }) => {
-  const { isDarkMode } = useAppSelector(state => state.ui);
+  const { isDarkMode } = useTheme();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,7 +31,7 @@ const Navigation = ({ showUserActions = true }) => {
   const isAuthenticated = !!(localStorage.getItem('codex_token') && teamName && username);
 
   const handleThemeToggle = () => {
-    dispatch(toggleTheme());
+    dispatch(useTheme());
   };
 
   // Close dropdowns when clicking outside

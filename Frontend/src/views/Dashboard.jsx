@@ -12,11 +12,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchProjects } from '../store/slices/projectSlice';
-import { toggleTheme } from '../store/slices/uiSlice';
 import Navigation from '../components/layout/Navigation';
 import Sidebar from '../components/layout/Sidebar';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchProjects } from '../store/slices/projectSlice';
+import { useTheme } from '../context/ThemeContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ const Dashboard = () => {
 
   /* ========== HANDLERS ========== */
   const handleThemeToggle = () => {
-    dispatch(toggleTheme());
+    dispatch(useTheme());
   };
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -120,7 +120,7 @@ const Dashboard = () => {
           : 'bg-gradient-to-br from-gray-100 via-stone-400 to-gray-200'
       }`}
     >
-      <Navigation isDarkMode={isDarkMode} toggleTheme={handleThemeToggle} />
+      <Navigation isDarkMode={isDarkMode} useTheme={handleThemeToggle} />
 
       {/* Desktop Sidebar */}
       <div

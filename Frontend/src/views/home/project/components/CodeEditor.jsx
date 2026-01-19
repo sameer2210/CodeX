@@ -20,7 +20,7 @@ import {
   setLanguage,
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
-import { addToast } from '../../../../store/slices/uiSlice';
+// import { addToast } from '../../../../store/slices/uiSlice';
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();

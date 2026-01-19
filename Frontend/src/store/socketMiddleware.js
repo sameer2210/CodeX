@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { notify } from '../lib/notify';
 
 import {
   addChatMessage,
@@ -16,7 +17,6 @@ import {
   socketDisconnected,
   socketError,
 } from './slices/socketSlice';
-import { addToast } from './slices/uiSlice';
 
 let socket = null;
 let reconnectAttempts = 0;
@@ -27,14 +27,14 @@ export const socketMiddleware = store => next => action => {
 
   if (action.type === 'socket/init') {
     if (socket?.connected) {
-      console.log('✅ Socket already connected');
+      console.log('Socket already connected');
       return next(action);
     }
 
     const token = localStorage.getItem('codex_token');
 
     if (!token) {
-      console.warn('⚠️ No auth token found');
+      console.warn('No auth token found');
       return next(action);
     }
 
@@ -56,51 +56,43 @@ export const socketMiddleware = store => next => action => {
     socket.on('connect', () => {
       reconnectAttempts = 0;
       store.dispatch(socketConnected());
-      store.dispatch(addToast({ message: 'Connected to server', type: 'success' }));
-      console.log('🔌 Socket connected:', socket.id);
+      notify('Connected to server', 'success');
+      console.log('Socket connected:', socket.id);
     });
 
     socket.on('disconnect', reason => {
       store.dispatch(socketDisconnected());
-      console.log('🔌 Socket disconnected:', reason);
+      console.log('Socket disconnected:', reason);
 
       if (reason === 'io server disconnect') {
-        store.dispatch(
-          addToast({ message: 'Disconnected by server. Please refresh.', type: 'error' })
-        );
+        notify('Disconnected by server. Please refresh.', 'error');
       }
     });
 
     socket.on('connect_error', err => {
       reconnectAttempts++;
       store.dispatch(socketError(err.message));
-      console.error('❌ Connection error:', err.message);
+      console.error('Connection error:', err.message);
 
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        store.dispatch(
-          addToast({ message: 'Unable to connect. Please check your connection.', type: 'error' })
-        );
+        notify('Unable to connect. Please check your connection.', 'error');
       }
     });
 
     socket.on('reconnect', attemptNumber => {
       reconnectAttempts = 0;
       store.dispatch(socketConnected());
-      store.dispatch(
-        addToast({ message: `Reconnected after ${attemptNumber} attempts`, type: 'success' })
-      );
-      console.log('🔄 Reconnected');
+      notify(`Reconnected after ${attemptNumber} attempts`, 'success');
+      console.log('Reconnected');
     });
 
     socket.on('reconnect_failed', () => {
-      store.dispatch(
-        addToast({ message: 'Failed to reconnect. Please refresh the page.', type: 'error' })
-      );
+      notify('Failed to reconnect. Please refresh the page.', 'error');
     });
 
     socket.on('error', err => {
       store.dispatch(socketError(err.message || 'Socket error'));
-      store.dispatch(addToast({ message: err.message || 'An error occurred', type: 'error' }));
+      notify(err.message || 'An error occurred', 'error');
     });
 
     /* ===== PROJECT ROOM EVENTS ===== */
@@ -231,16 +223,16 @@ export const socketMiddleware = store => next => action => {
 
       if (success && review) {
         store.dispatch(updateProjectReview({ projectId, review }));
-        store.dispatch(addToast({ message: 'AI review completed!', type: 'success' }));
+        notify('AI review completed!', 'success');
       } else if (error) {
         const errorReview = `❌ **AI Review Failed**\n\n${error}\n\nPlease check:\n- Your API key is configured correctly\n- The backend service is running\n- Try again in a moment`;
         store.dispatch(updateProjectReview({ projectId, review: errorReview }));
-        store.dispatch(addToast({ message: 'AI review failed', type: 'error' }));
+        notify('AI review failed', 'error');
       } else {
         const fallbackReview =
           '⚠️ **No Review Generated**\n\nThe AI service returned an empty response. Please try again.';
         store.dispatch(updateProjectReview({ projectId, review: fallbackReview }));
-        store.dispatch(addToast({ message: 'No review generated', type: 'warning' }));
+        notify('No review generated', 'warning');
       }
     });
 
@@ -248,13 +240,13 @@ export const socketMiddleware = store => next => action => {
       console.error('❌ Review error:', error, message);
       const errorReview = `❌ **AI Review Error**\n\n${message || error || 'An unknown error occurred'}\n\nTroubleshooting:\n- Check if GOOGLE_API_KEY is set in backend .env\n- Verify Gemini API is accessible\n- Check backend logs for details`;
       store.dispatch(updateProjectReview({ projectId, review: errorReview }));
-      store.dispatch(addToast({ message: 'Review generation failed', type: 'error' }));
+      notify('Review generation failed', 'error');
     });
 
     /* ===== CALL EVENTS ===== */
 
     socket.on('incoming-call', ({ from, offer, type, callerSocket }) => {
-      store.dispatch(addToast({ message: `Incoming ${type} call from ${from}`, type: 'info' }));
+      notify(`Incoming ${type} call from ${from}`, 'info');
       // Dispatch to a custom slice or handle in component
       window.dispatchEvent(
         new CustomEvent('incoming-call', {
@@ -273,7 +265,7 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('call-rejected', ({ from }) => {
-      store.dispatch(addToast({ message: `${from} rejected the call`, type: 'warning' }));
+      notify(`${from} rejected the call`, 'warning');
       window.dispatchEvent(
         new CustomEvent('call-rejected', {
           detail: { from },
@@ -282,7 +274,7 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('call-failed', ({ message }) => {
-      store.dispatch(addToast({ message: message || 'Call failed', type: 'error' }));
+      notify(message || 'Call failed', 'error');
     });
 
     socket.on('end-call', ({ from }) => {

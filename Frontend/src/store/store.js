@@ -3,7 +3,6 @@ import { configureStore } from '@reduxjs/toolkit';
 import authSlice from './slices/authSlice';
 import projectSlice from './slices/projectSlice';
 import socketSlice from './slices/socketSlice';
-import uiSlice from './slices/uiSlice';
 import { socketMiddleware } from './socketMiddleware';
 
 export const store = configureStore({
@@ -11,7 +10,6 @@ export const store = configureStore({
     socket: socketSlice,
     auth: authSlice,
     projects: projectSlice,
-    ui: uiSlice,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

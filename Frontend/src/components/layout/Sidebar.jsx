@@ -14,9 +14,10 @@ import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
+import { useTheme } from '../../context/ThemeContext';
 
 const Sidebar = () => {
-  const { isDarkMode } = useAppSelector(state => state.ui);
+  const { isDarkMode } = useTheme();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);

@@ -428,6 +428,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -437,13 +438,13 @@ const Navigation = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const { scrollY } = useScroll();
-  const userMenuRef = useRef < HTMLDivElement > null;
+  const userMenuRef = useRef(null);
+  const { isDarkMode, toggleTheme } = useTheme();
 
   // Authentication check
   const teamName = localStorage.getItem('codex_team');
   const username = localStorage.getItem('codex_username');
   const isAuthenticated = !!(localStorage.getItem('codex_token') && teamName && username);
-  // const { isDarkMode, toggleTheme } = useTheme();
 
   // useEffect(() => {
   //   const handleScroll = () => setIsScrolled(window.scrollY > 20);

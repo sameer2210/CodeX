@@ -6,8 +6,13 @@ import App from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 import { store } from './store/store';
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Could not find root element to mount to');
+}
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = ReactDOM.createRoot(rootElement);
+root.render(
   <React.StrictMode>
     <Provider store={store}>
       <ThemeProvider>

@@ -1,16 +1,62 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- =============== BASIC META =============== -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CodeX — Collaborative AI-Powered Code Editor</title>
+
+    <!-- =============== SEO META =============== -->
+    <meta
+      name="description"
+      content="CodeX is an enterprise-grade collaborative code editor with real-time collaboration, AI-powered code reviews, chat, and video calls."
+    />
+    <meta
+      name="keywords"
+      content="Code Editor, Collaborative Coding, AI Code Review, MERN, Socket.IO, WebRTC"
+    />
+    <meta name="author" content="CodeX Team" />
+
+    <!-- =============== OPEN GRAPH / SOCIAL =============== -->
+    <meta property="og:title" content="CodeX — Collaborative AI-Powered Code Editor" />
+    <meta
+      property="og:description"
+      content="Build, review, and collaborate on code in real-time with AI assistance."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://codex.app" />
+
+    <!-- =============== FAVICON =============== -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
+    <!-- =============== PERFORMANCE =============== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- =============== ICONS =============== -->
     <link
-    href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
-    rel="stylesheet"/>
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+
+    <!-- =============== THEME COLOR =============== -->
+    <meta name="theme-color" content="#0f172a" />
   </head>
-  <body>
+
+  <body class="antialiased bg-white text-gray-900 dark:bg-black dark:text-white">
+    <!-- =============== APP ROOT =============== -->
     <div id="root"></div>
+
+    <!-- =============== NO-JS FALLBACK =============== -->
+    <noscript>
+      <strong>CodeX requires JavaScript to run properly. Please enable JavaScript.</strong>
+    </noscript>
+
+    <!-- =============== VITE ENTRY =============== -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

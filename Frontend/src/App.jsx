@@ -15,7 +15,18 @@ const App = () => {
   return (
     <>
       <Routes />
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="top-right"
+        theme="dark"
+        toastOptions={{
+          style: {
+            background: '#10120F',
+            border: '1px solid rgba(194, 202, 187, 0.1)',
+            color: '#C2CABB',
+          },
+        }}
+        // richColors
+      />
     </>
   );
 };

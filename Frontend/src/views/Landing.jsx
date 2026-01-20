@@ -1,21 +1,5 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import {
-  Code2,
-  Github,
-  Home,
-  Menu,
-  Moon,
-  Shield,
-  Sun,
-  Terminal,
-  Twitter,
-  Users,
-  Zap,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { notify } from '../lib/notify';
-
+import { Code2, Github, Shield, Terminal, Twitter, Users, Zap } from 'lucide-react';
 const EASE = [0.22, 1, 0.36, 1];
 
 const HUDLabel = ({ children, className = '' }) => (
@@ -38,93 +22,6 @@ const GlassCard = ({ children, className = '', delay = 0 }) => (
     {children}
   </motion.div>
 );
-
-const Navigation = () => {
-  // Logic from user snippet
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isDarkMode, toggleTheme } = useTheme();
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const welcomed = sessionStorage.getItem('codex_welcomed');
-
-    if (!welcomed) {
-      // toast.success('Welcome to CodeX', {
-      //   description: 'Your collaborative workspace is ready.',
-      // });
-
-      notify('Welcome to CodeX', 'success', {
-        description: 'Your collaborative workspace is ready.',
-      });
-
-      sessionStorage.setItem('codex_welcomed', 'true');
-    }
-  }, []);
-
-  const navItems = [
-    { label: 'Platform', icon: Home },
-    { label: 'Features', icon: Zap },
-    { label: 'AI Core', icon: Code2 },
-    { label: 'Community', icon: Users },
-  ];
-
-  return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${
-        isScrolled
-          ? 'py-3 bg-black/80 backdrop-blur-xl border-white/10'
-          : 'py-6 bg-transparent border-transparent'
-      }`}
-    >
-      <div className="max-w-[1440px] mx-auto px-8 flex items-center justify-between">
-        <div className="flex items-center gap-3 group cursor-pointer">
-          <span className="text-2xl font-black uppercase tracking-tighter">CodeX</span>
-        </div>
-
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-10">
-          {navItems.map(item => (
-            <a
-              key={item.label}
-              href="#"
-              className="text-[11px] uppercase tracking-[0.15em] font-bold text-white/50 hover:text-[#17E1FF] transition-colors relative group"
-            >
-              {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-[#17E1FF] transition-all group-hover:w-full" />
-            </a>
-          ))}
-        </nav>
-
-        {/* Actions */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-xl border border-white/5 hover:border-white/20 transition-all bg-white/5 text-white/60 hover:text-white"
-          >
-            {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-          </button>
-
-          <button className="hidden md:block bg-white text-black text-[11px] font-black uppercase tracking-[0.15em] px-8 py-3 rounded-full hover:bg-[#17E1FF] transition-all">
-            Get Started
-          </button>
-
-          <button className="lg:hidden p-2 text-white/60">
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-    </motion.header>
-  );
-};
 
 const Hero = () => {
   const { scrollY } = useScroll();
@@ -486,9 +383,6 @@ const Landing = () => {
         className="fixed inset-0 pointer-events-none opacity-[0.03] z-[9999]"
         style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }}
       />
-
-      <Navigation />
-
       <main>
         <Hero />
         <StatsSection />

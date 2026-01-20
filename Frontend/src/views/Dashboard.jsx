@@ -25,7 +25,6 @@ const Dashboard = () => {
   // Selectors
   const { projects, stats, isLoading } = useAppSelector(state => state.projects);
   const { isAuthenticated } = useAppSelector(state => state.auth);
-  const { isDarkMode } = useAppSelector(state => state.ui);
   const { user } = useAppSelector(state => state.auth);
 
   // Local state
@@ -63,9 +62,17 @@ const Dashboard = () => {
   }, []);
 
   /* ========== HANDLERS ========== */
-  const handleThemeToggle = () => {
-    dispatch(useTheme());
-  };
+  // const handleThemeToggle = () => {
+  //   dispatch(useTheme());
+  // };
+
+ const { isDarkMode, toggleTheme } = useTheme();
+
+ const handleThemeToggle = () => {
+   toggleTheme();
+ };
+
+
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
@@ -135,7 +142,7 @@ const Dashboard = () => {
       <main
         className={`transition-all duration-300 ${
           isLargeScreen ? (isSidebarCollapsed ? 'ml-8' : 'ml-18') : 'ml-0'
-        } pt-4 lg:pt-0`}
+        } pt-4 lg:pt-12`}
       >
         <div className="p-6">
           {/* Welcome Header */}

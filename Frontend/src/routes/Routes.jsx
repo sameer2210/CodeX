@@ -1,25 +1,40 @@
+import { lazy, Suspense } from 'react';
 import {
   BrowserRouter as AppRouter,
-  Routes as AppRoutes,
   Navigate,
   Outlet,
   Route,
+  Routes as AppRoutes,
 } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { useAppSelector } from '../store/hooks';
-import Login from '../views/auth/Login';
-import Register from '../views/auth/Register';
-import CreateProject from '../views/create-project/CreateProject';
-import Dashboard from '../views/Dashboard';
-import Project from '../views/home/project/Project';
-import Landing from '../views/Landing';
-import NotFound from '../views/NotFound';
 
+// Lazy load components for better performance
+const Login = lazy(() => import('../views/auth/Login'));
+const Register = lazy(() => import('../views/auth/Register'));
+const CreateProject = lazy(() => import('../views/create-project/CreateProject'));
+const Dashboard = lazy(() => import('../views/Dashboard'));
+const Project = lazy(() => import('../views/home/project/Project'));
+const Landing = lazy(() => import('../views/Landing'));
+const NotFound = lazy(() => import('../views/NotFound'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#0B0E11]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-[#17E1FF]/20 border-t-[#17E1FF] rounded-full animate-spin" />
+      <p className="text-sm font-mono text-white/40 uppercase tracking-widest">Loading...</p>
+    </div>
+  </div>
+);
+
+// Private route wrapper - redirects to login if not authenticated
 const PrivateRoute = () => {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
+// Public route wrapper - redirects to dashboard if already authenticated
 const PublicRoute = () => {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
@@ -28,34 +43,39 @@ const PublicRoute = () => {
 const Routes = () => {
   return (
     <AppRouter>
-      <AppRoutes>
-        {/* Public Routes (with Layout where needed) */}
-        <Route element={<PublicRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Landing />} />
+      <Suspense fallback={<LoadingFallback />}>
+        <AppRoutes>
+          {/* Public Routes */}
+          <Route element={<PublicRoute />}>
+            {/* Landing page with Layout */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<Landing />} />
+            </Route>
+
+            {/* Auth pages without Layout */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Route>
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Route>
+          {/* Protected Routes */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projects" element={<Dashboard />} />
+            <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/project/:id" element={<Project />} />
+            <Route path="/team" element={<Dashboard />} />
+            <Route path="/activity" element={<Dashboard />} />
+            <Route path="/settings" element={<Dashboard />} />
+            <Route path="/help" element={<Dashboard />} />
+          </Route>
 
-        {/* Protected Routes (no global Layout; assume per-component) */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects" element={<Dashboard />} />
-          <Route path="/create-project" element={<CreateProject />} />
-          <Route path="/project/:id" element={<Project />} />
-          <Route path="/team" element={<Dashboard />} />
-          <Route path="/activity" element={<Dashboard />} />
-          <Route path="/settings" element={<Dashboard />} />
-          <Route path="/help" element={<Dashboard />} />
-        </Route>
+          {/* 404 Not Found - Accessible to everyone */}
+          <Route path="/not-found" element={<NotFound />} />
 
-        {/* Catch-all Redirect */}
-        <Route element={<Layout />}>
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </AppRoutes>
+          {/* Catch-all - Redirect unknown routes to NotFound */}
+          <Route path="*" element={<Navigate to="/not-found" replace />} />
+        </AppRoutes>
+      </Suspense>
     </AppRouter>
   );
 };

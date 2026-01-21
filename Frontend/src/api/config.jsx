@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { notify } from '../lib/notify';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
@@ -25,6 +26,7 @@ api.interceptors.response.use(
       localStorage.clear();
       window.location.href = '/login';
     }
+     notify(error.response?.data?.message || 'Network error', 'error');
     return Promise.reject(error);
   }
 );

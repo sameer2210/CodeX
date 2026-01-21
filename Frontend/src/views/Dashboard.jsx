@@ -18,9 +18,11 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjects } from '../store/slices/projectSlice';
 import { useTheme } from '../context/ThemeContext';
 
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  
 
   // Selectors
   const { projects, stats, isLoading } = useAppSelector(state => state.projects);

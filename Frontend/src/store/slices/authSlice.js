@@ -1,5 +1,5 @@
 //authSlice.js
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../../api/config';
 
 // Async thunks
@@ -8,7 +8,6 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await api.post('/auth/login', credentials);
-
       if (response.data.success) {
         localStorage.setItem('codex_token', response.data.token);
         localStorage.setItem('codex_team', response.data.user.teamName);
@@ -16,13 +15,7 @@ export const loginUser = createAsyncThunk(
         return response.data;
       }
     } catch (error) {
-      const msg = error.response?.data?.message || 'Login failed';
-
-      if (msg === 'TEAM_NOT_FOUND') {
-        return rejectWithValue('Team does not exist. Please register the team first.');
-      }
-
-      return rejectWithValue(msg);
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -39,30 +32,51 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+const getInitialAuthState = () => {
+  const token = localStorage.getItem('codex_token');
+  if (!token)
+    return { user: { username: null, teamName: null }, token: null, isAuthenticated: false };
+
+  try {
+    const tokenData = JSON.parse(atob(token.split('.')[1]));
+    if (tokenData.exp < Date.now() / 1000) {
+      localStorage.clear();
+      return { user: { username: null, teamName: null }, token: null, isAuthenticated: false };
+    }
+    return {
+      user: {
+        username: localStorage.getItem('codex_username'),
+        teamName: localStorage.getItem('codex_team'),
+      },
+      token,
+      isAuthenticated: true,
+    };
+  } catch {
+    localStorage.clear();
+    return { user: { username: null, teamName: null }, token: null, isAuthenticated: false };
+  }
+};
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: {
-      username: localStorage.getItem('codex_username') || null,
-      teamName: localStorage.getItem('codex_team') || null,
-    },
-    token: localStorage.getItem('codex_token') || null,
-    isAuthenticated: !!localStorage.getItem('codex_token'),
+    ...getInitialAuthState(),
     isLoading: false,
     error: null,
   },
   reducers: {
-    logout: (state) => {
+    logout: state => {
       state.user = { username: null, teamName: null };
       state.token = null;
       state.isAuthenticated = false;
+      state.error = null;
       localStorage.clear();
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       .addCase(loginUser.pending, state => {
         state.isLoading = true;

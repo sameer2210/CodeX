@@ -19,6 +19,7 @@ import {
 } from './slices/socketSlice';
 
 let socket = null;
+let pendingActions = [];
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
@@ -58,6 +59,8 @@ export const socketMiddleware = store => next => action => {
       store.dispatch(socketConnected());
       notify('Connected to server', 'success');
       console.log('Socket connected:', socket.id);
+      pendingActions.forEach(action => store.dispatch(action));
+      pendingActions = [];
     });
 
     socket.on('disconnect', reason => {
@@ -406,8 +409,9 @@ export const socketMiddleware = store => next => action => {
         break;
     }
   } else if (action.type.startsWith('socket/') && action.type !== 'socket/init') {
+    pendingActions.push(action);
     // Socket not connected, queue or warn
-    console.warn('⚠️ Socket not connected for action:', action.type);
+    console.warn('⚠️ Queued or Socket not connected for action:', action.type);
   }
 
   return next(action);

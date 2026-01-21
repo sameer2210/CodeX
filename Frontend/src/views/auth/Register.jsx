@@ -116,7 +116,7 @@ const Register = () => {
           animate={{ opacity: 1, x: 0 }}
           className="hidden md:flex gap-12"
         >
-          <HUDLabel label="SEQUENCE" value="NEW REGISTRATION" />
+          <HUDLabel label="SEQUENCE" value="NEW TEAM REGISTRATION" />
           <HUDLabel label="AUTH_LEVEL" value="USER_LEVEL_01" />
           <HUDLabel label="ENCRYPTION" value="RSA-4096" />
         </motion.div>
@@ -142,7 +142,7 @@ const Register = () => {
               className="text-5xl md:text-7xl font-black tracking-[-0.03em] uppercase leading-none"
             >
               Start your <br />
-              <span className="text-[#17E1FF]">Digital Legacy</span>
+              <span className="text-[#17E1FF]">DOMAIN Legacy</span>
             </motion.h2>
           </div>
 
@@ -327,8 +327,8 @@ const Register = () => {
             DESIGNED FOR EXCELLENCE
           </span>
         </div>
-        <div className="flex gap-10 mt-6 md:mt-0">
-          {['Privacy', 'Network', 'Nodes'].map(item => (
+        <div onClick={() => navigate('/')} className="flex gap-10 mt-6 md:mt-0">
+          {['Privacy', 'Network', 'home'].map(item => (
             <a
               key={item}
               href="#"

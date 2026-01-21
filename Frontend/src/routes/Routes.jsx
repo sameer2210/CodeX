@@ -1,242 +1,60 @@
-// import { BrowserRouter as AppRouter, Routes as AppRoutes, Navigate, Route } from 'react-router-dom';
-// import Layout from '../components/layout/Layout';
-// import Login from '../views/auth/Login';
-// import Register from '../views/auth/Register';
-// import CreateProject from '../views/create-project/CreateProject';
-// import Dashboard from '../views/Dashboard';
-// import Project from '../views/home/project/Project';
-// import Landing from '../views/Landing';
-
-// const isAuthenticated = () => {
-//   const token = localStorage.getItem('codex_token');
-//   const teamName = localStorage.getItem('codex_team');
-//   const username = localStorage.getItem('codex_username');
-
-//   if (!token || !teamName || !username) return false;
-
-//   try {
-//     const tokenData = JSON.parse(atob(token.split('.')[1]));
-//     const currentTime = Date.now() / 1000;
-
-//     if (tokenData.exp && tokenData.exp < currentTime) {
-//       localStorage.clear();
-//       return false;
-//     }
-//     return true;
-//   } catch {
-//     localStorage.clear();
-//     return false;
-//   }
-// };
-
-// const ProtectedRoute = ({ children }) =>
-//   isAuthenticated() ? children : <Navigate to="/login" replace />;
-
-// const PublicRoute = ({ children }) =>
-//   isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
-
-// const Routes = () => {
-//   return (
-//     <AppRouter>
-//       <AppRoutes>
-//         {/* Public Routes inside Layout */}
-//         <Route
-//           path="/"
-//           element={
-//             <PublicRoute>
-//               <Layout />
-//             </PublicRoute>
-//           }
-//         >
-//           <Route index element={<Landing />} />
-//         </Route>
-
-//         {/* Auth Routes (without Layout) */}
-//         <Route
-//           path="/login"
-//           element={
-//             <PublicRoute>
-//               <Login />
-//             </PublicRoute>
-//           }
-//         />
-//         <Route
-//           path="/register"
-//           element={
-//             <PublicRoute>
-//               <Register />
-//             </PublicRoute>
-//           }
-//         />
-
-//         {/* Protected Routes with Layout */}
-//         <Route
-//           path="/"
-//         >
-//           <Route path="dashboard" element={<Dashboard />} />
-//           <Route path="projects" element={<Dashboard />} />
-//           <Route path="create-project" element={<CreateProject />} />
-//           <Route path="project/:id" element={<Project />} />
-//           <Route path="team" element={<Dashboard />} />
-//           <Route path="activity" element={<Dashboard />} />
-//           <Route path="settings" element={<Dashboard />} />
-//           <Route path="help" element={<Dashboard />} />
-//         </Route>
-
-//         {/* Catch-all */}
-//         <Route
-//           path="*"
-//           element={<Navigate to={isAuthenticated() ? '/dashboard' : '/'} replace />}
-//         />
-//       </AppRoutes>
-//     </AppRouter>
-//   );
-// };
-
-// export default Routes;
-
-import { BrowserRouter as AppRouter, Routes as AppRoutes, Navigate, Route } from 'react-router-dom';
+import {
+  BrowserRouter as AppRouter,
+  Routes as AppRoutes,
+  Navigate,
+  Outlet,
+  Route,
+} from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import { useAppSelector } from '../store/hooks';
 import Login from '../views/auth/Login';
 import Register from '../views/auth/Register';
 import CreateProject from '../views/create-project/CreateProject';
 import Dashboard from '../views/Dashboard';
 import Project from '../views/home/project/Project';
 import Landing from '../views/Landing';
+import NotFound from '../views/NotFound';
 
-const isAuthenticated = () => {
-  const token = localStorage.getItem('codex_token');
-  const teamName = localStorage.getItem('codex_team');
-  const username = localStorage.getItem('codex_username');
-
-  if (!token || !teamName || !username) return false;
-
-  try {
-    const tokenData = JSON.parse(atob(token.split('.')[1]));
-    const currentTime = Date.now() / 1000;
-
-    if (tokenData.exp && tokenData.exp < currentTime) {
-      localStorage.clear();
-      return false;
-    }
-    return true;
-  } catch {
-    localStorage.clear();
-    return false;
-  }
+const PrivateRoute = () => {
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
-const ProtectedRoute = ({ children }) =>
-  isAuthenticated() ? children : <Navigate to="/login" replace />;
-
-const PublicRoute = ({ children }) =>
-  isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
+const PublicRoute = () => {
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
+};
 
 const Routes = () => {
   return (
     <AppRouter>
       <AppRoutes>
-        {/* Public Routes inside Layout */}
-        <Route
-          path="/"
-          element={
-            <PublicRoute>
-              <Layout />
-            </PublicRoute>
-          }
-        >
-          <Route index element={<Landing />} />
+        {/* Public Routes (with Layout where needed) */}
+        <Route element={<PublicRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Landing />} />
+          </Route>
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Route>
 
-        {/* Auth Routes (without Layout) */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
+        {/* Protected Routes (no global Layout; assume per-component) */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/projects" element={<Dashboard />} />
+          <Route path="/create-project" element={<CreateProject />} />
+          <Route path="/project/:id" element={<Project />} />
+          <Route path="/team" element={<Dashboard />} />
+          <Route path="/activity" element={<Dashboard />} />
+          <Route path="/settings" element={<Dashboard />} />
+          <Route path="/help" element={<Dashboard />} />
+        </Route>
 
-        {/* Protected Routes with Layout - FIXED */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/projects"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-project"
-          element={
-            <ProtectedRoute>
-              <CreateProject />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/project/:id"
-          element={
-            <ProtectedRoute>
-              <Project />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/team"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/activity"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/help"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Catch-all */}
-        <Route
-          path="*"
-          element={<Navigate to={isAuthenticated() ? '/dashboard' : '/'} replace />}
-        />
+        {/* Catch-all Redirect */}
+        <Route element={<Layout />}>
+          <Route path="*" element={<NotFound />} />
+        </Route>
       </AppRoutes>
     </AppRouter>
   );

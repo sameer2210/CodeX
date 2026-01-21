@@ -79,8 +79,7 @@ export const checkTeamAccess = (req, res, next) => {
 // Rate limiting middleware (basic implementation)
 const requestCounts = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 5; // Max requests per window
-
+const MAX_REQUESTS = 50; // Max requests per window
 export const rateLimiter = (req, res, next) => {
   const clientIP =
     req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0]?.trim();

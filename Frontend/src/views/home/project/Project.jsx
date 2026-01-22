@@ -8,10 +8,10 @@ import {
   fetchProject,
   setCurrentProject,
 } from '../../../store/slices/projectSlice';
-// import { addToast } from '../../../store/slices/uiSlice';
 import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import ReviewPanel from './components/ReviewPanel';
+import { useTheme } from '../../../context/ThemeContext';
 
 const Project = () => {
   const { id: projectId } = useParams();
@@ -22,7 +22,7 @@ const Project = () => {
   const currentProject = useAppSelector(state => state.projects.currentProject);
   const isLoading = useAppSelector(state => state.projects.isLoading);
   const socketConnected = useAppSelector(state => state.socket.connected);
-  const isDarkMode = useAppSelector(state => state.ui.isDarkMode);
+  const isDarkMode = useTheme();
 
   // Local state
   const [activeTab, setActiveTab] = useState('code'); // 'code' | 'review'

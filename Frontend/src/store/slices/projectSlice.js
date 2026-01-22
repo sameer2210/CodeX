@@ -1,7 +1,29 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../../api/config';
+import { dashboardService } from '../../services/dashboardService';
 
 /* ========== ASYNC THUNKS ========== */
+
+export const fetchDashboardData = createAsyncThunk(
+  'projects/fetchDashboardData',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Parallel fetch for dashboard performance
+      const [stats, projects, team] = await Promise.all([
+        dashboardService.getStats(),
+        api
+          .get('/projects/get-all')
+          .then(res => res.data.data || [])
+          .catch(() => []),
+        dashboardService.getTeamMembers(),
+      ]);
+
+      return { stats, projects, team };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard data');
+    }
+  }
+);
 
 export const fetchProjects = createAsyncThunk(
   'projects/fetchAll',
@@ -56,31 +78,21 @@ export const updateProject = createAsyncThunk(
 const projectSlice = createSlice({
   name: 'projects',
   initialState: {
-    // Projects list
     projects: [],
-
-    // Current project
+    recentProjects: [],
+    teamMembers: [],
     currentProject: null,
-
-    // Project-specific data (keyed by projectId)
-    projectData: {
-      // [projectId]: {
-      //   messages: [],
-      //   activeUsers: [],
-      //   typingUsers: [],
-      //   code: '',
-      //   review: '',
-      //   language: 'javascript',
-      //   isJoined: false,
-      // }
-    },
+    projectData: {}, // Project-specific data (keyed by projectId)
 
     // Stats
     stats: {
       totalProjects: 0,
-      activeProjects: 0,
-      teamMembers: 1,
-      completedTasks: 0,
+      endedProjects: 0,
+      runningProjects: 0,
+      pendingProjects: 0,
+      totalGrowth: 0,
+      endedGrowth: 0,
+      runningGrowth: 0,
     },
 
     // UI state
@@ -256,6 +268,36 @@ const projectSlice = createSlice({
   },
   extraReducers: builder => {
     builder
+      // Dashboard Data
+      .addCase(fetchDashboardData.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchDashboardData.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.stats = action.payload.stats;
+        state.projects = action.payload.projects;
+        state.teamMembers = action.payload.team;
+
+        // Calculate derived stats if API didn't provide specific fields
+        if (state.stats.totalProjects === 0 && action.payload.projects.length > 0) {
+          state.stats.totalProjects = action.payload.projects.length;
+          state.stats.runningProjects = action.payload.projects.filter(
+            p => p.status === 'active'
+          ).length;
+          state.stats.endedProjects = action.payload.projects.filter(
+            p => p.status === 'completed'
+          ).length;
+          state.stats.pendingProjects = action.payload.projects.filter(
+            p => p.status === 'pending'
+          ).length;
+        }
+      })
+      .addCase(fetchDashboardData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
       // Fetch Projects
       .addCase(fetchProjects.pending, state => {
         state.isLoading = true;
@@ -264,12 +306,11 @@ const projectSlice = createSlice({
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.isLoading = false;
         state.projects = action.payload;
-        state.stats = {
-          totalProjects: action.payload.length,
-          activeProjects: action.payload.filter(p => p.status !== 'completed').length,
-          teamMembers: 1,
-          completedTasks: action.payload.filter(p => p.status === 'completed').length,
-        };
+        // Update stats based on projects
+        state.stats.totalProjects = action.payload.length;
+        state.stats.runningProjects = action.payload.filter(p => p.status === 'active').length;
+        state.stats.endedProjects = action.payload.filter(p => p.status === 'completed').length;
+        state.stats.pendingProjects = action.payload.filter(p => p.status === 'pending').length;
       })
       .addCase(fetchProjects.rejected, (state, action) => {
         state.isLoading = false;
@@ -313,7 +354,7 @@ const projectSlice = createSlice({
         state.isLoading = false;
         state.projects.push(action.payload);
         state.stats.totalProjects += 1;
-        state.stats.activeProjects += 1;
+        state.stats.runningProjects += 1;
       })
       .addCase(createProject.rejected, (state, action) => {
         state.isLoading = false;
@@ -337,6 +378,12 @@ const projectSlice = createSlice({
         if (state.currentProject?._id === updatedProject._id) {
           state.currentProject = updatedProject;
         }
+
+        // Recalculate stats after update
+        state.stats.totalProjects = state.projects.length;
+        state.stats.runningProjects = state.projects.filter(p => p.status === 'active').length;
+        state.stats.endedProjects = state.projects.filter(p => p.status === 'completed').length;
+        state.stats.pendingProjects = state.projects.filter(p => p.status === 'pending').length;
       })
       .addCase(updateProject.rejected, (state, action) => {
         state.isLoading = false;

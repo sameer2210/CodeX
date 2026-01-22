@@ -12,7 +12,7 @@ const CreateProject = () => {
   const dispatch = useAppDispatch();
 
   const { isLoading } = useAppSelector(state => state.projects);
-  const { isDarkMode } = useAppSelector(state => state.ui);
+  const { isDarkMode } = useTheme();
 
   const handleSubmit = async e => {
     e.preventDefault();

@@ -2,7 +2,6 @@ import {
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon,
   ChartBarIcon,
-  CodeBracketIcon,
   Cog6ToothIcon,
   FolderIcon,
   QuestionMarkCircleIcon,
@@ -10,26 +9,15 @@ import {
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAppDispatch } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 
-const Sidebar = ({ isCollapsed }) => {
+const Sidebar = ({ isCollapsed, onToggleCollapse }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      if (!mobile) setIsExpanded(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -38,7 +26,7 @@ const Sidebar = ({ isCollapsed }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Squares2X2Icon },
-    { name: 'Tasks', path: '/tasks', icon: FolderIcon, badge: '12+' },
+    { name: 'Projects', path: '/projects', icon: FolderIcon },
     { name: 'Calendar', path: '/calendar', icon: CalendarDaysIcon },
     { name: 'Analytics', path: '/analytics', icon: ChartBarIcon },
     { name: 'Team', path: '/team', icon: UserGroupIcon },
@@ -50,71 +38,85 @@ const Sidebar = ({ isCollapsed }) => {
   ];
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-[#F8F9FA] border-r border-gray-100 flex flex-col z-30 font-sans">
-      {/* Brand */}
-      <div className="p-8 pb-4">
-        <motion.div
-          className="flex items-center gap-3 cursor-pointer group"
-          onClick={() => navigate('/')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="relative w-10 h-10 flex items-center justify-center bg-[#C2CABB]/5 rounded-xl border border-[#C2CABB]/10 overflow-hidden group-hover:border-[#C2CABB]/30 transition-colors group-hover:shadow-[0_0_12px_rgba(194,202,187,0.2)]">
-            <CodeBracketIcon className="w-5 h-5 text-[#C2CABB] relative z-10" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-sans font-bold text-lg tracking-tight text-white">CodeX</span>
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide">
-        {/* Menu Section */}
-        <div className="mb-8">
-          <p className="text-xs font-semibold text-gray-400 mb-4 px-3 tracking-wider">MENU</p>
-          <div className="space-y-1">
-            {navItems.map(item => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `
-                  flex items-center justify-between px-3 py-3 rounded-2xl transition-all duration-200 group
-                  ${
-                    isActive
-                      ? 'bg-white text-[#144d36] shadow-sm font-semibold'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-[#10120F]'
-                  }
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#144d36] text-white">
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            ))}
-          </div>
+    <aside
+      className={`fixed left-0 top-0 h-screen transition-all duration-500 z-50 ${
+        isCollapsed ? 'w-20' : 'w-64'
+      } ${isDarkMode ? 'bg-[#1a1c19]' : 'bg-[#10120F]'}`}
+    >
+      <div className="p-6 h-full flex flex-col">
+        {/* Brand Header */}
+        <div className="mb-12 flex items-center justify-between">
+          {!isCollapsed && (
+            <motion.h1
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-2xl font-bold text-[#C2CABB] tracking-tight"
+            >
+              STUDIO
+            </motion.h1>
+          )}
+          <button
+            onClick={onToggleCollapse}
+            className="text-[#C2CABB] hover:text-white transition-colors p-1"
+            aria-label="Toggle sidebar"
+          >
+            <div className="w-6 h-6 flex flex-col justify-center gap-1.5">
+              <span
+                className={`h-0.5 bg-current transition-all ${isCollapsed ? 'w-6' : 'w-4'}`}
+              ></span>
+              <span className="h-0.5 w-6 bg-current"></span>
+              <span
+                className={`h-0.5 bg-current transition-all ${isCollapsed ? 'w-6' : 'w-4'}`}
+              ></span>
+            </div>
+          </button>
         </div>
 
-        {/* General Section */}
-        <div className="mb-8">
-          <p className="text-xs font-semibold text-gray-400 mb-4 px-3 tracking-wider">GENERAL</p>
-          <div className="space-y-1">
+        {/* Main Navigation */}
+        <nav className="flex-1 space-y-2 overflow-y-auto scrollbar-hide">
+          {navItems.map((item, i) => (
+            <motion.div
+              key={item.path}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <NavLink
+                to={item.path}
+                className={({ isActive }) => `
+                  flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group relative overflow-hidden
+                  ${
+                    isActive
+                      ? 'bg-[#C2CABB]/20 text-[#C2CABB] font-bold'
+                      : 'text-[#C2CABB]/60 hover:bg-[#C2CABB]/10 hover:text-[#C2CABB]'
+                  }
+                  ${isCollapsed ? 'justify-center' : ''}
+                `}
+                title={isCollapsed ? item.name : ''}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && <span className="text-sm">{item.name}</span>}
+              </NavLink>
+            </motion.div>
+          ))}
+        </nav>
+
+        {/* Bottom Section */}
+        {!isCollapsed && (
+          <div className="space-y-2 mb-6">
+            <div className="h-px bg-[#C2CABB]/10 my-6"></div>
+
+            {/* Settings & Help */}
             {bottomItems.map(item => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) => `
-                  flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+                  flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-sm
                   ${
                     isActive
-                      ? 'bg-white text-[#144d36] shadow-sm font-semibold'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-[#10120F]'
+                      ? 'bg-[#C2CABB]/20 text-[#C2CABB] font-bold'
+                      : 'text-[#C2CABB]/60 hover:bg-[#C2CABB]/10 hover:text-[#C2CABB]'
                   }
                 `}
               >
@@ -122,27 +124,34 @@ const Sidebar = ({ isCollapsed }) => {
                 <span>{item.name}</span>
               </NavLink>
             ))}
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all duration-200"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-[#C2CABB]/60 hover:bg-red-500/10 hover:text-red-400 transition-all"
             >
               <ArrowRightOnRectangleIcon className="w-5 h-5" />
               <span>Logout</span>
             </button>
           </div>
-        </div>
+        )}
 
-        {/* CTA Card */}
-        <div className="mt-auto">
-          <div className="relative overflow-hidden rounded-3xl bg-[#0d1f18] p-5 text-white shadow-xl shadow-[#144d36]/20">
-            {/* Abstract Background Shapes */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#144d36] blur-2xl opacity-50"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-emerald-500 blur-xl opacity-20"></div>
+        {/* CTA Card - Only show when not collapsed */}
+        {!isCollapsed && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="relative overflow-hidden rounded-3xl bg-[#C2CABB]/10 p-6 border border-[#C2CABB]/20 backdrop-blur-sm"
+          >
+            {/* Decorative Background */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#C2CABB] blur-3xl opacity-10"></div>
+            <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-[#C2CABB] blur-2xl opacity-5"></div>
 
             <div className="relative z-10">
-              <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#C2CABB]/20 flex items-center justify-center mb-4">
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-5 h-5 text-[#C2CABB]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -151,20 +160,45 @@ const Sidebar = ({ isCollapsed }) => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
               </div>
-              <h4 className="font-bold text-lg mb-1">Download our Mobile App</h4>
-              <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                Get easy access in another way. Sync across devices.
+              <h4 className="font-bold text-sm mb-1 text-[#C2CABB]">Upgrade to Pro</h4>
+              <p className="text-xs text-[#C2CABB]/60 mb-4 leading-relaxed">
+                Unlock advanced features and unlimited projects.
               </p>
-              <button className="w-full py-2.5 rounded-xl bg-[#144d36] text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-lg shadow-black/20">
-                Download
+              <button className="w-full py-2.5 rounded-2xl bg-[#C2CABB] text-[#10120F] text-sm font-bold hover:scale-[1.02] transition-transform shadow-lg">
+                Upgrade Now
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        )}
+
+        {/* Collapsed State Icon */}
+        {isCollapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center"
+          >
+            <div className="w-10 h-10 rounded-full bg-[#C2CABB]/10 flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-[#C2CABB]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+          </motion.div>
+        )}
       </div>
     </aside>
   );

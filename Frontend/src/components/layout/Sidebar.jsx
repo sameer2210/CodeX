@@ -26,10 +26,10 @@ const Sidebar = ({ isCollapsed, onToggleCollapse }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Squares2X2Icon },
+    { name: 'Team', path: '/team', icon: UserGroupIcon },
     { name: 'Projects', path: '/projects', icon: FolderIcon },
     { name: 'Calendar', path: '/calendar', icon: CalendarDaysIcon },
     { name: 'Analytics', path: '/analytics', icon: ChartBarIcon },
-    { name: 'Team', path: '/team', icon: UserGroupIcon },
   ];
 
   const bottomItems = [
@@ -38,169 +38,229 @@ const Sidebar = ({ isCollapsed, onToggleCollapse }) => {
   ];
 
   return (
-    <aside
-      className={`fixed left-0 top-0 h-screen transition-all duration-500 z-50 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      } ${isDarkMode ? 'bg-[#1a1c19]' : 'bg-[#10120F]'}`}
+    <motion.aside
+      initial={false}
+      animate={{
+        width: isCollapsed ? 80 : 256,
+      }}
+      whileHover={{
+        width: 256,
+      }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed left-0 top-0 h-screen z-50 group overflow-hidden ${
+        isDarkMode
+          ? 'bg-[#0B0E11] border-r border-white/5'
+          : 'bg-[#E6E8E5] border-r border-[#0B0E11]/5'
+      }`}
     >
-      <div className="p-6 h-full flex flex-col">
+      {/* Subtle glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#17E1FF]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+      <div className="p-6 h-full flex flex-col relative z-10">
         {/* Brand Header */}
         <div className="mb-12 flex items-center justify-between">
-          {!isCollapsed && (
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-2xl font-bold text-[#C2CABB] tracking-tight"
+          <motion.div
+            initial={false}
+            animate={{
+              opacity: isCollapsed ? 0 : 1,
+              x: isCollapsed ? -20 : 0,
+            }}
+            className="group-hover:opacity-100 group-hover:x-0"
+          >
+            <h1
+              className={`text-2xl font-black uppercase tracking-tighter ${
+                isDarkMode ? 'text-[#E6E8E5]' : 'text-[#0B0E11]'
+              }`}
             >
-              STUDIO
-            </motion.h1>
-          )}
+              CODEX
+            </h1>
+          </motion.div>
           <button
             onClick={onToggleCollapse}
-            className="text-[#C2CABB] hover:text-white transition-colors p-1"
+            className={`p-2 rounded-xl transition-all ${
+              isDarkMode
+                ? 'text-[#E6E8E5]/60 hover:text-[#17E1FF] hover:bg-white/5'
+                : 'text-[#0B0E11]/60 hover:text-[#17E1FF] hover:bg-[#0B0E11]/5'
+            }`}
             aria-label="Toggle sidebar"
           >
-            <div className="w-6 h-6 flex flex-col justify-center gap-1.5">
-              <span
-                className={`h-0.5 bg-current transition-all ${isCollapsed ? 'w-6' : 'w-4'}`}
-              ></span>
-              <span className="h-0.5 w-6 bg-current"></span>
-              <span
-                className={`h-0.5 bg-current transition-all ${isCollapsed ? 'w-6' : 'w-4'}`}
-              ></span>
+            <div className="w-5 h-5 flex flex-col justify-center gap-1.5">
+              <motion.span
+                animate={{ width: isCollapsed ? 20 : 16 }}
+                className={`h-0.5 transition-colors ${isDarkMode ? 'bg-current' : 'bg-current'}`}
+              />
+              <span className="h-0.5 w-5 bg-current" />
+              <motion.span
+                animate={{ width: isCollapsed ? 20 : 16 }}
+                className="h-0.5 bg-current"
+              />
             </div>
           </button>
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-2 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
           {navItems.map((item, i) => (
             <motion.div
               key={item.path}
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.05, duration: 0.4 }}
             >
               <NavLink
                 to={item.path}
                 className={({ isActive }) => `
-                  flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group relative overflow-hidden
+                  flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all group/item relative overflow-hidden
                   ${
                     isActive
-                      ? 'bg-[#C2CABB]/20 text-[#C2CABB] font-bold'
-                      : 'text-[#C2CABB]/60 hover:bg-[#C2CABB]/10 hover:text-[#C2CABB]'
+                      ? isDarkMode
+                        ? 'bg-[#17E1FF]/10 text-[#17E1FF] font-bold border border-[#17E1FF]/20'
+                        : 'bg-[#0B0E11] text-[#E6E8E5] font-bold'
+                      : isDarkMode
+                        ? 'text-[#E6E8E5]/50 hover:bg-white/5 hover:text-[#E6E8E5]'
+                        : 'text-[#0B0E11]/50 hover:bg-[#0B0E11]/5 hover:text-[#0B0E11]'
                   }
-                  ${isCollapsed ? 'justify-center' : ''}
                 `}
-                title={isCollapsed ? item.name : ''}
+                title={item.name}
               >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!isCollapsed && <span className="text-sm">{item.name}</span>}
+                {/* Hover glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#17E1FF]/0 via-[#17E1FF]/5 to-[#17E1FF]/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-500" />
+
+                <item.icon className="w-5 h-5 flex-shrink-0 relative z-10" />
+                <motion.span
+                  initial={false}
+                  animate={{
+                    opacity: isCollapsed ? 0 : 1,
+                    x: isCollapsed ? -10 : 0,
+                  }}
+                  className="text-sm relative z-10 whitespace-nowrap group-hover:opacity-100 group-hover:x-0"
+                >
+                  {item.name}
+                </motion.span>
               </NavLink>
             </motion.div>
           ))}
         </nav>
 
         {/* Bottom Section */}
-        {!isCollapsed && (
-          <div className="space-y-2 mb-6">
-            <div className="h-px bg-[#C2CABB]/10 my-6"></div>
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: isCollapsed ? 0 : 1,
+          }}
+          className="space-y-2 mb-6 group-hover:opacity-100 transition-opacity"
+        >
+          <div className={`h-px my-6 ${isDarkMode ? 'bg-white/5' : 'bg-[#0B0E11]/5'}`} />
 
-            {/* Settings & Help */}
-            {bottomItems.map(item => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `
-                  flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-sm
-                  ${
-                    isActive
-                      ? 'bg-[#C2CABB]/20 text-[#C2CABB] font-bold'
-                      : 'text-[#C2CABB]/60 hover:bg-[#C2CABB]/10 hover:text-[#C2CABB]'
-                  }
-                `}
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </NavLink>
-            ))}
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-[#C2CABB]/60 hover:bg-red-500/10 hover:text-red-400 transition-all"
+          {/* Settings & Help */}
+          {bottomItems.map(item => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `
+                flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-sm
+                ${
+                  isActive
+                    ? isDarkMode
+                      ? 'bg-[#17E1FF]/10 text-[#17E1FF] font-bold'
+                      : 'bg-[#0B0E11] text-[#E6E8E5] font-bold'
+                    : isDarkMode
+                      ? 'text-[#E6E8E5]/50 hover:bg-white/5 hover:text-[#E6E8E5]'
+                      : 'text-[#0B0E11]/50 hover:bg-[#0B0E11]/5 hover:text-[#0B0E11]'
+                }
+              `}
             >
-              <ArrowRightOnRectangleIcon className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
+              <item.icon className="w-5 h-5" />
+              <span className="whitespace-nowrap">{item.name}</span>
+            </NavLink>
+          ))}
 
-        {/* CTA Card - Only show when not collapsed */}
-        {!isCollapsed && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="relative overflow-hidden rounded-3xl bg-[#C2CABB]/10 p-6 border border-[#C2CABB]/20 backdrop-blur-sm"
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition-all ${
+              isDarkMode
+                ? 'text-[#E6E8E5]/50 hover:bg-red-500/10 hover:text-red-400'
+                : 'text-[#0B0E11]/50 hover:bg-red-500/10 hover:text-red-500'
+            }`}
           >
-            {/* Decorative Background */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#C2CABB] blur-3xl opacity-10"></div>
-            <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-[#C2CABB] blur-2xl opacity-5"></div>
+            <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            <span className="whitespace-nowrap">Logout</span>
+          </button>
+        </motion.div>
 
-            <div className="relative z-10">
-              <div className="w-10 h-10 rounded-full bg-[#C2CABB]/20 flex items-center justify-center mb-4">
-                <svg
-                  className="w-5 h-5 text-[#C2CABB]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <h4 className="font-bold text-sm mb-1 text-[#C2CABB]">Upgrade to Pro</h4>
-              <p className="text-xs text-[#C2CABB]/60 mb-4 leading-relaxed">
-                Unlock advanced features and unlimited projects.
-              </p>
-              <button className="w-full py-2.5 rounded-2xl bg-[#C2CABB] text-[#10120F] text-sm font-bold hover:scale-[1.02] transition-transform shadow-lg">
-                Upgrade Now
-              </button>
-            </div>
-          </motion.div>
-        )}
+        {/* CTA Card */}
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: isCollapsed ? 0 : 1,
+            y: isCollapsed ? 20 : 0,
+          }}
+          className="relative overflow-hidden rounded-3xl border p-6 backdrop-blur-sm group-hover:opacity-100 group-hover:y-0 transition-all duration-500"
+          style={{
+            borderColor: isDarkMode ? 'rgba(23, 225, 255, 0.1)' : 'rgba(11, 14, 17, 0.1)',
+            backgroundColor: isDarkMode ? 'rgba(23, 225, 255, 0.05)' : 'rgba(11, 14, 17, 0.03)',
+          }}
+        >
+          {/* Decorative Background */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#17E1FF] blur-3xl opacity-10" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-[#17E1FF] blur-2xl opacity-5" />
 
-        {/* Collapsed State Icon */}
-        {isCollapsed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-center"
-          >
-            <div className="w-10 h-10 rounded-full bg-[#C2CABB]/10 flex items-center justify-center">
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-full bg-[#17E1FF]/20 flex items-center justify-center mb-4">
               <svg
-                className="w-5 h-5 text-[#C2CABB]"
+                className="w-5 h-5 text-[#17E1FF]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-          </motion.div>
-        )}
+            <h4
+              className={`font-black text-sm mb-1 uppercase tracking-tight ${
+                isDarkMode ? 'text-[#E6E8E5]' : 'text-[#0B0E11]'
+              }`}
+            >
+              Upgrade Pro
+            </h4>
+            <p
+              className={`text-xs mb-4 leading-relaxed font-light ${
+                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+              }`}
+            >
+              Unlock advanced features and unlimited projects.
+            </p>
+            <button className="w-full py-2.5 rounded-2xl bg-[#E6E8E5] text-[#0B0E11] text-sm font-black border uppercase tracking-wide hover:scale-[1.02] transition-transform shadow-lg">
+              Upgrade Now
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Collapsed State Indicator */}
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: isCollapsed ? 1 : 0,
+            scale: isCollapsed ? 1 : 0.8,
+          }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 group-hover:opacity-0 transition-opacity"
+        >
+          <div className="w-10 h-10 rounded-full bg-[#17E1FF]/10 border border-[#17E1FF]/20 flex items-center justify-center">
+            <svg
+              className="w-5 h-5 text-[#17E1FF]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </motion.div>
       </div>
-    </aside>
+    </motion.aside>
   );
 };
 

@@ -22,7 +22,7 @@ const Project = () => {
   const currentProject = useAppSelector(state => state.projects.currentProject);
   const isLoading = useAppSelector(state => state.projects.isLoading);
   const socketConnected = useAppSelector(state => state.socket.connected);
-  const isDarkMode = useTheme();
+const { isDarkMode, toggleTheme } = useTheme();
 
   // Local state
   const [activeTab, setActiveTab] = useState('code'); // 'code' | 'review'

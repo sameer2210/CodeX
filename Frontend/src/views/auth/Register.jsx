@@ -21,7 +21,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   // Form handling
   const handleChange = e => {
@@ -90,7 +90,11 @@ const Register = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-[#0B0E11] text-[#E6E8E5] overflow-hidden">
+    <div
+      className={`relative min-h-screen w-full flex flex-col overflow-hidden transition-colors duration-500 ${
+        isDarkMode ? 'bg-[#0B0E11] text-[#E6E8E5]' : 'bg-[#F4F6F5] text-[#10120F]'
+      }`}
+    >
       {/* Background HUD Layers */}
       <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
       <div className="absolute top-[-15%] right-[-10%] w-[50%] h-[50%] bg-[#17E1FF]/5 blur-[140px] rounded-full pointer-events-none" />

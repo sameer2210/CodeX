@@ -26,7 +26,7 @@ const Login = () => {
   const isLoading = useAppSelector(state => state.auth.isLoading);
   const reduxError = useAppSelector(state => state.auth.error);
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-  const { isDarkMode } = useTheme();
+const { isDarkMode, toggleTheme } = useTheme();
 
   // Combine local and redux errors
   const error = localError || reduxError;
@@ -132,7 +132,11 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-[#0B0E11] text-[#E6E8E5] overflow-hidden">
+     <div
+      className={`relative min-h-screen w-full flex flex-col overflow-hidden transition-colors duration-500 ${
+        isDarkMode ? 'bg-[#0B0E11] text-[#E6E8E5]' : 'bg-[#F4F6F5] text-[#10120F]'
+      }`}
+    >
       {/* Background Layering */}
       <div className="absolute inset-0 grid-bg opacity-30 pointer-events-none" />
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#17E1FF]/5 blur-[120px] rounded-full pointer-events-none" />

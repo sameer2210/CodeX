@@ -21,7 +21,8 @@ import {
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
 import { useTheme } from '../../../../context/ThemeContext';
-// import { addToast } from '../../../../store/slices/uiSlice';
+import { notify } from '../../../../lib/notify';
+
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -32,7 +33,7 @@ const CodeEditor = ({ projectId }) => {
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
-  const isDarkMode = useTheme();
+const { isDarkMode, toggleTheme } = useTheme();
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   // Local state

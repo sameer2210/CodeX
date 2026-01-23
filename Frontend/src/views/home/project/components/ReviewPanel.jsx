@@ -8,7 +8,8 @@ import {
   selectCurrentProjectReview,
   updateProjectReview,
 } from '../../../../store/slices/projectSlice';
-// import { addToast } from '../../../../store/slices/uiSlice';
+import { notify } from '../../../../lib/notify';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const ReviewPanel = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -18,7 +19,7 @@ const ReviewPanel = ({ projectId }) => {
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
   const socketConnected = useAppSelector(state => state.socket.connected);
-  const isDarkMode = useAppSelector(state => state.ui.isDarkMode);
+const { isDarkMode, toggleTheme } = useTheme();
 
   // Local state
   const [isGenerating, setIsGenerating] = useState(false);

@@ -11,6 +11,7 @@ import {
 import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import ReviewPanel from './components/ReviewPanel';
+import { notify } from '../../../lib/notify';
 import { useTheme } from '../../../context/ThemeContext';
 
 const Project = () => {

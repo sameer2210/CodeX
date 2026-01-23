@@ -23,6 +23,7 @@ import {
   selectCurrentProjectTypingUsers,
 } from '../../../../store/slices/projectSlice';
 import { useTheme } from '../../../../context/ThemeContext';
+import { notify } from '../../../../lib/notify';
 
 const ChatSection = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -32,7 +33,7 @@ const ChatSection = ({ projectId }) => {
   const activeUsers = useAppSelector(selectCurrentProjectActiveUsers);
   const typingUsers = useAppSelector(selectCurrentProjectTypingUsers);
   const currentUser = useAppSelector(state => state.auth.user?.username);
-  const isDarkMode = useTheme();
+ const { isDarkMode, toggleTheme } = useTheme();
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   // Local state

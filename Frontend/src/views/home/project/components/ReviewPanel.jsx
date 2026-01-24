@@ -19,7 +19,7 @@ const ReviewPanel = ({ projectId }) => {
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
   const socketConnected = useAppSelector(state => state.socket.connected);
-const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   // Local state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -27,7 +27,7 @@ const { isDarkMode, toggleTheme } = useTheme();
   /* ========== GENERATE REVIEW ========== */
   const getReview = useCallback(async () => {
     if (!code.trim()) {
-      dispatch(addToast({ message: 'Please write some code first!', type: 'warning' }));
+      notify({ message: 'Please write some code first!', type: 'warning' });
       return;
     }
 
@@ -54,7 +54,7 @@ const { isDarkMode, toggleTheme } = useTheme();
           },
         });
 
-        dispatch(addToast({ message: 'AI review requested...', type: 'info' }));
+        notify({ message: 'AI review requested...', type: 'info' });
 
         // Set timeout to reset generating state
         setTimeout(() => {
@@ -64,9 +64,10 @@ const { isDarkMode, toggleTheme } = useTheme();
         // Offline mock review
         const mockReview = generateOfflineReview(code, language);
         dispatch(updateProjectReview({ projectId, review: mockReview }));
-        dispatch(
-          addToast({ message: 'Using offline analysis (server disconnected)', type: 'warning' })
-        );
+        notify({
+          message: 'Using offline analysis (server disconnected)',
+          type: 'warning',
+        });
         setIsGenerating(false);
       }
     } catch (error) {
@@ -78,7 +79,7 @@ const { isDarkMode, toggleTheme } = useTheme();
             '❌ **Error generating review**\n\nAn error occurred while analyzing your code. Please try again.',
         })
       );
-      dispatch(addToast({ message: 'Failed to generate review', type: 'error' }));
+      notify({ message: 'Failed to generate review', type: 'error' });
       setIsGenerating(false);
     }
   }, [code, language, socketConnected, dispatch, projectId]);
@@ -144,17 +145,17 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
   /* ========== UTILITY FUNCTIONS ========== */
   const clearReview = useCallback(() => {
     dispatch(updateProjectReview({ projectId, review: '' }));
-    dispatch(addToast({ message: 'Review cleared', type: 'info' }));
+    notify({ message: 'Review cleared', type: 'info' });
   }, [dispatch, projectId]);
 
   const copyReview = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(review);
-      dispatch(addToast({ message: 'Review copied to clipboard!', type: 'success' }));
+      notify({ message: 'Review copied to clipboard!', type: 'success' });
     } catch (error) {
-      dispatch(addToast({ message: 'Failed to copy review', type: 'error' }));
+      notify({ message: 'Failed to copy review', type: 'error' });
     }
-  }, [review, dispatch]);
+  }, [review]);
 
   const downloadReview = useCallback(() => {
     const blob = new Blob([review], { type: 'text/markdown' });
@@ -164,8 +165,8 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
     a.download = `code-review-${Date.now()}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    dispatch(addToast({ message: 'Review downloaded!', type: 'success' }));
-  }, [review, dispatch]);
+    notify({ message: 'Review downloaded!', type: 'success' });
+  }, [review]);
 
   /* ========== RENDER ========== */
   return (

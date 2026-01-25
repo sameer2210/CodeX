@@ -12,9 +12,9 @@ const App = () => {
     dispatch({ type: 'socket/init' });
 
     // Cleanup on unmount (if your socket middleware supports it)
-    return () => {
-      dispatch({ type: 'socket/disconnect' });
-    };
+    // return () => {
+    //   dispatch({ type: 'socket/disconnect' });
+    // };
   }, [dispatch]);
 
   return (

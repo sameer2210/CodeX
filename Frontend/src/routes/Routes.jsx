@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react';
 import {
   BrowserRouter as AppRouter,
+  Routes as AppRoutes,
   Navigate,
   Outlet,
   Route,
-  Routes as AppRoutes,
 } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { useAppSelector } from '../store/hooks';
@@ -57,12 +57,16 @@ const Routes = () => {
             <Route path="/register" element={<Register />} />
           </Route>
 
-          {/* Protected Routes */}
           <Route element={<PrivateRoute />}>
+            {/* Routes WITH Navigation */}
+            <Route element={<Layout />}>
+              <Route path="/project/:id" element={<Project />} />
+              <Route path="/projects" element={<Dashboard />} />
+            </Route>
+
+            {/* Routes WITHOUT Navigation */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/projects" element={<Dashboard />} />
             <Route path="/create-project" element={<CreateProject />} />
-            <Route path="/project/:id" element={<Project />} />
             <Route path="/team" element={<Dashboard />} />
             <Route path="/activity" element={<Dashboard />} />
             <Route path="/settings" element={<Dashboard />} />

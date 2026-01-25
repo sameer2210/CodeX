@@ -53,9 +53,9 @@ const Dashboard = () => {
     if (isAuthenticated) {
       dispatch({ type: 'socket/init' });
     }
-    return () => {
-      dispatch({ type: 'socket/disconnect' });
-    };
+    // return () => {
+    //   dispatch({ type: 'socket/disconnect' });
+    // };
   }, [isAuthenticated, dispatch]);
 
   useEffect(() => {

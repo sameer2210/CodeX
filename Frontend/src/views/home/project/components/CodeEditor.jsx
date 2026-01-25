@@ -23,7 +23,6 @@ import {
 import { useTheme } from '../../../../context/ThemeContext';
 import { notify } from '../../../../lib/notify';
 
-
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
   const editorRef = useRef(null);
@@ -33,7 +32,7 @@ const CodeEditor = ({ projectId }) => {
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
-const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   // Local state
@@ -53,6 +52,8 @@ const { isDarkMode, toggleTheme } = useTheme();
   });
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [outputSize, setOutputSize] = useState(isMobile ? 192 : 384); // px for height (mobile) or width (desktop)
+  const [isResizingOutput, setIsResizingOutput] = useState(false);
 
   const languages = [
     {
@@ -104,6 +105,7 @@ const { isDarkMode, toggleTheme } = useTheme();
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setEditorSettings(prev => ({ ...prev, minimap: !mobile }));
+      setOutputSize(mobile ? 192 : 384);
     };
 
     window.addEventListener('resize', handleResize);
@@ -157,8 +159,8 @@ const { isDarkMode, toggleTheme } = useTheme();
     });
 
     // Add keyboard shortcuts
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, () => {
-      dispatch(addToast({ message: 'Code saved!', type: 'success' }));
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      notify({ message: 'Code saved!', type: 'success' });
     });
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
@@ -206,17 +208,12 @@ const { isDarkMode, toggleTheme } = useTheme();
 
   const executeCode = async () => {
     if (language !== 'javascript') {
-      dispatch(
-        addToast({
-          type: 'warning',
-          message: 'Only JavaScript execution is supported currently',
-        })
-      );
+      notify({ message: 'Only JavaScript execution is supported currently', type: 'warning' });
       return;
     }
 
     if (!code.trim()) {
-      dispatch(addToast({ message: 'Please write some code first!', type: 'warning' }));
+      notify({ message: 'Please write some code first!', type: 'warning' });
       return;
     }
 
@@ -233,7 +230,7 @@ const { isDarkMode, toggleTheme } = useTheme();
       console.log = originalLog;
 
       setOutput(logs.length ? `Output:\n${logs.join('\n')}` : 'Code executed (no output)');
-      dispatch(addToast({ message: 'Code executed!', type: 'success' }));
+      notify({ message: 'Code executed!', type: 'success' });
     } catch (err) {
       setOutput(`Error:\n${err.message}`);
     } finally {
@@ -266,11 +263,11 @@ const { isDarkMode, toggleTheme } = useTheme();
   const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
-      dispatch(addToast({ message: 'Code copied!', type: 'success' }));
+      notify({ message: 'Code copied!', type: 'success' });
     } catch (error) {
-      dispatch(addToast({ message: 'Failed to copy', type: 'error' }));
+      notify({ message: 'Failed to copy', type: 'error' });
     }
-  }, [code, dispatch]);
+  }, [code]);
 
   const resetCode = useCallback(() => {
     const langConfig = languages.find(l => l.value === language);
@@ -283,7 +280,7 @@ const { isDarkMode, toggleTheme } = useTheme();
         payload: { projectId, code: templateCode },
       });
     }
-    dispatch(addToast({ message: 'Code reset', type: 'info' }));
+    notify({ message: 'Code reset', type: 'info' });
   }, [dispatch, projectId, language, socketConnected]);
 
   const downloadCode = () => {
@@ -294,7 +291,7 @@ const { isDarkMode, toggleTheme } = useTheme();
     a.download = `code.${language}`;
     a.click();
     URL.revokeObjectURL(url);
-    dispatch(addToast({ message: 'Code downloaded!', type: 'success' }));
+    notify({ message: 'Code downloaded!', type: 'success' });
   };
 
   const formatCode = async () => {
@@ -304,9 +301,9 @@ const { isDarkMode, toggleTheme } = useTheme();
 
     try {
       await saveProjectCode(projectId, '');
-      dispatch(addToast({ message: 'Code formatted & backend cleared', type: 'success' }));
+      notify({ message: 'Code formatted & backend cleared', type: 'success' });
     } catch (err) {
-      dispatch(addToast({ message: 'Backend clear failed', type: 'error', err }));
+      notify({ message: 'Backend clear failed', type: 'error' });
     }
   };
 
@@ -329,12 +326,53 @@ const { isDarkMode, toggleTheme } = useTheme();
     });
   };
 
+  /* ========== OUTPUT RESIZING HANDLERS ========== */
+
+  const startOutputResizing = e => {
+    e.preventDefault();
+    setIsResizingOutput(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = e => {
+      if (!isResizingOutput) return;
+      const container = document.querySelector('.editor-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      let newSize;
+      if (isMobile) {
+        // Vertical resize for height
+        newSize = rect.bottom - e.clientY;
+      } else {
+        // Horizontal resize for width
+        newSize = rect.right - e.clientX;
+      }
+      if (newSize >= 100 && newSize <= (isMobile ? rect.height * 0.8 : rect.width * 0.5)) {
+        setOutputSize(newSize);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingOutput(false);
+    };
+
+    if (isResizingOutput) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingOutput, isMobile]);
+
   /* ========== RENDER ========== */
   return (
     <div
       className={`flex flex-col h-full rounded-lg overflow-hidden border ${
         isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+      } ${isFullscreen ? 'fixed inset-0 z-50' : ''} editor-container`}
     >
       {/* Header */}
       <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -481,10 +519,10 @@ const { isDarkMode, toggleTheme } = useTheme();
       </div>
 
       {/* Editor + Output Split */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0">
+      <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'} min-h-0`}>
         {/* Editor */}
         <div
-          className={`flex-1 ${showOutput ? 'md:border-r' : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+          className={`flex-1 ${showOutput ? (isMobile ? 'border-b' : 'md:border-r') : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
         >
           <Editor
             height="100%"
@@ -510,10 +548,21 @@ const { isDarkMode, toggleTheme } = useTheme();
           />
         </div>
 
+        {/* Output Resizer */}
+        {showOutput && (
+          <div
+            className={`${isMobile ? 'h-2 cursor-row-resize' : 'w-2 cursor-col-resize'} bg-gray-300 hover:bg-blue-500 transition-colors ${
+              isResizingOutput ? 'bg-blue-500' : ''
+            }`}
+            onMouseDown={startOutputResizing}
+          ></div>
+        )}
+
         {/* Output Panel */}
         {showOutput && (
           <div
-            className={`${isMobile ? 'h-48' : 'w-96'} flex flex-col border-t md:border-t-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+            className={`flex flex-col border-t md:border-t-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+            style={{ [isMobile ? 'height' : 'width']: `${outputSize}px` }}
           >
             <div
               className={`flex items-center justify-between p-3 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}

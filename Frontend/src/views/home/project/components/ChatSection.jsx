@@ -33,7 +33,7 @@ const ChatSection = ({ projectId }) => {
   const activeUsers = useAppSelector(selectCurrentProjectActiveUsers);
   const typingUsers = useAppSelector(selectCurrentProjectTypingUsers);
   const currentUser = useAppSelector(state => state.auth.user?.username);
- const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   // Local state
@@ -41,6 +41,8 @@ const ChatSection = ({ projectId }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [inputHeight, setInputHeight] = useState(48); // Initial height in px
+  const [isResizingInput, setIsResizingInput] = useState(false);
 
   // Call state
   const [isInCall, setIsInCall] = useState(false);
@@ -166,6 +168,39 @@ const ChatSection = ({ projectId }) => {
     [handleSendMessage]
   );
 
+  /* ========== INPUT RESIZING ========== */
+  const startInputResizing = e => {
+    e.preventDefault();
+    setIsResizingInput(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = e => {
+      if (!isResizingInput) return;
+      const container = document.querySelector('.chat-input-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const newHeight = rect.top - e.clientY + rect.height;
+      if (newHeight >= 48 && newHeight <= 300) {
+        setInputHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingInput(false);
+    };
+
+    if (isResizingInput) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingInput]);
+
   /* ========== WEBRTC CALL FUNCTIONS ========== */
   const initializePeerConnection = useCallback(() => {
     const configuration = {
@@ -234,12 +269,9 @@ const ChatSection = ({ projectId }) => {
       setIsInCall(true);
     } catch (error) {
       console.error('Error starting call:', error);
-      dispatch({
-        type: 'ui/addToast',
-        payload: {
-          message: 'Failed to start call. Please check camera/microphone permissions.',
-          type: 'error',
-        },
+      notify({
+        message: 'Failed to start call. Please check camera/microphone permissions.',
+        type: 'error',
       });
     }
   };
@@ -779,20 +811,29 @@ const ChatSection = ({ projectId }) => {
         )}
       </div>
 
+      {/* Input Resizer */}
+      <div
+        className={`h-2 bg-gray-300 hover:bg-blue-500 cursor-row-resize transition-colors ${
+          isResizingInput ? 'bg-blue-500' : ''
+        }`}
+        onMouseDown={startInputResizing}
+      ></div>
+
       {/* Input Area */}
       <div
-        className={`px-3 md:px-4 py-3 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+        className={`px-3 md:px-4 py-3 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} chat-input-container`}
+        style={{ height: `${inputHeight}px` }}
       >
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <input
+        <form onSubmit={handleSendMessage} className="flex items-end space-x-2 h-full">
+          <textarea
             ref={messageInputRef}
-            type="text"
             value={message}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             placeholder={socketConnected ? 'Type a message...' : 'Connecting...'}
             disabled={!socketConnected}
-            className={`flex-1 px-3 md:px-4 py-2 text-sm md:text-base rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            rows={1}
+            className={`flex-1 px-3 md:px-4 py-2 text-sm md:text-base rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-auto ${
               isDarkMode
                 ? 'bg-gray-800 text-white border border-gray-700'
                 : 'bg-gray-100 text-gray-900 border border-gray-200'

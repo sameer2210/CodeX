@@ -57,10 +57,10 @@ const Project = () => {
     // Cleanup on unmount
     return () => {
       if (projectId) {
-        dispatch({
-          type: 'socket/leaveProject',
-          payload: { projectId },
-        });
+        // dispatch({
+        //   type: 'socket/leaveProject',
+        //   payload: { projectId },
+        // });
         dispatch(clearProjectData({ projectId }));
       }
     };
@@ -68,29 +68,53 @@ const Project = () => {
 
   /* ========== SOCKET PROJECT ROOM ========== */
 
+  // useEffect(() => {
+  //   if (currentProject?._id && socketConnected) {
+  //     // Join project room
+  //     dispatch({
+  //       type: 'socket/joinProject',
+  //       payload: { projectId: currentProject._id },
+  //     });
+
+  //     console.log('🔌 Joined project room:', currentProject._id);
+  //     notify({ message: 'Joined project collaboration room', type: 'info' });
+  //   }
+
+  //   return () => {
+  //     if (currentProject?._id && socketConnected) {
+  //       dispatch({
+  //         type: 'socket/leaveProject',
+  //         payload: { projectId: currentProject._id },
+  //       });
+  //       console.log('🔌 Left project room:', currentProject._id);
+  //       notify({ message: 'Left project collaboration room', type: 'info' });
+  //     }
+  //   };
+  // }, [currentProject?._id, socketConnected, dispatch]);
+
   useEffect(() => {
-    if (currentProject?._id && socketConnected) {
-      // Join project room
-      dispatch({
-        type: 'socket/joinProject',
-        payload: { projectId: currentProject._id },
-      });
+    if (!socketConnected || !currentProject?._id) return;
 
-      console.log('🔌 Joined project room:', currentProject._id);
-      notify({ message: 'Joined project collaboration room', type: 'info' });
-    }
+    // JOIN
+    dispatch({
+      type: 'socket/joinProject',
+      payload: { projectId: currentProject._id },
+    });
 
+    console.log('🔌 Joined project room:', currentProject._id);
+
+    // LEAVE on unmount
     return () => {
-      if (currentProject?._id && socketConnected) {
+      if (socketConnected) {
         dispatch({
           type: 'socket/leaveProject',
           payload: { projectId: currentProject._id },
         });
         console.log('🔌 Left project room:', currentProject._id);
-        notify({ message: 'Left project collaboration room', type: 'info' });
       }
     };
   }, [currentProject?._id, socketConnected, dispatch]);
+
 
   /* ========== RESIZING HANDLERS ========== */
 

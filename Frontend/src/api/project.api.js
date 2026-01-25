@@ -8,3 +8,7 @@ import api from './config';
 export const saveProjectCode = (projectId, code) => {
   return api.put(`/projects/${projectId}`, { code });
 };
+
+export const executeProjectCodeApi = (projectId, payload) => {
+  return api.post(`/projects/${projectId}/execute`, payload);
+};

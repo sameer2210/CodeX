@@ -1,5 +1,6 @@
 import {
   createProject,
+  executeLocalJavaScript,
   getAllProjects,
   getProjectById,
   reviewProject,
@@ -114,7 +115,7 @@ export async function reviewProjectController(req, res) {
 export async function executeProjectCodeController(req, res) {
   try {
     const { id } = req.params;
-    const { source_code, language } = req.body;
+    const { code, language } = req.body;
 
     if (language !== 'javascript') {
       return res.status(400).json({
@@ -123,7 +124,7 @@ export async function executeProjectCodeController(req, res) {
       });
     }
 
-    const result = await executeLocalJavaScript(source_code);
+    const result = await executeLocalJavaScript(code);
 
     return res.status(200).json({
       success: true,

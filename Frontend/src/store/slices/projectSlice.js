@@ -73,6 +73,22 @@ export const updateProject = createAsyncThunk(
   }
 );
 
+export const executeProjectCode = createAsyncThunk(
+  'projects/executeCode',
+  async ({ projectId, code, language }, { rejectWithValue }) => {
+    try {
+      const res = await api.post(`/projects/${projectId}/execute`, { code, language });
+
+      return {
+        output: res.data.data.stdout,
+        error: res.data.data.stderr,
+      };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Execution failed');
+    }
+  }
+);
+
 /* ========== SLICE ========== */
 
 const projectSlice = createSlice({
@@ -93,6 +109,11 @@ const projectSlice = createSlice({
       totalGrowth: 0,
       endedGrowth: 0,
       runningGrowth: 0,
+    },
+    execution: {
+      isExecuting: false,
+      output: '',
+      error: null,
     },
 
     // UI state
@@ -385,9 +406,25 @@ const projectSlice = createSlice({
         state.stats.endedProjects = state.projects.filter(p => p.status === 'completed').length;
         state.stats.pendingProjects = state.projects.filter(p => p.status === 'pending').length;
       })
+
       .addCase(updateProject.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+
+      // Execute Project Code
+      .addCase(executeProjectCode.pending, state => {
+        state.execution.isExecuting = true;
+        state.execution.output = '';
+        state.execution.error = null;
+      })
+      .addCase(executeProjectCode.fulfilled, (state, action) => {
+        state.execution.isExecuting = false;
+        state.execution.output = action.payload.output;
+      })
+      .addCase(executeProjectCode.rejected, (state, action) => {
+        state.execution.isExecuting = false;
+        state.execution.error = action.payload;
       });
   },
 });
@@ -431,6 +468,10 @@ export const selectProjectById = projectId => state => {
 export const selectProjectDataById = projectId => state => {
   return state.projects.projectData[projectId];
 };
+
+export const selectExecutionOutput = state => state.projects.execution.output;
+export const selectExecutionError = state => state.projects.execution.error;
+export const selectIsExecuting = state => state.projects.execution.isExecuting;
 
 /* ========== EXPORTS ========== */
 

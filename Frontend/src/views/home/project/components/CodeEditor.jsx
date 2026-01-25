@@ -1,3 +1,4 @@
+// src/views/home/project/components/CodeEditor.jsx
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -8,37 +9,39 @@ import {
   Play,
   RotateCcw,
   Settings,
-  Terminal,
-  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveProjectCode } from '../../../../api/project.api';
+import { useTheme } from '../../../../context/ThemeContext';
+import { notify } from '../../../../lib/notify';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
+  executeProjectCode,
   selectCurrentProjectCode,
   selectCurrentProjectLanguage,
+  selectIsExecuting,
   setLanguage,
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
-import { useTheme } from '../../../../context/ThemeContext';
-import { notify } from '../../../../lib/notify';
+import { useNavigate } from 'react-router-dom';
+
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const saveTimeoutRef = useRef(null);
+  const navigate = useNavigate();
+
 
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const socketConnected = useAppSelector(state => state.socket.connected);
+  const isExecuting = useAppSelector(selectIsExecuting);
 
   // Local state
-  const [output, setOutput] = useState('');
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [showOutput, setShowOutput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -52,8 +55,6 @@ const CodeEditor = ({ projectId }) => {
   });
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [outputSize, setOutputSize] = useState(isMobile ? 192 : 384); // px for height (mobile) or width (desktop)
-  const [isResizingOutput, setIsResizingOutput] = useState(false);
 
   const languages = [
     {
@@ -105,7 +106,6 @@ const CodeEditor = ({ projectId }) => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setEditorSettings(prev => ({ ...prev, minimap: !mobile }));
-      setOutputSize(mobile ? 192 : 384);
     };
 
     window.addEventListener('resize', handleResize);
@@ -206,7 +206,7 @@ const CodeEditor = ({ projectId }) => {
 
   /* ========== CODE EXECUTION ========== */
 
-  const executeCode = async () => {
+  const executeCode = () => {
     if (language !== 'javascript') {
       notify({ message: 'Only JavaScript execution is supported currently', type: 'warning' });
       return;
@@ -216,26 +216,7 @@ const CodeEditor = ({ projectId }) => {
       notify({ message: 'Please write some code first!', type: 'warning' });
       return;
     }
-
-    setIsExecuting(true);
-    setShowOutput(true);
-    setOutput('Running code...\n');
-
-    try {
-      const logs = [];
-      const originalLog = console.log;
-
-      console.log = (...args) => logs.push(args.join(' '));
-      eval(code);
-      console.log = originalLog;
-
-      setOutput(logs.length ? `Output:\n${logs.join('\n')}` : 'Code executed (no output)');
-      notify({ message: 'Code executed!', type: 'success' });
-    } catch (err) {
-      setOutput(`Error:\n${err.message}`);
-    } finally {
-      setIsExecuting(false);
-    }
+    dispatch(executeProjectCode({ projectId, code, language }));
   };
 
   /* ========== LANGUAGE CHANGE ========== */
@@ -326,53 +307,12 @@ const CodeEditor = ({ projectId }) => {
     });
   };
 
-  /* ========== OUTPUT RESIZING HANDLERS ========== */
-
-  const startOutputResizing = e => {
-    e.preventDefault();
-    setIsResizingOutput(true);
-  };
-
-  useEffect(() => {
-    const handleMouseMove = e => {
-      if (!isResizingOutput) return;
-      const container = document.querySelector('.editor-container');
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      let newSize;
-      if (isMobile) {
-        // Vertical resize for height
-        newSize = rect.bottom - e.clientY;
-      } else {
-        // Horizontal resize for width
-        newSize = rect.right - e.clientX;
-      }
-      if (newSize >= 100 && newSize <= (isMobile ? rect.height * 0.8 : rect.width * 0.5)) {
-        setOutputSize(newSize);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizingOutput(false);
-    };
-
-    if (isResizingOutput) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizingOutput, isMobile]);
-
   /* ========== RENDER ========== */
   return (
     <div
       className={`flex flex-col h-full rounded-lg overflow-hidden border ${
         isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      } ${isFullscreen ? 'fixed inset-0 z-50' : ''} editor-container`}
+      } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Header */}
       <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -382,9 +322,10 @@ const CodeEditor = ({ projectId }) => {
               className={`w-4 h-4 md:w-5 md:h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}
             />
             <h2
-              className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+              onClick={() => navigate('/dashboard')}
+              className={`text-base cursor-pointer md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
             >
-              Code Editor
+              CodeX Editor
             </h2>
             {isSaving && <span className="text-xs text-yellow-400 ml-2">Saving…</span>}
             {!socketConnected && (
@@ -518,75 +459,30 @@ const CodeEditor = ({ projectId }) => {
         )}
       </div>
 
-      {/* Editor + Output Split */}
-      <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'} min-h-0`}>
-        {/* Editor */}
-        <div
-          className={`flex-1 ${showOutput ? (isMobile ? 'border-b' : 'md:border-r') : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
-        >
-          <Editor
-            height="100%"
-            language={language}
-            value={code}
-            onChange={handleEditorChange}
-            onMount={handleEditorDidMount}
-            theme={isDarkMode ? 'vs-dark' : 'light'}
-            options={{
-              ...editorSettings,
-              minimap: { enabled: editorSettings.minimap },
-              lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
-              wordWrap: editorSettings.wordWrap,
-              automaticLayout: true,
-              formatOnType: true,
-              formatOnPaste: editorSettings.formatOnPaste,
-              scrollBeyondLastLine: false,
-              smoothScrolling: true,
-              padding: { top: 10, bottom: 10 },
-              suggestOnTriggerCharacters: true,
-              quickSuggestions: editorSettings.autoComplete,
-            }}
-          />
-        </div>
-
-        {/* Output Resizer */}
-        {showOutput && (
-          <div
-            className={`${isMobile ? 'h-2 cursor-row-resize' : 'w-2 cursor-col-resize'} bg-gray-300 hover:bg-blue-500 transition-colors ${
-              isResizingOutput ? 'bg-blue-500' : ''
-            }`}
-            onMouseDown={startOutputResizing}
-          ></div>
-        )}
-
-        {/* Output Panel */}
-        {showOutput && (
-          <div
-            className={`flex flex-col border-t md:border-t-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
-            style={{ [isMobile ? 'height' : 'width']: `${outputSize}px` }}
-          >
-            <div
-              className={`flex items-center justify-between p-3 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
-            >
-              <div className="flex items-center space-x-2">
-                <Terminal className="w-4 h-4" />
-                <span className="font-medium text-sm">Output</span>
-              </div>
-              <button
-                onClick={() => setShowOutput(false)}
-                className={`p-1 rounded hover:bg-gray-700`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-3">
-              <pre
-                className={`text-xs md:text-sm font-mono whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}
-              >
-                {output || 'Run code to see output...'}
-              </pre>
-            </div>
-          </div>
-        )}
+      {/* Editor */}
+      <div className="flex-1 min-h-0">
+        <Editor
+          height="100%"
+          language={language}
+          value={code}
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          theme={isDarkMode ? 'vs-dark' : 'light'}
+          options={{
+            ...editorSettings,
+            minimap: { enabled: editorSettings.minimap },
+            lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+            wordWrap: editorSettings.wordWrap,
+            automaticLayout: true,
+            formatOnType: true,
+            formatOnPaste: editorSettings.formatOnPaste,
+            scrollBeyondLastLine: false,
+            smoothScrolling: true,
+            padding: { top: 10, bottom: 10 },
+            suggestOnTriggerCharacters: true,
+            quickSuggestions: editorSettings.autoComplete,
+          }}
+        />
       </div>
     </div>
   );

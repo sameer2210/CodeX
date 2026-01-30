@@ -16,14 +16,14 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
+import { notify } from '../../../../lib/notify';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
   selectCurrentProjectActiveUsers,
   selectCurrentProjectMessages,
   selectCurrentProjectTypingUsers,
 } from '../../../../store/slices/projectSlice';
-import { useTheme } from '../../../../context/ThemeContext';
-import { notify } from '../../../../lib/notify';
 
 const ChatSection = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -40,9 +40,7 @@ const ChatSection = ({ projectId }) => {
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [inputHeight, setInputHeight] = useState(48); // Initial height in px
-  const [isResizingInput, setIsResizingInput] = useState(false);
 
   // Call state
   const [isInCall, setIsInCall] = useState(false);
@@ -62,13 +60,6 @@ const ChatSection = ({ projectId }) => {
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
-
-  /* ========== RESPONSIVE HANDLING ========== */
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   /* ========== AUTO SCROLL ========== */
   const scrollToBottom = useCallback(() => {
@@ -167,39 +158,6 @@ const ChatSection = ({ projectId }) => {
     },
     [handleSendMessage]
   );
-
-  /* ========== INPUT RESIZING ========== */
-  const startInputResizing = e => {
-    e.preventDefault();
-    setIsResizingInput(true);
-  };
-
-  useEffect(() => {
-    const handleMouseMove = e => {
-      if (!isResizingInput) return;
-      const container = document.querySelector('.chat-input-container');
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const newHeight = rect.top - e.clientY + rect.height;
-      if (newHeight >= 48 && newHeight <= 300) {
-        setInputHeight(newHeight);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizingInput(false);
-    };
-
-    if (isResizingInput) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizingInput]);
 
   /* ========== WEBRTC CALL FUNCTIONS ========== */
   const initializePeerConnection = useCallback(() => {
@@ -810,14 +768,6 @@ const ChatSection = ({ projectId }) => {
           </>
         )}
       </div>
-
-      {/* Input Resizer */}
-      <div
-        className={`h-2 bg-gray-300 hover:bg-blue-500 cursor-row-resize transition-colors ${
-          isResizingInput ? 'bg-blue-500' : ''
-        }`}
-        onMouseDown={startInputResizing}
-      ></div>
 
       {/* Input Area */}
       <div

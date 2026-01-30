@@ -11,6 +11,7 @@ import {
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import ResizableContainer from '../../../components/ui/ResizableContainer';
 import { useTheme } from '../../../context/ThemeContext';
 import { notify } from '../../../lib/notify';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
@@ -23,7 +24,6 @@ import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import OutputPanel from './components/OutputPanel';
 import ReviewPanel from './components/ReviewPanel';
-import ResizableContainer from '../../../components/ui/ResizableContainer';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -240,7 +240,7 @@ const Project = () => {
           </button>
 
           <button
-            onClick={() => navigate('/login')} // Assuming logout navigates to login
+            onClick={() => navigate('/login')}
             className="p-2 hover:bg-white/10 rounded-full transition-all mt-auto"
           >
             <ArrowRightStartOnRectangleIcon className="w-6 h-6" />
@@ -252,72 +252,78 @@ const Project = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10"
+          className="flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10 flex flex-col"
         >
           {/* Desktop Layout: ≥1024px - Split View */}
           <motion.div
             variants={itemVariants}
-            className="hidden lg:flex flex-1 h-[calc(100vh-96px)] overflow-hidden"
+            className="hidden lg:flex flex-row flex-1 h-full overflow-hidden gap-2"
           >
-            {/* Left: 70% - Code Editor + Bottom Tabs (Output/Review) */}
-            <div className="flex flex-col w-[70%] gap-2 h-full">
-              {/* Code Editor - Full Height Priority */}
-              <ResizableContainer minHeight={300}>
-                <div
-                  className={`h-full rounded-xl border-2 border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                  }`}
-                >
-                  <CodeEditor projectId={currentProject._id} />
-                </div>
-              </ResizableContainer>
-
-              {/* Bottom: Output / Review Tabs - Fixed Height */}
-              <ResizableContainer minHeight={100}>
-                <div
-                  className={`h-full rounded-xl border border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                  }`}
-                >
-                  {/* Tabs with Icons */}
-                  <div className="flex border-b border-white/10">
-                    <button
-                      onClick={() => setActiveBottomTab('output')}
-                      className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                        activeBottomTab === 'output'
-                          ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                          : isDarkMode
-                            ? 'hover:bg-white/5'
-                            : 'hover:bg-[#0B0E11]/5'
-                      }`}
-                    >
-                      <CommandLineIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setActiveBottomTab('review')}
-                      className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                        activeBottomTab === 'review'
-                          ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                          : isDarkMode
-                            ? 'hover:bg-white/5'
-                            : 'hover:bg-[#0B0E11]/5'
-                      }`}
-                    >
-                      <DocumentMagnifyingGlassIcon className="w-5 h-5" />
-                    </button>
+            {/* Left: Code Editor + Bottom Tabs (Output/Review) - 2/3 width */}
+            <ResizableContainer minWidth={400} className="flex-[2]">
+              <div className="flex flex-col gap-2 h-full">
+                {/* Code Editor - Full Height Priority */}
+                <ResizableContainer minHeight={300}>
+                  <div
+                    className={`h-full rounded-xl border-2 border-white/10 overflow-hidden ${
+                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    }`}
+                  >
+                    <CodeEditor projectId={currentProject._id} />
                   </div>
+                </ResizableContainer>
 
-                  {/* Content */}
-                  <div className="h-[calc(100%-40px)] overflow-auto">
-                    {activeBottomTab === 'output' && <OutputPanel projectId={currentProject._id} />}
-                    {activeBottomTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
+                {/* Bottom: Output / Review Tabs - Fixed Height */}
+                <ResizableContainer minHeight={100}>
+                  <div
+                    className={`h-full rounded-xl border border-white/10 overflow-hidden ${
+                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    }`}
+                  >
+                    {/* Tabs with Icons */}
+                    <div className="flex border-b border-white/10">
+                      <button
+                        onClick={() => setActiveBottomTab('output')}
+                        className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                          activeBottomTab === 'output'
+                            ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                            : isDarkMode
+                              ? 'hover:bg-white/5'
+                              : 'hover:bg-[#0B0E11]/5'
+                        }`}
+                      >
+                        <CommandLineIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setActiveBottomTab('review')}
+                        className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                          activeBottomTab === 'review'
+                            ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                            : isDarkMode
+                              ? 'hover:bg-white/5'
+                              : 'hover:bg-[#0B0E11]/5'
+                        }`}
+                      >
+                        <DocumentMagnifyingGlassIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="h-[calc(100%-40px)] overflow-auto">
+                      {activeBottomTab === 'output' && (
+                        <OutputPanel projectId={currentProject._id} />
+                      )}
+                      {activeBottomTab === 'review' && (
+                        <ReviewPanel projectId={currentProject._id} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              </ResizableContainer>
-            </div>
+                </ResizableContainer>
+              </div>
+            </ResizableContainer>
 
-            {/* Right: 30% - Chat (Scrollable) */}
-            <ResizableContainer minWidth={200}>
+            {/* Right: Chat (Scrollable) - 1/3 width */}
+            <ResizableContainer minWidth={200} className="flex-[1]">
               <div
                 className={`h-full rounded-xl border border-white/10 overflow-hidden ${
                   isDarkMode ? 'bg-white/5' : 'bg-white/60'
@@ -331,10 +337,10 @@ const Project = () => {
           {/* Tablet Layout: 768px–1023px - Vertical Stack with Collapsible Chat */}
           <motion.div
             variants={itemVariants}
-            className="hidden md:flex lg:hidden flex-col flex-1  h-[calc(100vh-96px)] overflow-hidden"
+            className="hidden md:flex lg:hidden flex-col flex-1 h-full overflow-hidden gap-2"
           >
             {/* Code Editor - Top Priority */}
-            <ResizableContainer minHeight={300}>
+            <ResizableContainer minHeight={300} className="flex-grow">
               <div
                 className={`h-full rounded-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
                   isDarkMode ? 'bg-white/5' : 'bg-white/60'
@@ -400,7 +406,7 @@ const Project = () => {
               {isChatOpen ? 'Collapse Chat' : 'Expand Chat'}
             </button>
             {isChatOpen && (
-              <ResizableContainer minHeight={200}>
+              <ResizableContainer minHeight={200} className="flex-grow">
                 <div
                   className={`h-full rounded-b-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'
@@ -415,12 +421,12 @@ const Project = () => {
           {/* Mobile Layout: ≤767px - Sidebar + Content */}
           <motion.div
             variants={itemVariants}
-            className="flex md:hidden flex-1 gap-2 h-[calc(100vh-96px)] overflow-hidden"
+            className="flex md:hidden flex-1 h-full overflow-hidden"
           >
             {/* Content - Full Screen */}
-            <ResizableContainer minWidth={200} minHeight={300}>
+            <div className="flex-1 h-full">
               <div
-                className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-auto ${
+                className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
                   isDarkMode ? 'bg-white/5' : 'bg-white/60'
                 }`}
               >
@@ -429,7 +435,7 @@ const Project = () => {
                 {activeTab === 'output' && <OutputPanel projectId={currentProject._id} />}
                 {activeTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
               </div>
-            </ResizableContainer>
+            </div>
           </motion.div>
         </motion.main>
       </div>

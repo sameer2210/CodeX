@@ -1,5 +1,5 @@
 // src/components/ui/ResizableContainer.jsx
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const directions = [
   'top',
@@ -12,16 +12,31 @@ const directions = [
   'top-left',
 ];
 
-export default function ResizableContainer({ children, minWidth = 200, minHeight = 150 }) {
+export default function ResizableContainer({
+  children,
+  minWidth = 200,
+  minHeight = 150,
+  className = '',
+}) {
   const ref = useRef(null);
-  const [size, setSize] = useState({ width: 600, height: 400 });
+  const [size, setSize] = useState({ width: undefined, height: undefined });
+
+  useEffect(() => {
+    if (ref.current && size.width === undefined && size.height === undefined) {
+      setSize({
+        width: ref.current.offsetWidth,
+        height: ref.current.offsetHeight,
+      });
+    }
+  }, []);
 
   const startResize = (e, dir) => {
     e.preventDefault();
+    if (!ref.current) return;
     const startX = e.clientX;
     const startY = e.clientY;
-    const startWidth = size.width;
-    const startHeight = size.height;
+    const startWidth = ref.current.offsetWidth;
+    const startHeight = ref.current.offsetHeight;
 
     const onMouseMove = ev => {
       let newWidth = startWidth;
@@ -47,11 +62,15 @@ export default function ResizableContainer({ children, minWidth = 200, minHeight
     document.addEventListener('mouseup', stopResize);
   };
 
+  const style = {};
+  if (size.width !== undefined) style.width = `${size.width}px`;
+  if (size.height !== undefined) style.height = `${size.height}px`;
+
   return (
     <div
       ref={ref}
-      style={{ width: size.width, height: size.height }}
-      className="relative border rounded-lg overflow-hidden"
+      style={style}
+      className={`relative border rounded-lg overflow-hidden ${className}`}
     >
       {children}
 

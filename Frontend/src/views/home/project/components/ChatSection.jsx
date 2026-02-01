@@ -1,4 +1,4 @@
-// ChatSection.jsx
+// src/views/home/project/components/ChatSection.jsx
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bold,
@@ -53,7 +53,7 @@ const ChatSection = ({ projectId }) => {
 
   // --- Call State ---
   const [activeCall, setActiveCall] = useState(null);
-
+  const [callState, setCallState] = useState('IDLE');
   const [incomingCall, setIncomingCall] = useState(null);
 
   // --- Refs ---
@@ -183,9 +183,20 @@ const ChatSection = ({ projectId }) => {
   };
 
   /* ========== CALL HANDLERS ========== */
-  const startCall = (type, user) => {
-    setActiveCall({ type, user });
-  };
+ const startCall = async (type, user) => {
+   setCallState('CALLING');
+
+   setActiveCall({ type, user });
+
+   dispatch({
+     type: 'socket/callUser',
+     payload: {
+       username: user,
+       type,
+     },
+   });
+ };
+
 
   const acceptIncomingCall = () => {
     if (!incomingCall) return;
@@ -206,13 +217,36 @@ const ChatSection = ({ projectId }) => {
   };
 
   const endCall = () => {
+    setCallState('IDLE');
     setActiveCall(null);
   };
 
-  // Mock incoming call listener (replace with real socket.on)
+useEffect(() => {
+  const handler = e => {
+    setIncomingCall(e.detail);
+  };
+
+  window.addEventListener('incoming-call', handler);
+  return () => window.removeEventListener('incoming-call', handler);
+}, []);
+
+
   useEffect(() => {
-    // Example: socket.on('incoming-call', (data) => setIncomingCall(data));
-  }, []);
+    const handler = e => {
+      dispatch({
+        type: 'socket/callUser',
+        payload: {
+          username: activeCall.user,
+          offer: e.detail.offer,
+          type: activeCall.type,
+        },
+      });
+    };
+
+    window.addEventListener('send-offer', handler);
+    return () => window.removeEventListener('send-offer', handler);
+  }, [activeCall]);
+
 
   const renderMessage = (msg, index) => {
     const isCurrentUser = msg.username === currentUser;
@@ -252,7 +286,7 @@ const ChatSection = ({ projectId }) => {
               {msg.message}
             </ReactMarkdown>
           </div>
-          <span className="text-[10px] text-gray-600 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-gray-600 mt-1 px-1 opacity-70 group-hover:opacity-100 transition-opacity">
             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -287,12 +321,34 @@ const ChatSection = ({ projectId }) => {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowUserList(!showUserList)}
-            className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors ${showUserList ? 'bg-white/5 text-white' : ''}`}
-          >
-            <MoreVertical className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() =>
+                activeUsers.length > 0 &&
+                startCall('audio', activeUsers.length === 1 ? activeUsers[0] : 'Team')
+              }
+              disabled={activeUsers.length === 0}
+              className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() =>
+                activeUsers.length > 0 &&
+                startCall('video', activeUsers.length === 1 ? activeUsers[0] : 'Team')
+              }
+              disabled={activeUsers.length === 0}
+              className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Video className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowUserList(!showUserList)}
+              className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors ${showUserList ? 'bg-white/5 text-white' : ''}`}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* USER LIST DROPDOWN */}
@@ -332,16 +388,17 @@ const ChatSection = ({ projectId }) => {
                         </div>
                         <span className="text-sm text-gray-300 group-hover:text-white">{user}</span>
                       </div>
-                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex space-x-1 opacity-60 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => startCall('audio', user)}
-                          className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-[#17E1FF]"
+                          className="relative z-10 p-1.5 rounded-md text-gray-300 hover:text-[#17E1FF] hover:bg-white/10 transition-colors"
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </button>
+
                         <button
                           onClick={() => startCall('video', user)}
-                          className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-[#17E1FF]"
+                          className="relative z-10 p-1.5 rounded-md text-gray-300 hover:text-[#17E1FF] hover:bg-white/10 transition-colors"
                         >
                           <Video className="w-3.5 h-3.5" />
                         </button>

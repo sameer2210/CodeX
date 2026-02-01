@@ -1,7 +1,10 @@
-// callingpage.jsx (unchanged, as no major issues were identified here)
+// src/components/ui/callingpage.jsx
+
 import { motion } from 'framer-motion';
-import { Mic, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { getMedia } from '../webrtc/media';
+import { closePeer, createPeer } from '../webrtc/peer';
 
 export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
   const [isMuted, setIsMuted] = useState(false);
@@ -68,6 +71,7 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCallDuration(prev => prev + 1);
@@ -76,16 +80,89 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
   }, []);
 
   useEffect(() => {
-    // Initialize camera
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then(stream => {
+    let peer;
+    let stream;
+    let cancelled = false;
+
+    const start = async () => {
+      try {
+        //  DEV + StrictMode GUARD
+        if (window.__WEBRTC_MEDIA_ACTIVE__) return;
+        window.__WEBRTC_MEDIA_ACTIVE__ = true;
+
+        stream = await getMedia({ audio: true, video: true });
+
+        if (cancelled) return;
+          const isCaller = !isIncoming;
+
+          if (isCaller) {
+            const offerSDP = await peer.createOffer();
+            await peer.setLocalDescription(offerSDP);
+
+            window.dispatchEvent(
+              new CustomEvent('send-offer', {
+                detail: { offer: offerSDP },
+              })
+            );
+          }
+
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-      })
-      .catch(err => console.error('Video access error:', err));
+
+
+
+        peer = createPeer();
+        peer.ontrack = event => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+          }
+        };
+
+        stream.getTracks().forEach(track => {
+          peer.addTrack(track, stream);
+        });
+      } catch (err) {
+        console.error('Media init failed:', err);
+      }
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+
+      window.__WEBRTC_MEDIA_ACTIVE__ = false;
+      closePeer();
+    };
   }, []);
+
+  useEffect(() => {
+    if (!isIncoming || !offer) return;
+
+    const accept = async () => {
+      await peer.setRemoteDescription(offer);
+
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+
+      dispatch({
+        type: 'socket/callAccepted',
+        payload: {
+          to: user,
+          answer,
+        },
+      });
+    };
+
+    accept();
+  }, [isIncoming, offer]);
+
 
   const formatDuration = seconds => {
     const mins = Math.floor(seconds / 60);

@@ -1,6 +1,6 @@
+// store/socketMiddleware.js
 import { io } from 'socket.io-client';
 import { notify } from '../lib/notify';
-
 import {
   addChatMessage,
   addTypingUser,
@@ -105,10 +105,7 @@ export const socketMiddleware = store => next => action => {
         store.dispatch(setProjectJoined({ projectId, joined: true }));
         console.log('✅ Joined project:', projectId);
 
-        // Request chat history after joining
         socket.emit('get-chat-history', { projectId });
-
-        // Request project code
         socket.emit('get-project-code', { projectId });
       }
     });
@@ -162,7 +159,6 @@ export const socketMiddleware = store => next => action => {
 
     socket.on('chat-history', ({ projectId, messages }) => {
       if (Array.isArray(messages)) {
-        // Transform messages to include proper format
         const formattedMessages = messages.map(msg => ({
           ...msg,
           _id: msg._id || `msg_${Date.now()}_${Math.random()}`,
@@ -177,7 +173,6 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('chat-message', ({ projectId, message }) => {
-      // Ensure message has proper format
       const formattedMessage = {
         ...message,
         _id: message._id || `msg_${Date.now()}_${Math.random()}`,
@@ -207,16 +202,15 @@ export const socketMiddleware = store => next => action => {
 
       if (username !== currentUser) {
         store.dispatch(updateProjectCode({ projectId, code, delta, cursorPos, username }));
-        console.log(`📝 Code updated by ${username}`);
+        console.log(`Code updated by ${username}`);
       }
     });
 
     socket.on('project-code', ({ projectId, code }) => {
       store.dispatch(updateProjectCode({ projectId, code }));
-      console.log(`📝 Project code loaded for ${projectId}`);
+      console.log(`Project code loaded for ${projectId}`);
     });
 
-    // FIXED: AI Code Review Event Handler
     socket.on('code-review', ({ projectId, review, success, error }) => {
       console.log('🤖 AI Review received:', {
         projectId,
@@ -246,11 +240,12 @@ export const socketMiddleware = store => next => action => {
       notify('Review generation failed', 'error');
     });
 
-    /* ===== CALL EVENTS ===== */
+    /* ===== WEBRTC CALL SIGNALING EVENTS ===== */
 
     socket.on('incoming-call', ({ from, offer, type, callerSocket }) => {
+      console.log('Incoming call from:', from, 'Type:', type);
       notify(`Incoming ${type} call from ${from}`, 'info');
-      // Dispatch to a custom slice or handle in component
+
       window.dispatchEvent(
         new CustomEvent('incoming-call', {
           detail: { from, offer, type, callerSocket },
@@ -259,7 +254,8 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('call-accepted', ({ answer, from }) => {
-      console.log('📞 Call accepted by', from);
+      console.log('Call accepted by:', from);
+
       window.dispatchEvent(
         new CustomEvent('call-accepted', {
           detail: { answer, from },
@@ -268,7 +264,9 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('call-rejected', ({ from }) => {
+      console.log('Call rejected by:', from);
       notify(`${from} rejected the call`, 'warning');
+
       window.dispatchEvent(
         new CustomEvent('call-rejected', {
           detail: { from },
@@ -277,11 +275,13 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('call-failed', ({ message }) => {
+      console.error('Call failed:', message);
       notify(message || 'Call failed', 'error');
     });
 
     socket.on('end-call', ({ from }) => {
-      console.log('📞 Call ended by', from);
+      console.log('Call ended by:', from);
+
       window.dispatchEvent(
         new CustomEvent('end-call', {
           detail: { from },
@@ -290,7 +290,8 @@ export const socketMiddleware = store => next => action => {
     });
 
     socket.on('ice-candidate', ({ candidate, from }) => {
-      console.log('🧊 ICE candidate from', from);
+      console.log('Received ICE candidate from:', from);
+
       window.dispatchEvent(
         new CustomEvent('ice-candidate', {
           detail: { candidate, from },
@@ -301,11 +302,11 @@ export const socketMiddleware = store => next => action => {
     /* ===== TEAM EVENTS ===== */
 
     socket.on('user-online', ({ username, timestamp }) => {
-      console.log('✅ User online:', username);
+      console.log('User online:', username);
     });
 
     socket.on('user-offline', ({ username, timestamp }) => {
-      console.log('❌ User offline:', username);
+      console.log('User offline:', username);
     });
   }
 
@@ -314,14 +315,14 @@ export const socketMiddleware = store => next => action => {
   if (socket?.connected && action.type.startsWith('socket/')) {
     switch (action.type) {
       case 'socket/joinProject':
-        console.log('🚀 Joining project:', action.payload.projectId);
+        console.log('Joining project:', action.payload.projectId);
         socket.emit('join-project', {
           projectId: action.payload.projectId || action.payload,
         });
         break;
 
       case 'socket/leaveProject':
-        console.log('👋 Leaving project:', action.payload.projectId);
+        console.log('Leaving project:', action.payload.projectId);
         socket.emit('leave-project', {
           projectId: action.payload.projectId || action.payload,
         });
@@ -364,7 +365,10 @@ export const socketMiddleware = store => next => action => {
         });
         break;
 
+      /* ===== WEBRTC SIGNALING ACTIONS ===== */
+
       case 'socket/callUser':
+        console.log('Calling user:', action.payload.username, 'Type:', action.payload.type);
         socket.emit('call-user', {
           username: action.payload.username,
           offer: action.payload.offer,
@@ -373,6 +377,7 @@ export const socketMiddleware = store => next => action => {
         break;
 
       case 'socket/callAccepted':
+        console.log('Accepting call, sending answer to:', action.payload.to);
         socket.emit('call-accepted', {
           to: action.payload.to,
           answer: action.payload.answer,
@@ -380,12 +385,14 @@ export const socketMiddleware = store => next => action => {
         break;
 
       case 'socket/callRejected':
+        console.log('Rejecting call from:', action.payload.to);
         socket.emit('call-rejected', {
           to: action.payload.to,
         });
         break;
 
       case 'socket/iceCandidate':
+        console.log('Sending ICE candidate to:', action.payload.to);
         socket.emit('ice-candidate', {
           to: action.payload.to,
           candidate: action.payload.candidate,
@@ -393,6 +400,7 @@ export const socketMiddleware = store => next => action => {
         break;
 
       case 'socket/endCall':
+        console.log('Ending call with:', action.payload.to);
         socket.emit('end-call', {
           to: action.payload.to,
         });
@@ -410,8 +418,7 @@ export const socketMiddleware = store => next => action => {
     }
   } else if (action.type.startsWith('socket/') && action.type !== 'socket/init') {
     pendingActions.push(action);
-    // Socket not connected, queue or warn
-    console.warn('⚠️ Queued or Socket not connected for action:', action.type);
+    console.warn('⚠️ Socket not connected, queuing action:', action.type);
   }
 
   return next(action);

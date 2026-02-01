@@ -16,7 +16,7 @@ import {
   Video,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown'; // Added for rendering markdown in messages
+import ReactMarkdown from 'react-markdown';
 import { AudioCallPage, VideoCallPage } from '../../../../components/CallingPage';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -25,12 +25,6 @@ import {
   selectCurrentProjectMessages,
   selectCurrentProjectTypingUsers,
 } from '../../../../store/slices/projectSlice';
-
-// --- Constants ---
-const ACCENT_COLOR = '#17E1FF';
-const BG_DARK = '#0B0E12';
-const BG_SURFACE = '#111418';
-const BORDER_COLOR = 'rgba(255, 255, 255, 0.08)';
 
 const ChatSection = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -48,12 +42,9 @@ const ChatSection = ({ projectId }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
   const [attachments, setAttachments] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
 
   // --- Call State ---
   const [activeCall, setActiveCall] = useState(null);
-  const [callState, setCallState] = useState('IDLE');
   const [incomingCall, setIncomingCall] = useState(null);
 
   // --- Refs ---
@@ -133,7 +124,6 @@ const ChatSection = ({ projectId }) => {
     }
   };
 
-  // --- New: Formatting Handlers ---
   const handleFormat = format => {
     const textarea = messageInputRef.current;
     if (!textarea) return;
@@ -173,7 +163,6 @@ const ChatSection = ({ projectId }) => {
     const newMessage = message.substring(0, start) + newText + message.substring(end);
     setMessage(newMessage);
 
-    // Adjust cursor position
     const newCursorPos = start + prefix.length + selected.length;
     setTimeout(() => {
       textarea.focus();
@@ -183,23 +172,26 @@ const ChatSection = ({ projectId }) => {
   };
 
   /* ========== CALL HANDLERS ========== */
- const startCall = async (type, user) => {
-   setCallState('CALLING');
+  const startCall = (type, targetUser) => {
+    if (!targetUser || targetUser === 'Team') {
+      console.warn('Team calls not yet supported');
+      return;
+    }
 
-   setActiveCall({ type, user });
+    console.log(`Starting ${type} call with ${targetUser}`);
 
-   dispatch({
-     type: 'socket/callUser',
-     payload: {
-       username: user,
-       type,
-     },
-   });
- };
-
+    setActiveCall({
+      type,
+      user: targetUser,
+      isIncoming: false,
+    });
+  };
 
   const acceptIncomingCall = () => {
     if (!incomingCall) return;
+
+    console.log('Accepting incoming call from:', incomingCall.from);
+
     setActiveCall({
       type: incomingCall.type,
       user: incomingCall.from,
@@ -211,43 +203,42 @@ const ChatSection = ({ projectId }) => {
 
   const rejectIncomingCall = () => {
     if (incomingCall) {
-      dispatch({ type: 'socket/callRejected', payload: { to: incomingCall.from } });
+      console.log('Rejecting call from:', incomingCall.from);
+      dispatch({
+        type: 'socket/callRejected',
+        payload: { to: incomingCall.from },
+      });
     }
     setIncomingCall(null);
   };
 
   const endCall = () => {
-    setCallState('IDLE');
+    console.log('Ending call');
     setActiveCall(null);
   };
 
-useEffect(() => {
-  const handler = e => {
-    setIncomingCall(e.detail);
-  };
-
-  window.addEventListener('incoming-call', handler);
-  return () => window.removeEventListener('incoming-call', handler);
-}, []);
-
-
+  /* ========== CALL EVENT LISTENERS ========== */
   useEffect(() => {
-    const handler = e => {
-      dispatch({
-        type: 'socket/callUser',
-        payload: {
-          username: activeCall.user,
-          offer: e.detail.offer,
-          type: activeCall.type,
-        },
-      });
+    const handleIncomingCall = e => {
+      console.log('Incoming call received:', e.detail);
+      setIncomingCall(e.detail);
     };
 
-    window.addEventListener('send-offer', handler);
-    return () => window.removeEventListener('send-offer', handler);
-  }, [activeCall]);
+    const handleCallRejected = () => {
+      console.log('Call was rejected');
+      setActiveCall(null);
+    };
 
+    window.addEventListener('incoming-call', handleIncomingCall);
+    window.addEventListener('call-rejected', handleCallRejected);
 
+    return () => {
+      window.removeEventListener('incoming-call', handleIncomingCall);
+      window.removeEventListener('call-rejected', handleCallRejected);
+    };
+  }, []);
+
+  /* ========== MESSAGE RENDERING ========== */
   const renderMessage = (msg, index) => {
     const isCurrentUser = msg.username === currentUser;
     const isSystem = msg.type === 'system';

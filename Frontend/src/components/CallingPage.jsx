@@ -161,13 +161,13 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
 
   // Handle call end
   useEffect(() => {
-    const handleEndCall = () => {
+    const handleRemoteEndCall = () => {
       console.log('Call ended by remote peer');
       handleEndCall();
     };
 
-    window.addEventListener('end-call', handleEndCall);
-    return () => window.removeEventListener('end-call', handleEndCall);
+    window.addEventListener('end-call', handleRemoteEndCall);
+    return () => window.removeEventListener('end-call', handleRemoteEndCall);
   }, []);
 
   // Cleanup on unmount

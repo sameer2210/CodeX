@@ -328,20 +328,37 @@ io.on('connection', socket => {
     }
   });
 
+  const resolveTargetSocketId = to => {
+    if (!to) return null;
+    if (roomManager.getConnection(to)) return to;
+    return roomManager.getUserSocketId(teamName, to);
+  };
+
   socket.on('call-accepted', ({ to, answer }) => {
-    io.to(to).emit('call-accepted', { answer });
+    const targetSocketId = resolveTargetSocketId(to);
+    if (!targetSocketId) {
+      socket.emit('call-failed', { message: 'User not available' });
+      return;
+    }
+    io.to(targetSocketId).emit('call-accepted', { answer, from: username, fromSocket: socket.id });
   });
 
   socket.on('call-rejected', ({ to }) => {
-    io.to(to).emit('call-rejected');
+    const targetSocketId = resolveTargetSocketId(to);
+    if (!targetSocketId) return;
+    io.to(targetSocketId).emit('call-rejected', { from: username, fromSocket: socket.id });
   });
 
   socket.on('ice-candidate', ({ to, candidate }) => {
-    io.to(to).emit('ice-candidate', { candidate });
+    const targetSocketId = resolveTargetSocketId(to);
+    if (!targetSocketId) return;
+    io.to(targetSocketId).emit('ice-candidate', { candidate, from: username, fromSocket: socket.id });
   });
 
   socket.on('end-call', ({ to }) => {
-    io.to(to).emit('end-call');
+    const targetSocketId = resolveTargetSocketId(to);
+    if (!targetSocketId) return;
+    io.to(targetSocketId).emit('end-call', { from: username, fromSocket: socket.id });
   });
 
   /* ========== AI CODE REVIEW ========== */

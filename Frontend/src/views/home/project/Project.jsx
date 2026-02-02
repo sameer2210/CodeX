@@ -9,7 +9,7 @@ import {
   VideoCameraIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ResizableContainer from '../../../components/ui/ResizableContainer';
 import { useTheme } from '../../../context/ThemeContext';
@@ -42,15 +42,47 @@ const Project = () => {
   const [activeTab, setActiveTab] = useState('code'); // For mobile
   const [activeBottomTab, setActiveBottomTab] = useState('output'); // For output/review toggle
   const [isChatOpen, setIsChatOpen] = useState(true); // For tablet chat collapsible
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const splitRef = useRef(null);
+  const [editorSplit, setEditorSplit] = useState(70); // percent
+  const dividerSize = 8; // px
+  const getLayoutMode = () => {
+    if (typeof window === 'undefined') return 'desktop';
+    if (window.innerWidth >= 1024) return 'desktop';
+    if (window.innerWidth >= 768) return 'tablet';
+    return 'mobile';
+  };
+  const [layoutMode, setLayoutMode] = useState(getLayoutMode);
+
+  const clampEditorSplit = useCallback(() => {
+    if (!splitRef.current) return;
+    const containerHeight = splitRef.current.getBoundingClientRect().height - dividerSize;
+    if (containerHeight <= 0) return;
+    const minTop = 300;
+    const minBottom = 120;
+    const minPercent = (minTop / containerHeight) * 100;
+    const maxPercent = 100 - (minBottom / containerHeight) * 100;
+    setEditorSplit(prev => Math.min(Math.max(prev, minPercent), maxPercent));
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      setLayoutMode(prev => {
+        const next = getLayoutMode();
+        return prev === next ? prev : next;
+      });
+      if (layoutMode === 'desktop') {
+        requestAnimationFrame(clampEditorSplit);
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [clampEditorSplit, layoutMode]);
+
+  useEffect(() => {
+    if (layoutMode === 'desktop') {
+      requestAnimationFrame(clampEditorSplit);
+    }
+  }, [layoutMode, clampEditorSplit]);
 
   /* ========== PROJECT INITIALIZATION ========== */
 
@@ -255,188 +287,241 @@ const Project = () => {
           className="flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10 flex flex-col"
         >
           {/* Desktop Layout: ≥1024px - Split View */}
-          <motion.div
-            variants={itemVariants}
-            className="hidden lg:flex flex-row flex-1 h-full overflow-hidden gap-2"
-          >
-            {/* Left: Code Editor + Bottom Tabs (Output/Review) - 2/3 width */}
-            <ResizableContainer minWidth={400} className="flex-[2]">
-              <div className="flex flex-col gap-2 h-full">
-                {/* Code Editor - Full Height Priority */}
-                <ResizableContainer minHeight={300}>
-                  <div
-                    className={`h-full rounded-xl border-2 border-white/10 overflow-hidden ${
-                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                    }`}
-                  >
-                    <CodeEditor projectId={currentProject._id} />
-                  </div>
-                </ResizableContainer>
-
-                {/* Bottom: Output / Review Tabs - Fixed Height */}
-                <ResizableContainer minHeight={100}>
-                  <div
-                    className={`h-full rounded-xl border border-white/10 overflow-hidden ${
-                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                    }`}
-                  >
-                    {/* Tabs with Icons */}
-                    <div className="flex border-b border-white/10">
-                      <button
-                        onClick={() => setActiveBottomTab('output')}
-                        className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                          activeBottomTab === 'output'
-                            ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                            : isDarkMode
-                              ? 'hover:bg-white/5'
-                              : 'hover:bg-[#0B0E11]/5'
-                        }`}
-                      >
-                        <CommandLineIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setActiveBottomTab('review')}
-                        className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                          activeBottomTab === 'review'
-                            ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                            : isDarkMode
-                              ? 'hover:bg-white/5'
-                              : 'hover:bg-[#0B0E11]/5'
-                        }`}
-                      >
-                        <DocumentMagnifyingGlassIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="h-[calc(100%-40px)] overflow-auto">
-                      {activeBottomTab === 'output' && (
-                        <OutputPanel projectId={currentProject._id} />
-                      )}
-                      {activeBottomTab === 'review' && (
-                        <ReviewPanel projectId={currentProject._id} />
-                      )}
-                    </div>
-                  </div>
-                </ResizableContainer>
-              </div>
-            </ResizableContainer>
-
-            {/* Right: Chat (Scrollable) - 1/3 width */}
-            <ResizableContainer minWidth={200} className="flex-[1]">
-              <div
-                className={`h-full rounded-xl border border-white/10 overflow-hidden ${
-                  isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                }`}
-              >
-                <ChatSection projectId={currentProject._id} />
-              </div>
-            </ResizableContainer>
-          </motion.div>
-
-          {/* Tablet Layout: 768px–1023px - Vertical Stack with Collapsible Chat */}
-          <motion.div
-            variants={itemVariants}
-            className="hidden md:flex lg:hidden flex-col flex-1 h-full overflow-hidden gap-2"
-          >
-            {/* Code Editor - Top Priority */}
-            <ResizableContainer minHeight={300} className="flex-grow">
-              <div
-                className={`h-full rounded-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                  isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                }`}
-              >
-                <CodeEditor projectId={currentProject._id} />
-              </div>
-            </ResizableContainer>
-
-            {/* Output / Review Tabs - Fixed Height */}
-            <ResizableContainer minHeight={100}>
-              <div
-                className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                  isDarkMode ? 'bg-white/5' : 'bg-white/60'
-                }`}
-              >
-                {/* Tabs with Icons */}
-                <div className="flex border-b border-white/10">
-                  <button
-                    onClick={() => setActiveBottomTab('output')}
-                    className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                      activeBottomTab === 'output'
-                        ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                        : isDarkMode
-                          ? 'hover:bg-white/5'
-                          : 'hover:bg-[#0B0E11]/5'
-                    }`}
-                  >
-                    <CommandLineIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setActiveBottomTab('review')}
-                    className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
-                      activeBottomTab === 'review'
-                        ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
-                        : isDarkMode
-                          ? 'hover:bg-white/5'
-                          : 'hover:bg-[#0B0E11]/5'
-                    }`}
-                  >
-                    <DocumentMagnifyingGlassIcon className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="h-[calc(100%-40px)] overflow-auto">
-                  {activeBottomTab === 'output' && <OutputPanel projectId={currentProject._id} />}
-                  {activeBottomTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
-                </div>
-              </div>
-            </ResizableContainer>
-
-            {/* Chat Collapsible */}
-            <button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className={` rounded-t-2xl flex items-center justify-center text-sm font-medium transition-all ${
-                isDarkMode
-                  ? 'bg-white/5 text-[#E6E8E5] hover:bg-white/10'
-                  : 'bg-[#0B0E11]/5 text-[#0B0E11] hover:bg-[#0B0E11]/10'
-              }`}
+          {layoutMode === 'desktop' && (
+            <motion.div
+              variants={itemVariants}
+              className="hidden lg:flex flex-row flex-1 h-full overflow-hidden gap-2"
             >
-              <ChatBubbleLeftRightIcon className="w-5 h-5" />
-              {isChatOpen ? 'Collapse Chat' : 'Expand Chat'}
-            </button>
-            {isChatOpen && (
-              <ResizableContainer minHeight={200} className="flex-grow">
+              {/* Left: Code Editor + Bottom Tabs (Output/Review) - 2/3 width */}
+              <ResizableContainer minWidth={400} className="flex-[2]">
                 <div
-                  className={`h-full rounded-b-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
+                  ref={splitRef}
+                  className="grid h-full min-h-0"
+                  style={{
+                    gridTemplateRows: `${editorSplit}% ${dividerSize}px ${
+                      100 - editorSplit
+                    }%`,
+                  }}
+                >
+                  {/* Code Editor - Full Height Priority */}
+                  <div className="min-h-[300px]">
+                    <div
+                      className={`h-full rounded-xl border-2 border-white/10 overflow-hidden ${
+                        isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                      }`}
+                    >
+                      <CodeEditor projectId={currentProject._id} />
+                    </div>
+                  </div>
+
+                  <div
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      if (!splitRef.current) return;
+                      const startY = e.clientY;
+                      const rect = splitRef.current.getBoundingClientRect();
+                      const containerHeight = rect.height - dividerSize;
+                      if (containerHeight <= 0) return;
+                      const startTopHeight = (editorSplit / 100) * containerHeight;
+                      const minTop = 300;
+                      const minBottom = 120;
+
+                      const onMouseMove = ev => {
+                        const delta = ev.clientY - startY;
+                        let nextTopHeight = startTopHeight + delta;
+                        nextTopHeight = Math.min(
+                          Math.max(nextTopHeight, minTop),
+                          containerHeight - minBottom
+                        );
+                        const nextPercent = (nextTopHeight / containerHeight) * 100;
+                        setEditorSplit(nextPercent);
+                      };
+
+                      const stopResize = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', stopResize);
+                      };
+
+                      document.addEventListener('mousemove', onMouseMove);
+                      document.addEventListener('mouseup', stopResize);
+                    }}
+                    className="cursor-row-resize bg-white/10 hover:bg-[#17E1FF]/40 transition-colors rounded-md"
+                    title="Drag to resize"
+                  />
+
+                  {/* Bottom: Output / Review Tabs - Fixed Height */}
+                  <div className="min-h-[120px]">
+                    <div
+                      className={`h-full rounded-xl border border-white/10 overflow-hidden ${
+                        isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                      }`}
+                    >
+                      {/* Tabs with Icons */}
+                      <div className="flex border-b border-white/10">
+                        <button
+                          onClick={() => setActiveBottomTab('output')}
+                          className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                            activeBottomTab === 'output'
+                              ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                              : isDarkMode
+                                ? 'hover:bg-white/5'
+                                : 'hover:bg-[#0B0E11]/5'
+                          }`}
+                        >
+                          <CommandLineIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setActiveBottomTab('review')}
+                          className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                            activeBottomTab === 'review'
+                              ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                              : isDarkMode
+                                ? 'hover:bg-white/5'
+                                : 'hover:bg-[#0B0E11]/5'
+                          }`}
+                        >
+                          <DocumentMagnifyingGlassIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Content */}
+                      <div className="h-[calc(100%-40px)] overflow-auto">
+                        {activeBottomTab === 'output' && (
+                          <OutputPanel projectId={currentProject._id} />
+                        )}
+                        {activeBottomTab === 'review' && (
+                          <ReviewPanel projectId={currentProject._id} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ResizableContainer>
+
+              {/* Right: Chat (Scrollable) - 1/3 width */}
+              <ResizableContainer minWidth={200} className="flex-[1]">
+                <div
+                  className={`h-full rounded-xl border border-white/10 overflow-hidden ${
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'
                   }`}
                 >
                   <ChatSection projectId={currentProject._id} />
                 </div>
               </ResizableContainer>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
 
-          {/* Mobile Layout: ≤767px - Sidebar + Content */}
-          <motion.div
-            variants={itemVariants}
-            className="flex md:hidden flex-1 h-full overflow-hidden"
-          >
-            {/* Content - Full Screen */}
-            <div className="flex-1 h-full">
-              <div
-                className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                  isDarkMode ? 'bg-white/5' : 'bg-white/60'
+          {/* Tablet Layout: 768px–1023px - Vertical Stack with Collapsible Chat */}
+          {layoutMode === 'tablet' && (
+            <motion.div
+              variants={itemVariants}
+              className="hidden md:flex lg:hidden flex-col flex-1 h-full overflow-hidden gap-2"
+            >
+              {/* Code Editor - Top Priority */}
+              <ResizableContainer minHeight={300} className="flex-grow">
+                <div
+                  className={`h-full rounded-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
+                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                  }`}
+                >
+                  <CodeEditor projectId={currentProject._id} />
+                </div>
+              </ResizableContainer>
+
+              {/* Output / Review Tabs - Fixed Height */}
+              <ResizableContainer minHeight={100}>
+                <div
+                  className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
+                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                  }`}
+                >
+                  {/* Tabs with Icons */}
+                  <div className="flex border-b border-white/10">
+                    <button
+                      onClick={() => setActiveBottomTab('output')}
+                      className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                        activeBottomTab === 'output'
+                          ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                          : isDarkMode
+                            ? 'hover:bg-white/5'
+                            : 'hover:bg-[#0B0E11]/5'
+                      }`}
+                    >
+                      <CommandLineIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setActiveBottomTab('review')}
+                      className={`flex-1 py-3 px-6 flex items-center justify-center transition-all ${
+                        activeBottomTab === 'review'
+                          ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
+                          : isDarkMode
+                            ? 'hover:bg-white/5'
+                            : 'hover:bg-[#0B0E11]/5'
+                      }`}
+                    >
+                      <DocumentMagnifyingGlassIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div className="h-[calc(100%-40px)] overflow-auto">
+                    {activeBottomTab === 'output' && (
+                      <OutputPanel projectId={currentProject._id} />
+                    )}
+                    {activeBottomTab === 'review' && (
+                      <ReviewPanel projectId={currentProject._id} />
+                    )}
+                  </div>
+                </div>
+              </ResizableContainer>
+
+              {/* Chat Collapsible */}
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={` rounded-t-2xl flex items-center justify-center text-sm font-medium transition-all ${
+                  isDarkMode
+                    ? 'bg-white/5 text-[#E6E8E5] hover:bg-white/10'
+                    : 'bg-[#0B0E11]/5 text-[#0B0E11] hover:bg-[#0B0E11]/10'
                 }`}
               >
-                {activeTab === 'code' && <CodeEditor projectId={currentProject._id} />}
-                {activeTab === 'chat' && <ChatSection projectId={currentProject._id} />}
-                {activeTab === 'output' && <OutputPanel projectId={currentProject._id} />}
-                {activeTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
+                <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                {isChatOpen ? 'Collapse Chat' : 'Expand Chat'}
+              </button>
+              {isChatOpen && (
+                <ResizableContainer minHeight={200} className="flex-grow">
+                  <div
+                    className={`h-full rounded-b-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
+                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    }`}
+                  >
+                    <ChatSection projectId={currentProject._id} />
+                  </div>
+                </ResizableContainer>
+              )}
+            </motion.div>
+          )}
+
+          {/* Mobile Layout: ≤767px - Sidebar + Content */}
+          {layoutMode === 'mobile' && (
+            <motion.div
+              variants={itemVariants}
+              className="flex md:hidden flex-1 h-full overflow-hidden"
+            >
+              {/* Content - Full Screen */}
+              <div className="flex-1 h-full">
+                <div
+                  className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
+                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                  }`}
+                >
+                  {activeTab === 'code' && <CodeEditor projectId={currentProject._id} />}
+                  {activeTab === 'chat' && <ChatSection projectId={currentProject._id} />}
+                  {activeTab === 'output' && <OutputPanel projectId={currentProject._id} />}
+                  {activeTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
         </motion.main>
       </div>
     </div>

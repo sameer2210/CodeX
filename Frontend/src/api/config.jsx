@@ -22,11 +22,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || '';
+    const isAuthRequest =
+      requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+    const isAuthPage =
+      window.location.pathname === '/login' || window.location.pathname === '/register';
+
+    if (status === 401 && !isAuthRequest && !isAuthPage) {
       localStorage.clear();
       window.location.href = '/login';
     }
-     notify(error.response?.data?.message || 'Network error', 'error');
+
+    notify(error.response?.data?.message || 'Network error', 'error');
     return Promise.reject(error);
   }
 );

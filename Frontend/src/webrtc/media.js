@@ -22,47 +22,82 @@ class MediaManager {
       this.stopMedia();
     }
 
+    const audioConstraints = audio
+      ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          deviceId: audioDeviceId ? { exact: audioDeviceId } : undefined,
+        }
+      : false;
+
+    const buildVideoConstraints = (relaxed = false) => {
+      if (!video) return false;
+      if (relaxed) {
+        if (videoDeviceId) {
+          return { deviceId: { exact: videoDeviceId } };
+        }
+        return true;
+      }
+
+      return {
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 720, max: 1080 },
+        frameRate: { ideal: 30, max: 30 },
+        facingMode: 'user',
+        deviceId: videoDeviceId ? { exact: videoDeviceId } : undefined,
+      };
+    };
+
+    const logStreamDetails = stream => {
+      console.log(
+        'Media stream acquired:',
+        `Audio: ${stream.getAudioTracks().length}, Video: ${stream.getVideoTracks().length}`
+      );
+      stream.getTracks().forEach(track => {
+        console.log(`Track: ${track.kind} - ${track.label} (${track.readyState})`);
+      });
+    };
+
     try {
-      // Build constraints
       const constraints = {
-        audio: audio
-          ? {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-              deviceId: audioDeviceId ? { exact: audioDeviceId } : undefined,
-            }
-          : false,
-        video: video
-          ? {
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 30, max: 30 },
-              facingMode: 'user',
-              deviceId: videoDeviceId ? { exact: videoDeviceId } : undefined,
-            }
-          : false,
+        audio: audioConstraints,
+        video: buildVideoConstraints(false),
       };
 
       console.log('🎥 Requesting media with constraints:', constraints);
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.currentStream = stream;
-
-      console.log(
-        'Media stream acquired:',
-        `Audio: ${stream.getAudioTracks().length}, Video: ${stream.getVideoTracks().length}`
-      );
-
-      // Log track details
-      stream.getTracks().forEach(track => {
-        console.log(`Track: ${track.kind} - ${track.label} (${track.readyState})`);
-      });
-
+      logStreamDetails(stream);
       return stream;
     } catch (error) {
       console.error('Media access failed:', error);
-      throw this.handleMediaError(error);
+
+      const retryableErrors = ['OverconstrainedError', 'NotReadableError', 'TrackStartError'];
+      if (video && retryableErrors.includes(error.name)) {
+        try {
+          const relaxedConstraints = {
+            audio: audioConstraints,
+            video: buildVideoConstraints(true),
+          };
+
+          console.warn('Retrying media with relaxed video constraints:', relaxedConstraints);
+          const stream = await navigator.mediaDevices.getUserMedia(relaxedConstraints);
+          this.currentStream = stream;
+          logStreamDetails(stream);
+          return stream;
+        } catch (retryError) {
+          console.error('Media retry failed:', retryError);
+          const handledRetryError = this.handleMediaError(retryError);
+          handledRetryError.code = retryError.name;
+          throw handledRetryError;
+        }
+      }
+
+      const handledError = this.handleMediaError(error);
+      handledError.code = error.name;
+      throw handledError;
     }
   }
 

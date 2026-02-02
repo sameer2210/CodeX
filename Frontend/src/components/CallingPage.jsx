@@ -25,7 +25,8 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callState, setCallState] = useState(isIncoming ? 'connecting' : 'calling');
-  const cleanupRef = useRef(false);
+  const [initError, setInitError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
   const remoteAudioRef = useRef(null);
 
   // Call duration timer
@@ -38,20 +39,21 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
 
   // Initialize WebRTC for audio call
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
     let stream = null;
     let peer = null;
 
     const initializeCall = async () => {
-      if (cleanupRef.current) return;
+      if (cancelled) return;
 
       try {
         console.log('Initializing audio call...');
+        setInitError(null);
         setCallState('connecting');
 
         // Get audio stream
         stream = await getMedia({ audio: true, video: false });
-        if (!mounted || cleanupRef.current) {
+        if (cancelled) {
           stream.getTracks().forEach(t => t.stop());
           return;
         }
@@ -104,7 +106,15 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
           console.log('Offer sent to callee');
         }
       } catch (error) {
+        if (cancelled) return;
         console.error('Audio call initialization failed:', error);
+        const isPermissionError =
+          error?.code === 'NotAllowedError' || error?.name === 'NotAllowedError';
+        setInitError(error?.message || 'Unable to access microphone.');
+        if (isPermissionError) {
+          setCallState('permission');
+          return;
+        }
         setCallState('failed');
         setTimeout(() => onEnd(), 2000);
       }
@@ -113,10 +123,9 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
     initializeCall();
 
     return () => {
-      mounted = false;
-      cleanupRef.current = true;
+      cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
 
   // Handle call accepted event
   useEffect(() => {
@@ -185,6 +194,14 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
     setIsMuted(newMuted);
   };
 
+  const handleRetry = () => {
+    setInitError(null);
+    setCallState(isIncoming ? 'connecting' : 'calling');
+    stopMedia();
+    closePeer();
+    setRetryKey(prev => prev + 1);
+  };
+
   const handleEndCall = () => {
     dispatch({
       type: 'socket/endCall',
@@ -211,6 +228,8 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
         return formatDuration(callDuration);
       case 'failed':
         return 'Call Failed';
+      case 'permission':
+        return 'Permission Required';
       default:
         return 'Audio Call';
     }
@@ -232,6 +251,15 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
         </div>
         <h2 className="text-3xl font-light text-white">{user}</h2>
         <p className="text-xl text-gray-400">{getStatusText()}</p>
+        {initError && <p className="text-sm text-red-400 max-w-sm mx-auto">{initError}</p>}
+        {callState === 'permission' && (
+          <button
+            onClick={handleRetry}
+            className="px-4 py-2 rounded-lg bg-[#17E1FF] text-black hover:bg-[#17E1FF]/90 transition-all"
+          >
+            Retry
+          </button>
+        )}
         {callState === 'connected' && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -267,7 +295,8 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callState, setCallState] = useState(isIncoming ? 'connecting' : 'calling');
-  const cleanupRef = useRef(false);
+  const [initError, setInitError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Call duration timer
   useEffect(() => {
@@ -279,20 +308,21 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
 
   // Initialize WebRTC for video call
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
     let stream = null;
     let peer = null;
 
     const initializeCall = async () => {
-      if (cleanupRef.current) return;
+      if (cancelled) return;
 
       try {
         console.log('🎥 Initializing video call...');
+        setInitError(null);
         setCallState('connecting');
 
         // Get video + audio stream
         stream = await getMedia({ audio: true, video: true });
-        if (!mounted || cleanupRef.current) {
+        if (cancelled) {
           stream.getTracks().forEach(t => t.stop());
           return;
         }
@@ -348,7 +378,15 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
           console.log('Offer sent to callee');
         }
       } catch (error) {
+        if (cancelled) return;
         console.error('Video call initialization failed:', error);
+        const isPermissionError =
+          error?.code === 'NotAllowedError' || error?.name === 'NotAllowedError';
+        setInitError(error?.message || 'Unable to access camera.');
+        if (isPermissionError) {
+          setCallState('permission');
+          return;
+        }
         setCallState('failed');
         setTimeout(() => onEnd(), 2000);
       }
@@ -357,10 +395,9 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
     initializeCall();
 
     return () => {
-      mounted = false;
-      cleanupRef.current = true;
+      cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
 
   // Handle call accepted event
   useEffect(() => {
@@ -435,6 +472,14 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
     setIsVideoOff(newVideoOff);
   };
 
+  const handleRetry = () => {
+    setInitError(null);
+    setCallState(isIncoming ? 'connecting' : 'calling');
+    stopMedia();
+    closePeer();
+    setRetryKey(prev => prev + 1);
+  };
+
   const handleEndCall = () => {
     dispatch({
       type: 'socket/endCall',
@@ -468,8 +513,23 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
                 <Video className="w-16 h-16 text-[#17E1FF]" />
               </div>
               <p className="text-white text-xl">
-                {callState === 'calling' ? 'Calling...' : 'Connecting...'}
+                {callState === 'permission'
+                  ? 'Camera Permission Required'
+                  : callState === 'failed'
+                    ? 'Call Failed'
+                    : callState === 'calling'
+                      ? 'Calling...'
+                      : 'Connecting...'}
               </p>
+              {initError && <p className="text-sm text-red-400 mt-2 max-w-xs">{initError}</p>}
+              {callState === 'permission' && (
+                <button
+                  onClick={handleRetry}
+                  className="mt-4 px-4 py-2 rounded-lg bg-[#17E1FF] text-black hover:bg-[#17E1FF]/90 transition-all"
+                >
+                  Retry
+                </button>
+              )}
             </div>
           </div>
         )}

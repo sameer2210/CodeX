@@ -11,7 +11,9 @@ import messageRoutes from './routes/message.routes.js';
 const app = express();
 app.use(helmet());
 
-const allowedOrigins = ['http://localhost:5173', 'https://code-x-hazel.vercel.app'];
+// const allowedOrigins = ['http://localhost:5173', 'https://code-x-hazel.vercel.app'];
+const allowedOrigins = config.FRONTEND_URLS;
+
 
 app.use(
   cors({

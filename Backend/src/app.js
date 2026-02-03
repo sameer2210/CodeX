@@ -11,27 +11,30 @@ import messageRoutes from './routes/message.routes.js';
 const app = express();
 app.use(helmet());
 
-// const allowedOrigins = ['http://localhost:5173', 'https://code-x-hazel.vercel.app'];
-const allowedOrigins = config.FRONTEND_URLS;
+// const allowedOrigins = ['http://localhost:5173', 'https://codex-psi-murex.vercel.app/];
+const normalizeOrigin = origin => (origin ? origin.replace(/\/+$/, '') : origin);
+const allowedOrigins = config.FRONTEND_URLS.map(normalizeOrigin);
 
+console.log('Allowed Origins:', allowedOrigins);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    const requestOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(requestOrigin)) {
+      return callback(null, true);
+    }
 
-      return callback(new Error('CORS not allowed'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-app.options('*', cors());
+    return callback(new Error('CORS not allowed'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));

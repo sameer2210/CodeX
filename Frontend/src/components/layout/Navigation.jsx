@@ -21,10 +21,12 @@ const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const { scrollY } = useScroll();
   const userMenuRef = useRef(null);
   const { isDarkMode, toggleTheme } = useTheme();
+  const logoSrc = '/logo.png';
 
   // Authentication check
   const teamName = localStorage.getItem('codex_team');
@@ -127,11 +129,21 @@ const Navigation = () => {
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative w-10 h-10 flex items-center justify-center bg-[#C2CABB]/5 rounded-xl border border-[#C2CABB]/10 overflow-hidden group-hover:border-[#C2CABB]/30 transition-colors group-hover:shadow-[0_0_12px_rgba(194,202,187,0.2)]">
-              <Terminal className="w-5 h-5 text-[#C2CABB] relative z-10" />
+              {!logoFailed ? (
+                <img
+                  src={logoSrc}
+                  alt="CodeX logo"
+                  className="w-10 h-10 object-contain rounded-xl relative z-10"
+                  onError={() => setLogoFailed(true)}
+                  draggable="false"
+                />
+              ) : (
+                <Terminal className="w-5 h-5 text-[#C2CABB] relative z-10" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <div className="flex flex-col">
-              <span className="font-sans font-bold text-lg tracking-tight text-white">CodeX</span>
+              {/* <span className="font-sans font-bold text-lg tracking-tight text-white">CodeX</span> */}
               {isAuthenticated && teamName && (
                 <span className="text-[10px] uppercase tracking-widest text-[#C2CABB]/60 font-medium">
                   {teamName}
@@ -274,8 +286,18 @@ const Navigation = () => {
           >
             <div className="flex items-center justify-between mb-12">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg">
-                  <Terminal className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg overflow-hidden">
+                  {!logoFailed ? (
+                    <img
+                      src={logoSrc}
+                      alt="CodeX logo"
+                      className="w-5 h-5 object-contain"
+                      onError={() => setLogoFailed(true)}
+                      draggable="false"
+                    />
+                  ) : (
+                    <Terminal className="w-4 h-4 text-white" />
+                  )}
                 </div>
                 <span className="text-lg font-bold text-white">CodeX</span>
               </div>

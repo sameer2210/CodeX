@@ -11,10 +11,9 @@ connectToDb();
 /* -------------------- SERVER SETUP -------------------- */
 
 const server = http.createServer(app);
-
 const io = new SocketServer(server, {
   cors: {
-    // origin: ['http://localhost:5173', 'https://code-x-hazel.vercel.app'],
+    // origin: ['http://localhost:5173', 'https://codex-psi-murex.vercel.app/'],
     origin: config.FRONTEND_URLS,
     credentials: true,
     methods: ['GET', 'POST'],
@@ -22,7 +21,6 @@ const io = new SocketServer(server, {
   pingInterval: 25000,
   pingTimeout: 60000,
 });
-
 /* -------------------- SOCKET ROOM MANAGER -------------------- */
 
 class SocketRoomManager {

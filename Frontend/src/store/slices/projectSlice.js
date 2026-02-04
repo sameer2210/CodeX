@@ -274,6 +274,32 @@ const projectSlice = createSlice({
       }
     },
 
+    /* ===== TEAM STATUS ===== */
+
+    updateTeamMemberStatus: (state, action) => {
+      const { username, status, isActive } = action.payload || {};
+      if (!username) return;
+
+      const normalizedStatus = status || (isActive ? 'online' : 'offline');
+      const normalizedIsActive = typeof isActive === 'boolean' ? isActive : normalizedStatus === 'online';
+
+      const member = state.teamMembers.find(
+        m => m.username?.toLowerCase() === username.toLowerCase()
+      );
+
+      if (member) {
+        member.status = normalizedStatus;
+        member.isActive = normalizedIsActive;
+      } else {
+        state.teamMembers.unshift({
+          _id: `temp_${username}`,
+          username,
+          status: normalizedStatus,
+          isActive: normalizedIsActive,
+        });
+      }
+    },
+
     /* ===== UTILITY ===== */
 
     clearError: state => {
@@ -487,6 +513,7 @@ export const {
   updateProjectCode,
   updateProjectReview,
   setLanguage,
+  updateTeamMemberStatus,
   clearError,
   clearProjectData,
 } = projectSlice.actions;

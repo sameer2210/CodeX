@@ -14,6 +14,7 @@ const Login = lazy(() => import('../views/auth/Login'));
 const Register = lazy(() => import('../views/auth/Register'));
 const CreateProject = lazy(() => import('../views/create-project/CreateProject'));
 const Dashboard = lazy(() => import('../views/Dashboard'));
+const Settings = lazy(() => import('../components/page/Settings'));
 const Project = lazy(() => import('../views/home/project/Project'));
 const Landing = lazy(() => import('../views/Landing'));
 const NotFound = lazy(() => import('../views/NotFound'));
@@ -69,7 +70,7 @@ const Routes = () => {
             <Route path="/project/:id" element={<Project />} />
             <Route path="/team" element={<Dashboard />} />
             <Route path="/activity" element={<Dashboard />} />
-            <Route path="/settings" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Dashboard />} />
           </Route>
 

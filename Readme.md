@@ -10,6 +10,17 @@ CodeX is a real-time collaborative code editor with AI-powered code review capab
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 
 
+## Live link -  https://codex-psi-murex.vercel.app/
+
+## 📱 App Screens (Mobile)
+
+<p align="center">
+  <img src="" alt="Home Screen" width="200"/>
+  <img src="" alt="Register Screen" width="200"/>
+  <img src="" alt="User Dashboard" width="200"/>
+  <img src="" alt="Rewards Screen" width="200"/>
+</p>
+
 ## 🏗️ Project Architecture
 
 ```

@@ -8,6 +8,7 @@ import {
   setActiveUsers,
   setChatMessages,
   setProjectJoined,
+  updateTeamMemberStatus,
   updateProjectCode,
   updateProjectReview,
 } from './slices/projectSlice';
@@ -302,10 +303,26 @@ export const socketMiddleware = store => next => action => {
     /* ===== TEAM EVENTS ===== */
 
     socket.on('user-online', ({ username, timestamp }) => {
+      store.dispatch(
+        updateTeamMemberStatus({
+          username,
+          status: 'online',
+          isActive: true,
+          lastSeen: timestamp,
+        })
+      );
       console.log('User online:', username);
     });
 
     socket.on('user-offline', ({ username, timestamp }) => {
+      store.dispatch(
+        updateTeamMemberStatus({
+          username,
+          status: 'offline',
+          isActive: false,
+          lastSeen: timestamp,
+        })
+      );
       console.log('User offline:', username);
     });
   }

@@ -11,37 +11,6 @@ const generateMockStats = () => ({
   runningGrowth: 2,
 });
 
-const generateMockTeam = () => [
-  {
-    _id: '1',
-    username: 'Alexandra Deff',
-    email: 'alex@donezo.com',
-    role: 'Frontend Dev',
-    status: 'online',
-  },
-  {
-    _id: '2',
-    username: 'Edwin Adenike',
-    email: 'edwin@donezo.com',
-    role: 'Product Owner',
-    status: 'busy',
-  },
-  {
-    _id: '3',
-    username: 'Isaac Oluwatemilorun',
-    email: 'isaac@donezo.com',
-    role: 'Backend Dev',
-    status: 'offline',
-  },
-  {
-    _id: '4',
-    username: 'David Oshodi',
-    email: 'david@donezo.com',
-    role: 'Designer',
-    status: 'online',
-  },
-];
-
 export const dashboardService = {
   // Fetch high-level statistics
   getStats: async () => {
@@ -57,11 +26,22 @@ export const dashboardService = {
   // Fetch team members
   getTeamMembers: async () => {
     try {
-      const response = await api.get('/team/members');
-      return response.data.data;
+      const teamName = localStorage.getItem('codex_team');
+      if (!teamName) {
+        console.warn('No team name found, skipping team members fetch');
+        return [];
+      }
+
+      const response = await api.get(`/auth/team/${teamName}/members`);
+      const members = response.data.members || response.data.data || [];
+
+      return members.map(member => ({
+        ...member,
+        status: member.status || (member.isActive ? 'online' : 'offline'),
+      }));
     } catch (error) {
-      console.warn('Failed to fetch team, using mock data');
-      return generateMockTeam();
+      console.warn('Failed to fetch team, returning empty list');
+      return [];
     }
   },
 

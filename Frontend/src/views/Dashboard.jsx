@@ -1,5 +1,6 @@
 import {
   ArrowUpRightIcon,
+  Bars3Icon,
   BellIcon,
   FolderIcon,
   MagnifyingGlassIcon,
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, toggleTheme } = useTheme();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(
     window.matchMedia('(min-width: 1024px)').matches
   );
@@ -44,6 +46,12 @@ const Dashboard = () => {
     media.addListener(listener);
     return () => media.removeListener(listener);
   }, []);
+
+  useEffect(() => {
+    if (isLargeScreen && isMobileSidebarOpen) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [isLargeScreen, isMobileSidebarOpen]);
 
   useEffect(() => {
     dispatch(fetchDashboardData());
@@ -92,6 +100,20 @@ const Dashboard = () => {
   ];
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const openMobileSidebar = () => setIsMobileSidebarOpen(true);
+  const closeMobileSidebar = () => setIsMobileSidebarOpen(false);
+
+  const resolveMemberStatus = member => {
+    if (!member) return 'offline';
+    if (member.status) return member.status;
+    if (typeof member.isActive === 'boolean') return member.isActive ? 'online' : 'offline';
+    return 'offline';
+  };
+
+  const activeTeamMembers = (teamMembers || []).filter(member => {
+    const status = resolveMemberStatus(member);
+    return status === 'online' || status === 'active';
+  });
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -155,7 +177,27 @@ const Dashboard = () => {
       {/* Ambient Glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#17E1FF]/10 rounded-full blur-[200px] opacity-30 pointer-events-none z-[1]" />
 
-      {/* Sidebar */}
+      {/* Mobile Sidebar */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 ${
+          isMobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}
+      >
+        <div
+          onClick={closeMobileSidebar}
+          className={`absolute inset-0 z-40 transition-opacity backdrop-blur-sm ${
+            isMobileSidebarOpen ? 'opacity-100' : 'opacity-0'
+          } ${isDarkMode ? 'bg-[#0B0E11]/60' : 'bg-[#0B0E11]/40'}`}
+        />
+        <Sidebar
+          isCollapsed={false}
+          isMobile
+          isOpen={isMobileSidebarOpen}
+          onClose={closeMobileSidebar}
+        />
+      </div>
+
+      {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
         <Sidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={toggleSidebar} />
       </div>
@@ -172,25 +214,41 @@ const Dashboard = () => {
         <header className="mb-12 lg:mb-16">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8 lg:mb-12">
             {/* Search Bar with Glass Effect */}
-            <div className="relative flex-1 max-w-xl group">
-              <MagnifyingGlassIcon
-                className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+            <div className="flex items-center gap-3 flex-1 max-w-xl">
+              <motion.button
+                onClick={openMobileSidebar}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`lg:hidden p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                   isDarkMode
-                    ? 'text-[#E6E8E5]/40 group-focus-within:text-[#17E1FF]'
-                    : 'text-[#0B0E11]/40 group-focus-within:text-[#17E1FF]'
+                    ? 'hover:bg-white/5 border-white/5'
+                    : 'hover:bg-white/80 border-[#0B0E11]/5'
                 }`}
-              />
-              <input
-                type="text"
-                placeholder="Search projects, tasks, people..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className={`w-full pl-14 pr-6 py-4 rounded-3xl text-sm font-medium outline-none transition-all backdrop-blur-xl border ${
-                  isDarkMode
-                    ? 'bg-white/5 text-[#E6E8E5] placeholder-[#E6E8E5]/30 border-white/10 focus:border-[#17E1FF]/30 focus:bg-white/10'
-                    : 'bg-white/60 text-[#0B0E11] placeholder-[#0B0E11]/30 border-[#0B0E11]/5 focus:border-[#17E1FF]/30 focus:bg-white'
-                }`}
-              />
+                aria-label="Open sidebar"
+              >
+                <Bars3Icon className="w-6 h-6" />
+              </motion.button>
+
+              <div className="relative flex-1 group">
+                <MagnifyingGlassIcon
+                  className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+                    isDarkMode
+                      ? 'text-[#E6E8E5]/40 group-focus-within:text-[#17E1FF]'
+                      : 'text-[#0B0E11]/40 group-focus-within:text-[#17E1FF]'
+                  }`}
+                />
+                <input
+                  type="text"
+                  placeholder="Search projects, tasks, people..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className={`w-full pl-14 pr-6 py-4 rounded-3xl text-sm font-medium outline-none transition-all backdrop-blur-xl border ${
+                    isDarkMode
+                      ? 'bg-white/5 text-[#E6E8E5] placeholder-[#E6E8E5]/30 border-white/10 focus:border-[#17E1FF]/30 focus:bg-white/10'
+                      : 'bg-white/60 text-[#0B0E11] placeholder-[#0B0E11]/30 border-[#0B0E11]/5 focus:border-[#17E1FF]/30 focus:bg-white'
+                  }`}
+                />
+              </div>
             </div>
 
             {/* Header Actions */}
@@ -434,41 +492,53 @@ const Dashboard = () => {
             >
               <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">Active Team</h3>
               <div className="space-y-6">
-                {(teamMembers || []).slice(0, 5).map((member, i) => (
-                  <motion.div
-                    key={member._id || i}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: i * 0.1, ease: EASE }}
-                    className="flex items-center gap-4"
-                  >
-                    <div className="relative">
-                      <img
-                        src={
-                          member.avatar ||
-                          `https://ui-avatars.com/api/?name=${member.username}&background=random`
-                        }
-                        alt={member.username}
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-[#17E1FF]/30"
-                      />
-                      <span
-                        className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${
-                          isDarkMode ? 'border-[#0B0E11]' : 'border-white'
-                        } ${member.status === 'online' ? 'bg-[#17E1FF]' : 'bg-yellow-500'}`}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-sm">{member.username}</p>
-                      <p
-                        className={`text-xs ${
-                          isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
-                        }`}
+                {activeTeamMembers.length === 0 ? (
+                  <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
+                    No active members right now.
+                  </p>
+                ) : (
+                  activeTeamMembers.slice(0, 5).map((member, i) => {
+                    const status = resolveMemberStatus(member);
+                    const isOnline = status === 'online' || status === 'active';
+                    const displayName = member.username || member.email || 'Unknown';
+
+                    return (
+                      <motion.div
+                        key={member._id || member.username || i}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: i * 0.1, ease: EASE }}
+                        className="flex items-center gap-4"
                       >
-                        {member.status === 'online' ? 'Active now' : 'Away'}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="relative">
+                          <img
+                            src={
+                              member.avatar ||
+                              `https://ui-avatars.com/api/?name=${displayName}&background=random`
+                            }
+                            alt={displayName}
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-[#17E1FF]/30"
+                          />
+                          <span
+                            className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${
+                              isDarkMode ? 'border-[#0B0E11]' : 'border-white'
+                            } ${isOnline ? 'bg-[#17E1FF]' : 'bg-yellow-500'}`}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm">{displayName}</p>
+                          <p
+                            className={`text-xs ${
+                              isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                            }`}
+                          >
+                            {isOnline ? 'Active now' : 'Away'}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           </div>

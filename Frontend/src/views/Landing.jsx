@@ -1,5 +1,16 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Code2, Github, Shield, Terminal, Twitter, Users, Zap } from 'lucide-react';
+import {
+  Github,
+  Globe,
+  Instagram,
+  Linkedin,
+  Mail,
+  Shield,
+  Terminal,
+  Twitter,
+  Users,
+  Zap,
+} from 'lucide-react';
 const EASE = [0.22, 1, 0.36, 1];
 
 const HUDLabel = ({ children, className = '' }) => (
@@ -313,8 +324,16 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-20 mb-32">
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 bg-[#17E1FF] rounded-lg flex items-center justify-center">
-                <Code2 className="text-black w-5 h-5" />
+              <div className="w-8 h-8  rounded-lg flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  className="w-5 h-5 object-contain"
+                  onError={e => {
+                    e.target.onerror = null;
+                    e.target.src = '';
+                  }}
+                />
               </div>
               <span className="text-xl font-bold uppercase tracking-tight">CodeX</span>
             </div>
@@ -323,12 +342,54 @@ const Footer = () => {
               security at its core.
             </p>
             <div className="flex gap-4">
-              <button className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all">
-                <Github className="w-4 h-4" />
-              </button>
-              <button className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all">
+              <a
+                href="mailto:sameerkhan27560@gmail.com"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF]  transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Mail className="w-4 h-4" />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/sameer-khan2210"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Linkedin className="w-4 h-4" />
+              </a>
+              <a
+                href="https://www.instagram.com/isameer_22/"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a
+                href="https://x.com/Sameer2210_"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Twitter className="w-4 h-4" />
-              </button>
+              </a>
+              <a
+                href="https://github.com/sameer2210"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="w-4 h-4" />
+              </a>
+              <a
+                href="https://portfolio-coral-two-16.vercel.app/"
+                className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 flex items-center justify-center hover:border-[#17E1FF] transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Globe className="w-4 h-4" />
+              </a>
             </div>
           </div>
 
@@ -372,7 +433,6 @@ const Footer = () => {
     </footer>
   );
 };
-
 // --- Main View ---
 
 const Landing = () => {

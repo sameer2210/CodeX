@@ -1,5 +1,6 @@
 import {
   ArrowRightOnRectangleIcon,
+  Bars3Icon,
   BellIcon,
   CreditCardIcon,
   KeyIcon,
@@ -51,7 +52,10 @@ const Settings = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isLargeScreen, setIsLargeScreen] = useState(true);
+  const [isLargeScreen, setIsLargeScreen] = useState(
+    window.matchMedia('(min-width: 1024px)').matches
+  );
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { teamMembers, isLoading } = useAppSelector(state => state.projects);
 
   const dispatch = useAppDispatch();
@@ -82,6 +86,12 @@ const Settings = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (isLargeScreen && isMobileSidebarOpen) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [isLargeScreen, isMobileSidebarOpen]);
 
   const resolveMemberStatus = member => {
     if (!member) return 'offline';
@@ -117,6 +127,26 @@ const Settings = () => {
         }}
       />
 
+      {/* Mobile Sidebar */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 ${
+          isMobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}
+      >
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className={`absolute inset-0 z-40 transition-opacity backdrop-blur-sm ${
+            isMobileSidebarOpen ? 'opacity-100' : 'opacity-0'
+          } ${isDarkMode ? 'bg-[#0B0E11]/60' : 'bg-[#0B0E11]/40'}`}
+        />
+        <Sidebar
+          isCollapsed={false}
+          isMobile
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+        />
+      </div>
+
       {/* Main Sidebar */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
         <Sidebar
@@ -131,19 +161,34 @@ const Settings = () => {
           marginLeft: isLargeScreen ? (isSidebarCollapsed ? 80 : 256) : 0,
         }}
         transition={{ duration: 0.3, ease: EASE }}
-        className="relative z-10 flex-1 p-4 sm:p-6 lg:p-12 min-h-screen flex flex-col"
+        className="relative z-10 flex-1 p-4 sm:p-6 lg:p-12 min-h-screen flex flex-col min-w-0"
       >
         {/* Header */}
         <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase mb-2">
-              Settings
-            </h1>
-            <p
-              className={`text-sm lg:text-base ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+          <div className="flex items-start gap-3">
+            <motion.button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`lg:hidden p-3 rounded-2xl transition-all backdrop-blur-xl border ${
+                isDarkMode
+                  ? 'hover:bg-white/5 border-white/5'
+                  : 'hover:bg-white/80 border-[#0B0E11]/5'
+              }`}
+              aria-label="Open sidebar"
             >
-              Manage your workspace preferences and team access.
-            </p>
+              <Bars3Icon className="w-6 h-6" />
+            </motion.button>
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase mb-2">
+                Settings
+              </h1>
+              <p
+                className={`text-sm lg:text-base ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+              >
+                Manage your workspace preferences and team access.
+              </p>
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -158,7 +203,7 @@ const Settings = () => {
           </button>
         </header>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 flex-1">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 flex-1 min-w-0">
           {/* Settings Navigation */}
           <nav className="lg:w-64 flex-shrink-0">
             <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
@@ -193,7 +238,7 @@ const Settings = () => {
           </nav>
 
           {/* Settings Content Area */}
-          <div className="flex-1 max-w-4xl relative min-h-[500px]">
+          <div className="flex-1 max-w-4xl relative min-h-[500px] min-w-0">
             <AnimatePresence mode="wait">
               {activeTab === 'profile' && (
                 <motion.div
@@ -335,31 +380,47 @@ const Settings = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {teamMembers.map(member => (
+                    {(teamMembers || []).length === 0 ? (
+                      <p
+                        className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                      >
+                        {isLoading ? 'Loading team members…' : 'No team members found.'}
+                      </p>
+                    ) : (
+                      (teamMembers || []).map(member => {
+                        const memberName = member.name || member.username || 'Unknown';
+                        const memberEmail = member.email || member.username || '—';
+                        const memberRole = member.role || (member.isAdmin ? 'Admin' : 'Member');
+
+                        return (
                       <div
-                        key={member.id}
+                        key={member._id || member.id || member.username}
                         className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 ${isDarkMode ? 'bg-black/20 border-white/5 hover:border-[#17E1FF]/30' : 'bg-white/40 border-[#0B0E11]/5 hover:border-[#17E1FF]/30'}`}
                       >
                         <div className="flex items-center gap-4">
                           <img
-                            src={`https://ui-avatars.com/api/?name=${member.name}&background=random`}
-                            alt={member.name}
+                            src={`https://ui-avatars.com/api/?name=${memberName}&background=random`}
+                            alt={memberName}
                             className="w-10 h-10 rounded-full"
                           />
                           <div>
-                            <p className="font-bold text-sm">{member.name}</p>
+                            <p className="font-bold text-sm">{memberName}</p>
                             <p
                               className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-black/40'}`}
                             >
-                              {member.email}
+                              {memberEmail}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                           <div
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${member.role === 'Admin' ? 'bg-[#17E1FF]/20 text-[#17E1FF]' : 'bg-gray-500/20 text-gray-400'}`}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                              memberRole === 'Admin'
+                                ? 'bg-[#17E1FF]/20 text-[#17E1FF]'
+                                : 'bg-gray-500/20 text-gray-400'
+                            }`}
                           >
-                            {member.role}
+                            {memberRole}
                           </div>
                           <button
                             className={`text-xs font-bold hover:underline ${isDarkMode ? 'text-white/60' : 'text-black/60'}`}
@@ -368,7 +429,9 @@ const Settings = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                        );
+                      })
+                    )}
                   </div>
                 </motion.div>
               )}

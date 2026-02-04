@@ -1,12 +1,11 @@
 import {
+  ArrowLeftStartOnRectangleIcon,
   ArrowRightStartOnRectangleIcon,
   ChatBubbleLeftRightIcon,
   CodeBracketIcon,
   CommandLineIcon,
   DocumentMagnifyingGlassIcon,
   HomeIcon,
-  PhoneIcon,
-  VideoCameraIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -178,6 +177,35 @@ const Project = () => {
     },
   };
 
+  const mobileTab = activeTab === 'output' ? 'review' : activeTab;
+  const mobileNavItems = [
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: ArrowLeftStartOnRectangleIcon,
+      onClick: () => navigate('/login'),
+      tone: 'danger',
+    },
+    {
+      key: 'chat',
+      label: 'Chat',
+      icon: ChatBubbleLeftRightIcon,
+      onClick: () => setActiveTab('chat'),
+    },
+    {
+      key: 'code',
+      label: 'Code',
+      icon: CodeBracketIcon,
+      onClick: () => setActiveTab('code'),
+    },
+    {
+      key: 'review',
+      label: 'Review',
+      icon: DocumentMagnifyingGlassIcon,
+      onClick: () => setActiveTab('review'),
+    },
+  ];
+
   return (
     <div
       className={`min-h-screen font-sans transition-colors duration-500 relative ${
@@ -208,9 +236,9 @@ const Project = () => {
 
       {/* Sidebar + Main Content */}
       <div className="flex min-h-screen">
-        {/* Sidebar - Icons Only, Visible on All Screens */}
+        {/* Sidebar - Icons Only (Tablet/Desktop) */}
         <div
-          className={`w-16 flex flex-col items-center py-4 gap-6 border-r ${
+          className={`hidden md:flex w-16 flex-col items-center py-4 gap-6 border-r ${
             isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#E6E8E5] border-[#0B0E11]/10'
           }`}
         >
@@ -258,20 +286,6 @@ const Project = () => {
           </button>
 
           <button
-            onClick={() => notify('Audio call feature coming soon', 'info')}
-            className="p-2 hover:bg-white/10 rounded-full transition-all"
-          >
-            <PhoneIcon className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => notify('Video call feature coming soon', 'info')}
-            className="p-2 hover:bg-white/10 rounded-full transition-all"
-          >
-            <VideoCameraIcon className="w-6 h-6" />
-          </button>
-
-          <button
             onClick={() => navigate('/login')}
             className="p-2 hover:bg-white/10 rounded-full transition-all mt-auto"
           >
@@ -284,7 +298,9 @@ const Project = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10 flex flex-col"
+          className={`flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10 flex flex-col ${
+            layoutMode === 'mobile' ? 'pb-28' : ''
+          }`}
         >
           {/* Desktop Layout: ≥1024px - Split View */}
           {layoutMode === 'desktop' && (
@@ -298,9 +314,7 @@ const Project = () => {
                   ref={splitRef}
                   className="grid h-full min-h-0"
                   style={{
-                    gridTemplateRows: `${editorSplit}% ${dividerSize}px ${
-                      100 - editorSplit
-                    }%`,
+                    gridTemplateRows: `${editorSplit}% ${dividerSize}px ${100 - editorSplit}%`,
                   }}
                 >
                   {/* Code Editor - Full Height Priority */}
@@ -465,12 +479,8 @@ const Project = () => {
 
                   {/* Content */}
                   <div className="h-[calc(100%-40px)] overflow-auto">
-                    {activeBottomTab === 'output' && (
-                      <OutputPanel projectId={currentProject._id} />
-                    )}
-                    {activeBottomTab === 'review' && (
-                      <ReviewPanel projectId={currentProject._id} />
-                    )}
+                    {activeBottomTab === 'output' && <OutputPanel projectId={currentProject._id} />}
+                    {activeBottomTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
                   </div>
                 </div>
               </ResizableContainer>
@@ -514,16 +524,76 @@ const Project = () => {
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'
                   }`}
                 >
-                  {activeTab === 'code' && <CodeEditor projectId={currentProject._id} />}
-                  {activeTab === 'chat' && <ChatSection projectId={currentProject._id} />}
-                  {activeTab === 'output' && <OutputPanel projectId={currentProject._id} />}
-                  {activeTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
+                  {mobileTab === 'code' && <CodeEditor projectId={currentProject._id} />}
+                  {mobileTab === 'chat' && <ChatSection projectId={currentProject._id} />}
+                  {mobileTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
                 </div>
               </div>
             </motion.div>
           )}
         </motion.main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {layoutMode === 'mobile' && (
+        <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
+          <div className="mx-auto w-full max-w-md  pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+            <div
+              className={` border backdrop-blur-2xl px-2 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.28)] ${
+                isDarkMode
+                  ? 'bg-[#0B0E11]/88 border-white/10'
+                  : 'bg-white/88 border-[#0B0E11]/10 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
+              }`}
+            >
+              <div className="grid grid-cols-4 gap-2">
+                {mobileNavItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = item.key === mobileTab;
+                  const isDanger = item.tone === 'danger';
+
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={item.onClick}
+                      className={`group relative flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-all ${
+                        isActive
+                          ? ''
+                          : isDanger
+                            ? isDarkMode
+                              ? 'text-red-400/70 hover:text-red-400'
+                              : 'text-red-500/70 hover:text-red-500'
+                            : isDarkMode
+                              ? 'text-[#E6E8E5]/60 hover:text-[#E6E8E5]'
+                              : 'text-[#0B0E11]/60 hover:text-[#0B0E11]'
+                      }`}
+                      aria-label={item.label}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {isActive && (
+                        <motion.span layoutId="mobileNavActive" className="absolute inset-0 " />
+                      )}
+                      {isActive && (
+                        <motion.span
+                          layoutId="mobileNavIndicator"
+                          className="absolute -top-1.5 h-1 w-6 rounded-full bg-[#17E1FF]"
+                        />
+                      )}
+                      <Icon className="w-6 h-6 relative z-10" />
+                      <span
+                        className={`relative z-10 text-[10px] font-semibold tracking-[0.14em] uppercase leading-none transition-all overflow-hidden ${
+                          isActive ? 'max-h-4 opacity-100' : 'max-h-0 opacity-0'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

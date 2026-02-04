@@ -11,6 +11,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { saveProjectCode } from '../../../../api/project.api';
 import { useTheme } from '../../../../context/ThemeContext';
 import { notify } from '../../../../lib/notify';
@@ -23,8 +24,6 @@ import {
   setLanguage,
   updateProjectCode,
 } from '../../../../store/slices/projectSlice';
-import { useNavigate } from 'react-router-dom';
-
 
 const CodeEditor = ({ projectId }) => {
   const dispatch = useAppDispatch();
@@ -32,7 +31,6 @@ const CodeEditor = ({ projectId }) => {
   const monacoRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const navigate = useNavigate();
-
 
   // Selectors
   const code = useAppSelector(selectCurrentProjectCode);
@@ -185,9 +183,9 @@ const CodeEditor = ({ projectId }) => {
       }
 
       // 3. Debounced DB autosave
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      setTimeout(async () => {
+        await saveProjectCode(projectId, newCode);
+      }, 1000);
 
       saveTimeoutRef.current = setTimeout(async () => {
         try {
@@ -277,14 +275,23 @@ const CodeEditor = ({ projectId }) => {
 
   const formatCode = async () => {
     if (!editorRef.current) return;
-    await editorRef.current.getAction('editor.action.formatDocument').run();
-    dispatch(updateProjectCode({ projectId, code: '' }));
 
     try {
-      await saveProjectCode(projectId, '');
-      notify({ message: 'Code formatted & backend cleared', type: 'success' });
+      await editorRef.current.getAction('editor.action.formatDocument').run();
+
+      // Get formatted value from editor
+      const formattedCode = editorRef.current.getValue();
+
+      // Sync Redux
+      dispatch(updateProjectCode({ projectId, code: formattedCode }));
+
+      // Save backend
+      await saveProjectCode(projectId, formattedCode);
+
+      notify({ message: 'Code formatted successfully!', type: 'success' });
     } catch (err) {
-      notify({ message: 'Backend clear failed', type: 'error' });
+      console.error(err);
+      notify({ message: 'Formatting failed', type: 'error' });
     }
   };
 

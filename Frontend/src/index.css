@@ -6,6 +6,11 @@
     -ms-overflow-style: none; /* IE/Edge */
   }
 
+  .custom-scrollbar {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 0;
     height: 0;

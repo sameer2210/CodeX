@@ -298,8 +298,8 @@ const Project = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className={`flex-1 p-1 sm:p-2 lg:p-4 min-h-screen relative z-10 flex flex-col ${
-            layoutMode === 'mobile' ? 'pb-28' : ''
+          className={`flex-1 p-1 sm:p-2 lg:p-4 relative z-10 flex flex-col min-h-0 ${
+            layoutMode === 'mobile' ? 'h-[100dvh] pb-28' : 'min-h-screen'
           }`}
         >
           {/* Desktop Layout: ≥1024px - Split View */}
@@ -515,10 +515,10 @@ const Project = () => {
           {layoutMode === 'mobile' && (
             <motion.div
               variants={itemVariants}
-              className="flex md:hidden flex-1 h-full overflow-hidden"
+              className="flex md:hidden flex-1 min-h-0 overflow-hidden"
             >
               {/* Content - Full Screen */}
-              <div className="flex-1 h-full">
+              <div className="flex-1 min-h-0">
                 <div
                   className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'

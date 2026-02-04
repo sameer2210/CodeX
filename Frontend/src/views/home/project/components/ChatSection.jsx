@@ -289,14 +289,14 @@ const ChatSection = ({ projectId }) => {
     <>
       {/* Main Chat View */}
       <div
-        className="flex flex-col h-full relative overflow-hidden bg-[#0B0E12]"
+        className="flex flex-col h-full min-h-0 relative overflow-hidden bg-[#0B0E12]"
         style={{ fontFamily: 'Inter, sans-serif' }}
       >
         {/* Background Ambience */}
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#17E1FF] opacity-[0.03] blur-[120px] pointer-events-none" />
 
         {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0B0E12]/80 backdrop-blur-md z-10">
+        <div className="flex items-center justify-between shrink-0 px-4 sm:px-6 py-4 border-b border-white/5 bg-[#0B0E12]/80 backdrop-blur-md z-20 sticky top-0">
           <div className="flex items-center space-x-4">
             <div className="relative">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center border border-white/10 shadow-inner">
@@ -445,7 +445,7 @@ const ChatSection = ({ projectId }) => {
         </AnimatePresence>
 
         {/* MESSAGES AREA */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 custom-scrollbar overscroll-contain">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full opacity-30">
               <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
@@ -490,7 +490,7 @@ const ChatSection = ({ projectId }) => {
         </div>
 
         {/* COMPOSER */}
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-4 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shrink-0 sticky bottom-0 z-20 bg-[#0B0E12]/95 backdrop-blur-md border-t border-white/5">
           {attachments.length > 0 && (
             <div className="flex space-x-3 mb-3 overflow-x-auto pb-2 custom-scrollbar">
               {attachments.map(file => (

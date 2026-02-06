@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { AudioCallPage, VideoCallPage } from '../../../../components/CallingPage';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
@@ -26,7 +25,7 @@ import {
   selectCurrentProjectTypingUsers,
 } from '../../../../store/slices/projectSlice';
 
-const ChatSection = ({ projectId }) => {
+const ChatSection = ({ projectId, onStartCall }) => {
   const dispatch = useAppDispatch();
 
   // --- Selectors ---
@@ -43,10 +42,6 @@ const ChatSection = ({ projectId }) => {
   const [showUserList, setShowUserList] = useState(false);
   const [attachments, setAttachments] = useState([]);
 
-  // --- Call State ---
-  const [activeCall, setActiveCall] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
-
   // --- Refs ---
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -60,6 +55,7 @@ const ChatSection = ({ projectId }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom, attachments]);
+
 
   /* ========== TYPING INDICATOR ========== */
   const handleTyping = useCallback(() => {
@@ -179,64 +175,8 @@ const ChatSection = ({ projectId }) => {
     }
 
     console.log(`Starting ${type} call with ${targetUser}`);
-
-    setActiveCall({
-      type,
-      user: targetUser,
-      isIncoming: false,
-    });
+    onStartCall?.(type, targetUser);
   };
-
-  const acceptIncomingCall = () => {
-    if (!incomingCall) return;
-
-    console.log('Accepting incoming call from:', incomingCall.from);
-
-    setActiveCall({
-      type: incomingCall.type,
-      user: incomingCall.from,
-      isIncoming: true,
-      offer: incomingCall.offer,
-    });
-    setIncomingCall(null);
-  };
-
-  const rejectIncomingCall = () => {
-    if (incomingCall) {
-      console.log('Rejecting call from:', incomingCall.from);
-      dispatch({
-        type: 'socket/callRejected',
-        payload: { to: incomingCall.from },
-      });
-    }
-    setIncomingCall(null);
-  };
-
-  const endCall = () => {
-    console.log('Ending call');
-    setActiveCall(null);
-  };
-
-  /* ========== CALL EVENT LISTENERS ========== */
-  useEffect(() => {
-    const handleIncomingCall = e => {
-      console.log('Incoming call received:', e.detail);
-      setIncomingCall(e.detail);
-    };
-
-    const handleCallRejected = () => {
-      console.log('Call was rejected');
-      setActiveCall(null);
-    };
-
-    window.addEventListener('incoming-call', handleIncomingCall);
-    window.addEventListener('call-rejected', handleCallRejected);
-
-    return () => {
-      window.removeEventListener('incoming-call', handleIncomingCall);
-      window.removeEventListener('call-rejected', handleCallRejected);
-    };
-  }, []);
 
   /* ========== MESSAGE RENDERING ========== */
   const renderMessage = (msg, index) => {
@@ -396,48 +336,6 @@ const ChatSection = ({ projectId }) => {
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* INCOMING CALL BANNER */}
-        <AnimatePresence>
-          {incomingCall && (
-            <motion.div
-              initial={{ y: -100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -100, opacity: 0 }}
-              className="absolute top-6 left-0 right-0 z-50 flex justify-center pointer-events-none"
-            >
-              <div className="pointer-events-auto bg-[#111418]/90 backdrop-blur-xl border border-[#17E1FF]/30 rounded-2xl p-4 shadow-2xl w-80 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-[#17E1FF]/10 flex items-center justify-center animate-pulse">
-                    {incomingCall.type === 'audio' ? (
-                      <Phone className="w-5 h-5 text-[#17E1FF]" />
-                    ) : (
-                      <Video className="w-5 h-5 text-[#17E1FF]" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium">{incomingCall.from}</p>
-                    <p className="text-xs text-[#17E1FF]">Incoming {incomingCall.type} call...</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={rejectIncomingCall}
-                    className="p-2.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={acceptIncomingCall}
-                    className="p-2.5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-all"
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
                 </div>
               </div>
             </motion.div>
@@ -613,29 +511,6 @@ const ChatSection = ({ projectId }) => {
         </div>
       </div>
 
-      {/* Audio Call Page */}
-      <AnimatePresence>
-        {activeCall?.type === 'audio' && (
-          <AudioCallPage
-            user={activeCall.user}
-            isIncoming={activeCall.isIncoming}
-            offer={activeCall.offer}
-            onEnd={endCall}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Video Call Page */}
-      <AnimatePresence>
-        {activeCall?.type === 'video' && (
-          <VideoCallPage
-            user={activeCall.user}
-            isIncoming={activeCall.isIncoming}
-            offer={activeCall.offer}
-            onEnd={endCall}
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 };

@@ -7,17 +7,21 @@ import {
   DocumentMagnifyingGlassIcon,
   HomeIcon,
 } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AudioCallPage, VideoCallPage } from '../../../components/CallingPage';
 import ResizableContainer from '../../../components/ui/ResizableContainer';
 import { useTheme } from '../../../context/ThemeContext';
+import { createRingtoneLoop, playHorn } from '../../../lib/sounds';
 import { notify } from '../../../lib/notify';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
   clearProjectData,
   fetchProject,
   setCurrentProject,
+  selectCurrentProjectMessages,
 } from '../../../store/slices/projectSlice';
 import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
@@ -25,6 +29,7 @@ import OutputPanel from './components/OutputPanel';
 import ReviewPanel from './components/ReviewPanel';
 
 const EASE = [0.22, 1, 0.36, 1];
+const DEFAULT_EDITOR_SPLIT = 70;
 
 const Project = () => {
   const { id: projectId } = useParams();
@@ -33,6 +38,8 @@ const Project = () => {
 
   // Selectors
   const currentProject = useAppSelector(state => state.projects.currentProject);
+  const messages = useAppSelector(selectCurrentProjectMessages);
+  const currentUser = useAppSelector(state => state.auth.user?.username);
   const isLoading = useAppSelector(state => state.projects.isLoading);
   const socketConnected = useAppSelector(state => state.socket.connected);
   const { isDarkMode } = useTheme();
@@ -41,9 +48,15 @@ const Project = () => {
   const [activeTab, setActiveTab] = useState('code'); // For mobile
   const [activeBottomTab, setActiveBottomTab] = useState('output'); // For output/review toggle
   const [isChatOpen, setIsChatOpen] = useState(true); // For tablet chat collapsible
+  const [activeCall, setActiveCall] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
   const splitRef = useRef(null);
-  const [editorSplit, setEditorSplit] = useState(70); // percent
+  const [editorSplit, setEditorSplit] = useState(DEFAULT_EDITOR_SPLIT); // percent
   const dividerSize = 8; // px
+  const ringtoneRef = useRef(null);
+  const lastIncomingRef = useRef(false);
+  const lastMessageCountRef = useRef(messages.length);
+  const messageMountedRef = useRef(false);
   const getLayoutMode = () => {
     if (typeof window === 'undefined') return 'desktop';
     if (window.innerWidth >= 1024) return 'desktop';
@@ -56,8 +69,8 @@ const Project = () => {
     if (!splitRef.current) return;
     const containerHeight = splitRef.current.getBoundingClientRect().height - dividerSize;
     if (containerHeight <= 0) return;
-    const minTop = 300;
-    const minBottom = 120;
+    const minTop = Math.min(320, Math.max(220, containerHeight * 0.35));
+    const minBottom = Math.min(160, Math.max(120, containerHeight * 0.22));
     const minPercent = (minTop / containerHeight) * 100;
     const maxPercent = 100 - (minBottom / containerHeight) * 100;
     setEditorSplit(prev => Math.min(Math.max(prev, minPercent), maxPercent));
@@ -82,6 +95,40 @@ const Project = () => {
       requestAnimationFrame(clampEditorSplit);
     }
   }, [layoutMode, clampEditorSplit]);
+
+  useEffect(() => {
+    ringtoneRef.current = createRingtoneLoop();
+    return () => ringtoneRef.current?.stop();
+  }, []);
+
+  useEffect(() => {
+    messageMountedRef.current = false;
+    lastMessageCountRef.current = messages.length;
+  }, [currentProject?._id]);
+
+  useEffect(() => {
+    if (!messageMountedRef.current) {
+      messageMountedRef.current = true;
+      lastMessageCountRef.current = messages.length;
+      return;
+    }
+
+    if (messages.length <= lastMessageCountRef.current) {
+      lastMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const newMessages = messages.slice(lastMessageCountRef.current);
+    const hasIncoming = newMessages.some(
+      msg => msg.type !== 'system' && msg.username && msg.username !== currentUser
+    );
+
+    if (hasIncoming) {
+      playHorn();
+    }
+
+    lastMessageCountRef.current = messages.length;
+  }, [messages, currentUser]);
 
   /* ========== PROJECT INITIALIZATION ========== */
 
@@ -138,6 +185,43 @@ const Project = () => {
       }
     };
   }, [currentProject?._id, socketConnected, dispatch]);
+
+  /* ========== CALL EVENT LISTENERS ========== */
+  useEffect(() => {
+    const handleIncomingCall = e => {
+      console.log('Incoming call received:', e.detail);
+      setIncomingCall(e.detail);
+    };
+
+    const handleCallRejected = () => {
+      console.log('Call was rejected');
+      setActiveCall(null);
+      setIncomingCall(null);
+    };
+
+    window.addEventListener('incoming-call', handleIncomingCall);
+    window.addEventListener('call-rejected', handleCallRejected);
+
+    return () => {
+      window.removeEventListener('incoming-call', handleIncomingCall);
+      window.removeEventListener('call-rejected', handleCallRejected);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ringtoneRef.current) return;
+
+    if (incomingCall && !activeCall) {
+      ringtoneRef.current.start();
+      if (!lastIncomingRef.current) {
+        playHorn();
+      }
+      lastIncomingRef.current = true;
+    } else {
+      ringtoneRef.current.stop();
+      lastIncomingRef.current = false;
+    }
+  }, [incomingCall, activeCall]);
 
   /* ========== LOADING STATE ========== */
 
@@ -205,6 +289,49 @@ const Project = () => {
       onClick: () => setActiveTab('review'),
     },
   ];
+
+  const startCall = (type, targetUser) => {
+    if (!targetUser || targetUser === 'Team') {
+      console.warn('Team calls not yet supported');
+      return;
+    }
+
+    console.log(`Starting ${type} call with ${targetUser}`);
+    setActiveCall({
+      type,
+      user: targetUser,
+      isIncoming: false,
+    });
+  };
+
+  const acceptIncomingCall = () => {
+    if (!incomingCall) return;
+
+    console.log('Accepting incoming call from:', incomingCall.from);
+    setActiveCall({
+      type: incomingCall.type,
+      user: incomingCall.from,
+      isIncoming: true,
+      offer: incomingCall.offer,
+    });
+    setIncomingCall(null);
+  };
+
+  const rejectIncomingCall = () => {
+    if (incomingCall) {
+      console.log('Rejecting call from:', incomingCall.from);
+      dispatch({
+        type: 'socket/callRejected',
+        payload: { to: incomingCall.from },
+      });
+    }
+    setIncomingCall(null);
+  };
+
+  const endCall = () => {
+    console.log('Ending call');
+    setActiveCall(null);
+  };
 
   return (
     <div
@@ -332,23 +459,20 @@ const Project = () => {
                     onMouseDown={e => {
                       e.preventDefault();
                       if (!splitRef.current) return;
-                      const startY = e.clientY;
                       const rect = splitRef.current.getBoundingClientRect();
                       const containerHeight = rect.height - dividerSize;
                       if (containerHeight <= 0) return;
-                      const startTopHeight = (editorSplit / 100) * containerHeight;
-                      const minTop = 300;
-                      const minBottom = 120;
+
+                      const minTop = Math.min(320, Math.max(220, containerHeight * 0.35));
+                      const minBottom = Math.min(160, Math.max(120, containerHeight * 0.22));
+                      const minPercent = (minTop / containerHeight) * 100;
+                      const maxPercent = 100 - (minBottom / containerHeight) * 100;
 
                       const onMouseMove = ev => {
-                        const delta = ev.clientY - startY;
-                        let nextTopHeight = startTopHeight + delta;
-                        nextTopHeight = Math.min(
-                          Math.max(nextTopHeight, minTop),
-                          containerHeight - minBottom
-                        );
-                        const nextPercent = (nextTopHeight / containerHeight) * 100;
-                        setEditorSplit(nextPercent);
+                        const offset = ev.clientY - rect.top;
+                        const nextPercent = (offset / containerHeight) * 100;
+                        const clamped = Math.min(Math.max(nextPercent, minPercent), maxPercent);
+                        setEditorSplit(clamped);
                       };
 
                       const stopResize = () => {
@@ -359,8 +483,9 @@ const Project = () => {
                       document.addEventListener('mousemove', onMouseMove);
                       document.addEventListener('mouseup', stopResize);
                     }}
+                    onDoubleClick={() => setEditorSplit(DEFAULT_EDITOR_SPLIT)}
                     className="cursor-row-resize bg-white/10 hover:bg-[#17E1FF]/40 transition-colors rounded-md"
-                    title="Drag to resize"
+                    title="Drag to resize (double click to reset)"
                   />
 
                   {/* Bottom: Output / Review Tabs - Fixed Height */}
@@ -419,7 +544,7 @@ const Project = () => {
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'
                   }`}
                 >
-                  <ChatSection projectId={currentProject._id} />
+                  <ChatSection projectId={currentProject._id} onStartCall={startCall} />
                 </div>
               </ResizableContainer>
             </motion.div>
@@ -504,7 +629,7 @@ const Project = () => {
                       isDarkMode ? 'bg-white/5' : 'bg-white/60'
                     }`}
                   >
-                    <ChatSection projectId={currentProject._id} />
+                    <ChatSection projectId={currentProject._id} onStartCall={startCall} />
                   </div>
                 </ResizableContainer>
               )}
@@ -525,7 +650,9 @@ const Project = () => {
                   }`}
                 >
                   {mobileTab === 'code' && <CodeEditor projectId={currentProject._id} />}
-                  {mobileTab === 'chat' && <ChatSection projectId={currentProject._id} />}
+                  {mobileTab === 'chat' && (
+                    <ChatSection projectId={currentProject._id} onStartCall={startCall} />
+                  )}
                   {mobileTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
                 </div>
               </div>
@@ -534,12 +661,56 @@ const Project = () => {
         </motion.main>
       </div>
 
+      {/* Incoming Call Banner */}
+      <AnimatePresence>
+        {incomingCall && !activeCall && (
+          <motion.div
+            initial={{ y: -80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -80, opacity: 0 }}
+            className="fixed top-4 left-0 right-0 z-[60] flex justify-center px-3 pointer-events-none"
+          >
+            <div className="pointer-events-auto w-full max-w-md bg-[#111418]/90 backdrop-blur-xl border border-[#17E1FF]/30 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-full bg-[#17E1FF]/10 flex items-center justify-center animate-pulse">
+                  {incomingCall.type === 'audio' ? (
+                    <Phone className="w-5 h-5 text-[#17E1FF]" />
+                  ) : (
+                    <Video className="w-5 h-5 text-[#17E1FF]" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-white text-sm font-medium">{incomingCall.from}</p>
+                  <p className="text-xs text-[#17E1FF]">Incoming {incomingCall.type} call...</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={rejectIncomingCall}
+                  className="p-2.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                  aria-label="Reject call"
+                >
+                  <PhoneOff className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={acceptIncomingCall}
+                  className="p-2.5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-all"
+                  aria-label="Accept call"
+                >
+                  <Phone className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Bottom Navigation */}
       {layoutMode === 'mobile' && (
         <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
-          <div className="mx-auto w-full max-w-md  pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto w-full max-w-md px-2">
             <div
-              className={` border backdrop-blur-2xl px-2 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.28)] ${
+              className={`rounded-t-2xl border backdrop-blur-2xl px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-[0_16px_40px_rgba(0,0,0,0.28)] ${
                 isDarkMode
                   ? 'bg-[#0B0E11]/88 border-white/10'
                   : 'bg-white/88 border-[#0B0E11]/10 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
@@ -570,7 +741,12 @@ const Project = () => {
                       aria-current={isActive ? 'page' : undefined}
                     >
                       {isActive && (
-                        <motion.span layoutId="mobileNavActive" className="absolute inset-0 " />
+                        <motion.span
+                          layoutId="mobileNavActive"
+                          className={`absolute inset-0 rounded-xl ${
+                            isDarkMode ? 'bg-white/5' : 'bg-[#0B0E11]/5'
+                          }`}
+                        />
                       )}
                       {isActive && (
                         <motion.span
@@ -594,6 +770,30 @@ const Project = () => {
           </div>
         </div>
       )}
+
+      {/* Audio Call Page */}
+      <AnimatePresence>
+        {activeCall?.type === 'audio' && (
+          <AudioCallPage
+            user={activeCall.user}
+            isIncoming={activeCall.isIncoming}
+            offer={activeCall.offer}
+            onEnd={endCall}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Video Call Page */}
+      <AnimatePresence>
+        {activeCall?.type === 'video' && (
+          <VideoCallPage
+            user={activeCall.user}
+            isIncoming={activeCall.isIncoming}
+            offer={activeCall.offer}
+            onEnd={endCall}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

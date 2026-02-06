@@ -145,10 +145,19 @@ const logCall = (message, payload) => {
 export const socketMiddleware = store => next => action => {
   /* ========== CALL ACTIONS ========== */
   if (action.type === callStartRequested.type) {
-    const { callee, callType = 'audio' } = action.payload || {};
+    const { callee, callees, callType = 'audio' } = action.payload || {};
     const state = store.getState();
+    const username = state.auth.user?.username;
+    const targetList = Array.isArray(callees)
+      ? callees
+      : callee
+        ? [callee]
+        : [];
+    const uniqueTargets = Array.from(new Set(targetList.filter(Boolean))).filter(
+      user => user !== username
+    );
 
-    if (!callee) return next(action);
+    if (uniqueTargets.length === 0) return next(action);
     if (state.call.status !== CALL_STATUS.IDLE) {
       notify('A call is already in progress', 'warning');
       return next(action);
@@ -162,15 +171,17 @@ export const socketMiddleware = store => next => action => {
     }
 
     const callId = generateCallId();
+    const displayReceiver = uniqueTargets.length > 1 ? 'Team' : uniqueTargets[0];
     store.dispatch(
       setOutgoingCall({
         callId,
-        receiver: callee,
+        receiver: displayReceiver,
+        recipients: uniqueTargets,
         callType,
-        caller: state.auth.user?.username,
+        caller: username,
       })
     );
-    logCall('start', { callId, callee, callType });
+    logCall('start', { callId, targets: uniqueTargets, callType });
     attachCallListeners(store);
 
     void (async () => {
@@ -182,7 +193,13 @@ export const socketMiddleware = store => next => action => {
         store.dispatch(setLocalStream(localStream));
         store.dispatch(setPeerConnection(peer));
 
-        socket.emit('call:initiate', { callId, to: callee, offer, type: callType });
+        socket.emit('call:initiate', {
+          callId,
+          to: uniqueTargets.length === 1 ? uniqueTargets[0] : undefined,
+          targets: uniqueTargets.length > 1 ? uniqueTargets : undefined,
+          offer,
+          type: callType,
+        });
 
         clearCallTimers();
         callTimeoutId = setTimeout(() => {
@@ -411,21 +428,27 @@ export const socketMiddleware = store => next => action => {
       notify(`Incoming ${type || 'audio'} call from ${from}`, 'info');
     });
 
-    socket.on('call:accepted', ({ callId }) => {
+    socket.on('call:accepted', ({ callId, from }) => {
       const current = store.getState().call;
       if (current.callId !== callId) return;
+      if (current.status === CALL_STATUS.ACCEPTED) return;
       logCall('accepted', { callId });
       clearCallTimers();
-      store.dispatch(setCallAccepted());
+      store.dispatch(
+        setCallAccepted(current.direction === 'outgoing' ? { peer: from } : undefined)
+      );
     });
 
-    socket.on('call:answer', async ({ callId, answer }) => {
+    socket.on('call:answer', async ({ callId, answer, from }) => {
       const current = store.getState().call;
       if (current.callId !== callId) return;
+      if (current.status === CALL_STATUS.ACCEPTED) return;
       logCall('answer', { callId });
       try {
         await applyAnswer(answer);
-        store.dispatch(setCallAccepted());
+        store.dispatch(
+          setCallAccepted(current.direction === 'outgoing' ? { peer: from } : undefined)
+        );
       } catch (error) {
         store.dispatch(
           setCallEnded({

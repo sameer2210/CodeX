@@ -31,10 +31,16 @@ class CallService {
     return this.calls.get(callId) || null;
   }
 
+  isUserBusy(teamName, username) {
+    const key = buildUserKey(teamName, username);
+    return this.activeByUser.has(key);
+  }
+
   createCall({
     callId,
     caller,
     receiver,
+    receivers,
     type,
     teamName,
     callerSocketId,
@@ -42,9 +48,24 @@ class CallService {
     offer,
   }) {
     const callerKey = buildUserKey(teamName, caller);
-    const receiverKey = buildUserKey(teamName, receiver);
+    const targetList = Array.isArray(receivers) ? receivers : receiver ? [receiver] : [];
+    const uniqueTargets = Array.from(new Set(targetList.filter(Boolean))).filter(
+      username => username !== caller
+    );
 
-    if (this.activeByUser.has(callerKey) || this.activeByUser.has(receiverKey)) {
+    if (this.activeByUser.has(callerKey)) {
+      return { error: 'busy' };
+    }
+
+    if (uniqueTargets.length === 0) {
+      return { error: 'no-targets' };
+    }
+
+    const availableTargets = uniqueTargets.filter(
+      username => !this.activeByUser.has(buildUserKey(teamName, username))
+    );
+
+    if (availableTargets.length === 0) {
       return { error: 'busy' };
     }
 
@@ -54,10 +75,18 @@ class CallService {
     }
 
     const now = Date.now();
+    const receiverStates = {};
+    availableTargets.forEach(username => {
+      receiverStates[username] = 'RINGING';
+    });
+
     const call = {
       callId: id,
       caller,
-      receiver,
+      receiver: availableTargets.length === 1 ? availableTargets[0] : null,
+      receivers: availableTargets,
+      receiverStates,
+      acceptedBy: null,
       type,
       teamName,
       callerSocketId,
@@ -74,9 +103,13 @@ class CallService {
 
     this.calls.set(id, call);
     this.activeByUser.set(callerKey, id);
-    this.activeByUser.set(receiverKey, id);
+    availableTargets.forEach(username => {
+      this.activeByUser.set(buildUserKey(teamName, username), id);
+    });
 
-    return { call };
+    const skipped = uniqueTargets.filter(username => !availableTargets.includes(username));
+
+    return { call, skipped };
   }
 
   updateCall(callId, updates = {}) {
@@ -104,6 +137,14 @@ class CallService {
     call.timeoutId = null;
   }
 
+  releaseReceiver(callId, username, status = 'CANCELLED') {
+    const call = this.calls.get(callId);
+    if (!call) return;
+    if (!call.receivers?.includes(username)) return;
+    call.receiverStates[username] = status;
+    this.activeByUser.delete(buildUserKey(call.teamName, username));
+  }
+
   startTimeout(callId, onTimeout) {
     const call = this.calls.get(callId);
     if (!call) return;
@@ -119,13 +160,25 @@ class CallService {
     this.clearTimeout(call);
     this.calls.delete(callId);
     this.activeByUser.delete(buildUserKey(call.teamName, call.caller));
-    this.activeByUser.delete(buildUserKey(call.teamName, call.receiver));
+    if (Array.isArray(call.receivers)) {
+      call.receivers.forEach(username => {
+        this.activeByUser.delete(buildUserKey(call.teamName, username));
+      });
+    } else if (call.receiver) {
+      this.activeByUser.delete(buildUserKey(call.teamName, call.receiver));
+    }
   }
 
   findActiveCallBetween(teamName, caller, receiver) {
     const call = this.findActiveCallByUser(teamName, caller);
     if (!call) return null;
-    if (call.receiver !== receiver && call.caller !== receiver) return null;
+    if (
+      call.receiver !== receiver &&
+      call.caller !== receiver &&
+      !call.receivers?.includes(receiver)
+    ) {
+      return null;
+    }
     if (this.isTerminal(call.status)) return null;
     return call;
   }

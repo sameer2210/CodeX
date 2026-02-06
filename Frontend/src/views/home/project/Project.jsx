@@ -14,8 +14,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AudioCallPage, VideoCallPage } from '../../../components/CallingPage';
 import ResizableContainer from '../../../components/ui/ResizableContainer';
 import { useTheme } from '../../../context/ThemeContext';
-import { createRingtoneLoop, playHorn } from '../../../lib/sounds';
 import { notify } from '../../../lib/notify';
+import { createRingtoneLoop, playHorn } from '../../../lib/sounds';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
   CALL_STATUS,
@@ -26,8 +26,8 @@ import {
 import {
   clearProjectData,
   fetchProject,
-  setCurrentProject,
   selectCurrentProjectMessages,
+  setCurrentProject,
 } from '../../../store/slices/projectSlice';
 import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
@@ -191,10 +191,8 @@ const Project = () => {
     };
   }, [currentProject?._id, socketConnected, dispatch]);
 
-  const isIncomingRinging =
-    call.status === CALL_STATUS.RINGING && call.direction === 'incoming';
-  const isCallActive =
-    call.status === CALL_STATUS.CALLING || call.status === CALL_STATUS.ACCEPTED;
+  const isIncomingRinging = call.status === CALL_STATUS.RINGING && call.direction === 'incoming';
+  const isCallActive = call.status === CALL_STATUS.CALLING || call.status === CALL_STATUS.ACCEPTED;
 
   useEffect(() => {
     if (!ringtoneRef.current) return;
@@ -286,6 +284,12 @@ const Project = () => {
 
     console.log(`Starting ${type} call with ${targetUser}`);
     dispatch(callStartRequested({ callee: targetUser, callType: type }));
+  };
+
+  const startGroupCall = (type, users) => {
+    if (!Array.isArray(users) || users.length === 0) return;
+    console.log(`Starting ${type} group call`);
+    dispatch(callStartRequested({ callees: users, callType: type }));
   };
 
   const acceptIncomingCall = () => {
@@ -393,7 +397,9 @@ const Project = () => {
           initial="hidden"
           animate="visible"
           className={`flex-1 p-1 sm:p-2 lg:p-4 relative z-10 flex flex-col min-h-0 ${
-            layoutMode === 'mobile' ? 'h-[100dvh] pb-28' : 'min-h-screen'
+            layoutMode === 'mobile'
+              ? 'h-[100dvh] pb-[calc(72px+env(safe-area-inset-bottom))]'
+              : 'min-h-screen'
           }`}
         >
           {/* Desktop Layout: ≥1024px - Split View */}
@@ -511,7 +517,11 @@ const Project = () => {
                     isDarkMode ? 'bg-white/5' : 'bg-white/60'
                   }`}
                 >
-                  <ChatSection projectId={currentProject._id} onStartCall={startCall} />
+                  <ChatSection
+                    projectId={currentProject._id}
+                    onStartCall={startCall}
+                    onStartGroupCall={startGroupCall}
+                  />
                 </div>
               </ResizableContainer>
             </motion.div>
@@ -596,7 +606,11 @@ const Project = () => {
                       isDarkMode ? 'bg-white/5' : 'bg-white/60'
                     }`}
                   >
-                    <ChatSection projectId={currentProject._id} onStartCall={startCall} />
+                    <ChatSection
+                      projectId={currentProject._id}
+                      onStartCall={startCall}
+                      onStartGroupCall={startGroupCall}
+                    />
                   </div>
                 </ResizableContainer>
               )}
@@ -618,7 +632,11 @@ const Project = () => {
                 >
                   {mobileTab === 'code' && <CodeEditor projectId={currentProject._id} />}
                   {mobileTab === 'chat' && (
-                    <ChatSection projectId={currentProject._id} onStartCall={startCall} />
+                    <ChatSection
+                      projectId={currentProject._id}
+                      onStartCall={startCall}
+                      onStartGroupCall={startGroupCall}
+                    />
                   )}
                   {mobileTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
                 </div>

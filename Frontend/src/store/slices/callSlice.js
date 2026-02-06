@@ -11,13 +11,14 @@ export const CALL_STATUS = {
   FAILED: 'FAILED',
 };
 
-const initialState = {
+  const initialState = {
   status: CALL_STATUS.IDLE,
   direction: null, // 'outgoing' | 'incoming'
   callId: null,
   callType: 'audio',
   caller: null,
   receiver: null,
+  recipients: [],
   offer: null,
   answer: null,
   startedAt: null,
@@ -37,12 +38,13 @@ const callSlice = createSlice({
   reducers: {
     resetCallState: () => ({ ...initialState }),
     setOutgoingCall: (state, action) => {
-      const { callId, receiver, callType, caller } = action.payload;
+      const { callId, receiver, callType, caller, recipients } = action.payload;
       state.status = CALL_STATUS.CALLING;
       state.direction = 'outgoing';
       state.callId = callId;
       state.callType = callType;
       state.receiver = receiver;
+      state.recipients = Array.isArray(recipients) ? recipients : receiver ? [receiver] : [];
       state.caller = caller || null;
       state.offer = null;
       state.answer = null;
@@ -59,6 +61,7 @@ const callSlice = createSlice({
       state.callType = callType;
       state.caller = caller;
       state.receiver = receiver || null;
+      state.recipients = [];
       state.offer = offer || null;
       state.answer = null;
       state.startedAt = Date.now();
@@ -67,10 +70,19 @@ const callSlice = createSlice({
       state.error = null;
     },
     setCallAccepted: (state, action) => {
+      const peer = action.payload?.peer;
       state.status = CALL_STATUS.ACCEPTED;
       state.answer = action.payload?.answer || state.answer;
       state.reason = null;
       state.error = null;
+      if (peer) {
+        if (state.direction === 'outgoing') {
+          state.receiver = peer;
+        } else {
+          state.caller = peer;
+        }
+        state.recipients = [peer];
+      }
     },
     setCallEnded: (state, action) => {
       const { status, reason, error } = action.payload || {};

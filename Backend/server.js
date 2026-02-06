@@ -326,20 +326,26 @@ io.on('connection', socket => {
     const call = callService.getCall(callId);
     if (!call || !['CALLING', 'RINGING'].includes(call.status)) return;
 
-    console.log(`📞 Call timeout: ${callId} (${call.caller} -> ${call.receiver})`);
+    console.log(
+      `📞 Call timeout: ${callId} (${call.caller} -> ${call.receivers?.join(', ') || call.receiver})`
+    );
     callService.setStatus(callId, 'CANCELLED', { reason: 'timeout' });
+    const receivers = call.receivers?.length ? call.receivers : call.receiver ? [call.receiver] : [];
+    receivers.forEach(receiverName => {
+      callService.releaseReceiver(callId, receiverName, 'CANCELLED');
+      emitToUser(receiverName, 'call:cancel', {
+        callId,
+        from: call.caller,
+        reason: 'timeout',
+      });
+      emitToUser(receiverName, 'end-call', { from: call.caller });
+    });
     emitToUser(call.caller, 'call:cancel', {
       callId,
-      from: call.receiver,
+      from: receivers[0] || 'system',
       reason: 'timeout',
     });
-    emitToUser(call.receiver, 'call:cancel', {
-      callId,
-      from: call.caller,
-      reason: 'timeout',
-    });
-    emitToUser(call.caller, 'end-call', { from: call.receiver });
-    emitToUser(call.receiver, 'end-call', { from: call.caller });
+    emitToUser(call.caller, 'end-call', { from: receivers[0] || 'system' });
     scheduleCallCleanup(callId);
   };
 
@@ -347,59 +353,94 @@ io.on('connection', socket => {
     return callService.findActiveCallBetween(teamName, username, targetUsername);
   };
 
-  const handleCallInitiate = ({ to, offer, type = 'video', callId }) => {
-    const targetSocketId = roomManager.getUserSocketId(teamName, to);
+  const handleCallInitiate = ({ to, targets, offer, type = 'video', callId }) => {
+    const requestedTargets = Array.isArray(targets) ? targets : to ? [to] : [];
+    const uniqueTargets = Array.from(new Set(requestedTargets.filter(Boolean))).filter(
+      username => username !== socket.user.username
+    );
 
-    if (!targetSocketId) {
+    if (uniqueTargets.length === 0) {
+      socket.emit('call:failed', { reason: 'no-targets', message: 'No call targets' });
+      socket.emit('call-failed', { message: 'No call targets' });
+      return;
+    }
+
+    const onlineTargets = uniqueTargets.filter(user =>
+      roomManager.getUserSocketId(teamName, user)
+    );
+
+    if (onlineTargets.length === 0) {
       socket.emit('call:failed', { reason: 'offline', message: 'User not available' });
       socket.emit('call-failed', { message: 'User not available' });
       return;
     }
 
-    const { call, error } = callService.createCall({
+    const { call, error, skipped } = callService.createCall({
       callId,
       caller: username,
-      receiver: to,
+      receivers: onlineTargets,
       type,
       teamName,
       callerSocketId: socket.id,
-      receiverSocketId: targetSocketId,
+      receiverSocketId: null,
       offer,
     });
 
     if (error) {
-      const message = error === 'busy' ? 'User is busy' : 'Call already exists';
+      const message =
+        error === 'busy'
+          ? 'User is busy'
+          : error === 'no-targets'
+            ? 'No available targets'
+            : 'Call already exists';
       socket.emit('call:failed', { reason: error, message });
       socket.emit('call-failed', { message });
       return;
     }
 
-    console.log(`📞 Call initiated: ${call.callId} (${username} -> ${to}, ${type})`);
+    if (skipped?.length) {
+      console.log(`📞 Call skipped busy users: ${skipped.join(', ')}`);
+    }
+
+    console.log(
+      `📞 Call initiated: ${call.callId} (${username} -> ${call.receivers.join(', ')}, ${type})`
+    );
     callService.setStatus(call.callId, 'RINGING');
     callService.startTimeout(call.callId, handleCallTimeout);
 
-    socket.emit('call:initiated', { callId: call.callId, to, type });
-
-    io.to(targetSocketId).emit('call:incoming', {
+    socket.emit('call:initiated', {
       callId: call.callId,
-      from: username,
+      to: call.receivers.length === 1 ? call.receivers[0] : undefined,
+      targets: call.receivers,
       type,
-      offer,
-      startedAt: call.startedAt,
+      skipped,
     });
 
-    io.to(targetSocketId).emit('call:offer', {
-      callId: call.callId,
-      from: username,
-      type,
-      offer,
-    });
+    call.receivers.forEach(targetUser => {
+      const targetSocketId = roomManager.getUserSocketId(teamName, targetUser);
+      if (!targetSocketId) return;
 
-    io.to(targetSocketId).emit('incoming-call', {
-      from: username,
-      offer,
-      type,
-      callerSocket: socket.id,
+      io.to(targetSocketId).emit('call:incoming', {
+        callId: call.callId,
+        from: username,
+        type,
+        offer,
+        startedAt: call.startedAt,
+      });
+
+      io.to(targetSocketId).emit('call:offer', {
+        callId: call.callId,
+        from: username,
+        type,
+        offer,
+      });
+
+      io.to(targetSocketId).emit('incoming-call', {
+        from: username,
+        offer,
+        type,
+        callerSocket: socket.id,
+      });
     });
   };
 
@@ -412,7 +453,7 @@ io.on('connection', socket => {
       socket.emit('call-failed', { message: 'Call not found' });
       return;
     }
-    if (call.receiver !== username) {
+    if (call.receiver !== username && !call.receivers?.includes(username)) {
       socket.emit('call:failed', { reason: 'forbidden', message: 'Not authorized' });
       socket.emit('call-failed', { message: 'Not authorized' });
       return;
@@ -424,12 +465,28 @@ io.on('connection', socket => {
 
     console.log(`📞 Call accepted: ${callId} by ${username}`);
     callService.clearTimeout(call);
-    callService.setStatus(callId, 'ACCEPTED', { answer });
+    callService.setStatus(callId, 'ACCEPTED', { answer, acceptedBy: username, receiver: username });
+    call.acceptedBy = username;
+    call.receiver = username;
 
     emitToUser(call.caller, 'call:accepted', { callId, from: username, type: call.type });
-    emitToUser(call.receiver, 'call:accepted', { callId, from: username, type: call.type });
+    emitToUser(username, 'call:accepted', { callId, from: username, type: call.type });
     emitToUser(call.caller, 'call:answer', { callId, from: username, answer });
     emitToUser(call.caller, 'call-accepted', { answer, from: username });
+
+    if (Array.isArray(call.receivers)) {
+      call.receivers.forEach(receiverName => {
+        if (receiverName === username) return;
+        callService.releaseReceiver(callId, receiverName, 'CANCELLED');
+        emitToUser(receiverName, 'call:cancel', {
+          callId,
+          from: username,
+          reason: 'answered-elsewhere',
+        });
+        emitToUser(receiverName, 'end-call', { from: username });
+      });
+      call.receivers = [username];
+    }
   };
 
   socket.on('call:accept', handleCallAccept);
@@ -437,25 +494,29 @@ io.on('connection', socket => {
   const handleCallReject = ({ callId, reason }) => {
     const call = callService.getCall(callId);
     if (!call) return;
-    if (call.receiver !== username) return;
+    if (call.receiver !== username && !call.receivers?.includes(username)) return;
     if (call.status !== 'RINGING') return;
 
     console.log(`📞 Call rejected: ${callId} by ${username}`);
-    callService.clearTimeout(call);
-    callService.setStatus(callId, 'REJECTED', { reason: reason || 'rejected' });
+    callService.releaseReceiver(callId, username, 'REJECTED');
 
-    emitToUser(call.caller, 'call:reject', {
-      callId,
-      from: username,
-      reason: reason || 'rejected',
-    });
-    emitToUser(call.receiver, 'call:rejected', {
-      callId,
-      from: username,
-      reason: reason || 'rejected',
-    });
-    emitToUser(call.caller, 'call-rejected', { from: username });
-    scheduleCallCleanup(callId);
+    const remainingReceivers = (call.receivers || []).filter(
+      receiverName => receiverName !== username
+    );
+
+    call.receivers = remainingReceivers;
+
+    if (!call.acceptedBy && remainingReceivers.length === 0) {
+      callService.clearTimeout(call);
+      callService.setStatus(callId, 'REJECTED', { reason: reason || 'rejected' });
+      emitToUser(call.caller, 'call:reject', {
+        callId,
+        from: username,
+        reason: reason || 'rejected',
+      });
+      emitToUser(call.caller, 'call-rejected', { from: username });
+      scheduleCallCleanup(callId);
+    }
   };
 
   socket.on('call:reject', handleCallReject);
@@ -470,17 +531,22 @@ io.on('connection', socket => {
     callService.clearTimeout(call);
     callService.setStatus(callId, 'CANCELLED', { reason: reason || 'cancelled' });
 
-    emitToUser(call.receiver, 'call:cancel', {
-      callId,
-      from: username,
-      reason: reason || 'cancelled',
+    const receivers = call.receivers?.length ? call.receivers : call.receiver ? [call.receiver] : [];
+    receivers.forEach(receiverName => {
+      callService.releaseReceiver(callId, receiverName, 'CANCELLED');
+      emitToUser(receiverName, 'call:cancel', {
+        callId,
+        from: username,
+        reason: reason || 'cancelled',
+      });
+      emitToUser(receiverName, 'end-call', { from: username });
     });
+
     emitToUser(call.caller, 'call:cancelled', {
       callId,
       from: username,
       reason: reason || 'cancelled',
     });
-    emitToUser(call.receiver, 'end-call', { from: username });
     scheduleCallCleanup(callId);
   };
 
@@ -511,7 +577,20 @@ io.on('connection', socket => {
     const call = callService.getCall(callId);
     if (!call) return;
     if (call.caller !== username && call.receiver !== username) return;
+    if (!call.acceptedBy && username === call.caller) {
+      // Broadcast caller ICE candidates to all ringing receivers
+      (call.receivers || []).forEach(receiverName => {
+        emitToUser(receiverName, 'call:ice-candidate', {
+          callId,
+          candidate,
+          from: username,
+        });
+      });
+      return;
+    }
+
     const otherUser = call.caller === username ? call.receiver : call.caller;
+    if (!otherUser) return;
     emitToUser(otherUser, 'call:ice-candidate', { callId, candidate, from: username });
   };
 

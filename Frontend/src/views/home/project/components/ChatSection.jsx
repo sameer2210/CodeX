@@ -25,7 +25,7 @@ import {
   selectCurrentProjectTypingUsers,
 } from '../../../../store/slices/projectSlice';
 
-const ChatSection = ({ projectId, onStartCall }) => {
+const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
   const dispatch = useAppDispatch();
 
   // --- Selectors ---
@@ -55,7 +55,6 @@ const ChatSection = ({ projectId, onStartCall }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom, attachments]);
-
 
   /* ========== TYPING INDICATOR ========== */
   const handleTyping = useCallback(() => {
@@ -178,6 +177,16 @@ const ChatSection = ({ projectId, onStartCall }) => {
     onStartCall?.(type, targetUser);
   };
 
+  const startGroupCall = type => {
+    if (activeUsers.length === 0) return;
+    if (activeUsers.length === 1) {
+      startCall(type, activeUsers[0]);
+      return;
+    }
+    console.log(`Starting ${type} group call with ${activeUsers.length} users`);
+    onStartGroupCall?.(type, activeUsers);
+  };
+
   /* ========== MESSAGE RENDERING ========== */
   const renderMessage = (msg, index) => {
     const isCurrentUser = msg.username === currentUser;
@@ -254,20 +263,14 @@ const ChatSection = ({ projectId, onStartCall }) => {
 
           <div className="flex items-center space-x-3">
             <button
-              onClick={() =>
-                activeUsers.length > 0 &&
-                startCall('audio', activeUsers.length === 1 ? activeUsers[0] : 'Team')
-              }
+              onClick={() => startGroupCall('audio')}
               disabled={activeUsers.length === 0}
               className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Phone className="w-5 h-5" />
             </button>
             <button
-              onClick={() =>
-                activeUsers.length > 0 &&
-                startCall('video', activeUsers.length === 1 ? activeUsers[0] : 'Team')
-              }
+              onClick={() => startGroupCall('video')}
               disabled={activeUsers.length === 0}
               className={`p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
             >
@@ -425,7 +428,7 @@ const ChatSection = ({ projectId, onStartCall }) => {
             </div>
           )}
 
-          <div className="relative rounded-2xl border bg-[#111418] border-white/10 focus-within:border-white/20">
+          <div className="relative rounded-xl border bg-[#111418] border-white/10 focus-within:border-white/20">
             <div className="flex items-center px-4 py-2 border-b border-white/5 space-x-1">
               <button
                 title="Bold"
@@ -510,7 +513,6 @@ const ChatSection = ({ projectId, onStartCall }) => {
           </div>
         </div>
       </div>
-
     </>
   );
 };

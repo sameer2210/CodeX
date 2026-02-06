@@ -18,6 +18,12 @@ import { createRingtoneLoop, playHorn } from '../../../lib/sounds';
 import { notify } from '../../../lib/notify';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
+  CALL_STATUS,
+  callAcceptRequested,
+  callRejectRequested,
+  callStartRequested,
+} from '../../../store/slices/callSlice';
+import {
   clearProjectData,
   fetchProject,
   setCurrentProject,
@@ -48,8 +54,7 @@ const Project = () => {
   const [activeTab, setActiveTab] = useState('code'); // For mobile
   const [activeBottomTab, setActiveBottomTab] = useState('output'); // For output/review toggle
   const [isChatOpen, setIsChatOpen] = useState(true); // For tablet chat collapsible
-  const [activeCall, setActiveCall] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
+  const call = useAppSelector(state => state.call);
   const splitRef = useRef(null);
   const [editorSplit, setEditorSplit] = useState(DEFAULT_EDITOR_SPLIT); // percent
   const dividerSize = 8; // px
@@ -186,32 +191,15 @@ const Project = () => {
     };
   }, [currentProject?._id, socketConnected, dispatch]);
 
-  /* ========== CALL EVENT LISTENERS ========== */
-  useEffect(() => {
-    const handleIncomingCall = e => {
-      console.log('Incoming call received:', e.detail);
-      setIncomingCall(e.detail);
-    };
-
-    const handleCallRejected = () => {
-      console.log('Call was rejected');
-      setActiveCall(null);
-      setIncomingCall(null);
-    };
-
-    window.addEventListener('incoming-call', handleIncomingCall);
-    window.addEventListener('call-rejected', handleCallRejected);
-
-    return () => {
-      window.removeEventListener('incoming-call', handleIncomingCall);
-      window.removeEventListener('call-rejected', handleCallRejected);
-    };
-  }, []);
+  const isIncomingRinging =
+    call.status === CALL_STATUS.RINGING && call.direction === 'incoming';
+  const isCallActive =
+    call.status === CALL_STATUS.CALLING || call.status === CALL_STATUS.ACCEPTED;
 
   useEffect(() => {
     if (!ringtoneRef.current) return;
 
-    if (incomingCall && !activeCall) {
+    if (isIncomingRinging && !isCallActive) {
       ringtoneRef.current.start();
       if (!lastIncomingRef.current) {
         playHorn();
@@ -221,7 +209,7 @@ const Project = () => {
       ringtoneRef.current.stop();
       lastIncomingRef.current = false;
     }
-  }, [incomingCall, activeCall]);
+  }, [isIncomingRinging, isCallActive]);
 
   /* ========== LOADING STATE ========== */
 
@@ -297,40 +285,19 @@ const Project = () => {
     }
 
     console.log(`Starting ${type} call with ${targetUser}`);
-    setActiveCall({
-      type,
-      user: targetUser,
-      isIncoming: false,
-    });
+    dispatch(callStartRequested({ callee: targetUser, callType: type }));
   };
 
   const acceptIncomingCall = () => {
-    if (!incomingCall) return;
-
-    console.log('Accepting incoming call from:', incomingCall.from);
-    setActiveCall({
-      type: incomingCall.type,
-      user: incomingCall.from,
-      isIncoming: true,
-      offer: incomingCall.offer,
-    });
-    setIncomingCall(null);
+    if (!isIncomingRinging) return;
+    console.log('Accepting incoming call');
+    dispatch(callAcceptRequested());
   };
 
   const rejectIncomingCall = () => {
-    if (incomingCall) {
-      console.log('Rejecting call from:', incomingCall.from);
-      dispatch({
-        type: 'socket/callRejected',
-        payload: { to: incomingCall.from },
-      });
-    }
-    setIncomingCall(null);
-  };
-
-  const endCall = () => {
-    console.log('Ending call');
-    setActiveCall(null);
+    if (!isIncomingRinging) return;
+    console.log('Rejecting incoming call');
+    dispatch(callRejectRequested());
   };
 
   return (
@@ -663,7 +630,7 @@ const Project = () => {
 
       {/* Incoming Call Banner */}
       <AnimatePresence>
-        {incomingCall && !activeCall && (
+        {isIncomingRinging && (
           <motion.div
             initial={{ y: -80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -673,15 +640,15 @@ const Project = () => {
             <div className="pointer-events-auto w-full max-w-md bg-[#111418]/90 backdrop-blur-xl border border-[#17E1FF]/30 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
                 <div className="w-11 h-11 rounded-full bg-[#17E1FF]/10 flex items-center justify-center animate-pulse">
-                  {incomingCall.type === 'audio' ? (
+                  {call.callType === 'audio' ? (
                     <Phone className="w-5 h-5 text-[#17E1FF]" />
                   ) : (
                     <Video className="w-5 h-5 text-[#17E1FF]" />
                   )}
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium">{incomingCall.from}</p>
-                  <p className="text-xs text-[#17E1FF]">Incoming {incomingCall.type} call...</p>
+                  <p className="text-white text-sm font-medium">{call.caller}</p>
+                  <p className="text-xs text-[#17E1FF]">Incoming {call.callType} call...</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -773,26 +740,12 @@ const Project = () => {
 
       {/* Audio Call Page */}
       <AnimatePresence>
-        {activeCall?.type === 'audio' && (
-          <AudioCallPage
-            user={activeCall.user}
-            isIncoming={activeCall.isIncoming}
-            offer={activeCall.offer}
-            onEnd={endCall}
-          />
-        )}
+        {isCallActive && call.callType === 'audio' && <AudioCallPage />}
       </AnimatePresence>
 
       {/* Video Call Page */}
       <AnimatePresence>
-        {activeCall?.type === 'video' && (
-          <VideoCallPage
-            user={activeCall.user}
-            isIncoming={activeCall.isIncoming}
-            offer={activeCall.offer}
-            onEnd={endCall}
-          />
-        )}
+        {isCallActive && call.callType === 'video' && <VideoCallPage />}
       </AnimatePresence>
     </div>
   );

@@ -1,237 +1,76 @@
-// src/components/ui/CallingPage.jsx
-
+// src/components/CallingPage.jsx
 import { motion } from 'framer-motion';
 import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useAppDispatch } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-  getMedia,
-  stopMedia,
-  toggleAudio as toggleAudioTrack,
-  toggleVideo as toggleVideoTrack,
-} from '../webrtc/media';
-import {
-  addIceCandidate,
-  addTrack,
-  closePeer,
-  createAnswer,
-  createOffer,
-  createPeer,
-  setRemoteDescription,
-} from '../webrtc/peer';
+  CALL_STATUS,
+  callEndRequested,
+  setMuted,
+  setVideoOff,
+} from '../store/slices/callSlice';
+import { toggleAudio, toggleVideo } from '../webrtc/callManager';
 
-export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
-  const dispatch = useAppDispatch();
-  const [isMuted, setIsMuted] = useState(false);
+const useCallDuration = status => {
   const [callDuration, setCallDuration] = useState(0);
-  const [callState, setCallState] = useState(isIncoming ? 'connecting' : 'calling');
-  const [initError, setInitError] = useState(null);
-  const [retryKey, setRetryKey] = useState(0);
-  const remoteAudioRef = useRef(null);
 
-  // Call duration timer
   useEffect(() => {
+    if (status !== CALL_STATUS.ACCEPTED) {
+      setCallDuration(0);
+      return undefined;
+    }
+
     const interval = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [status]);
 
-  // Initialize WebRTC for audio call
+  return callDuration;
+};
+
+const formatDuration = seconds => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const AudioCallPage = ({ onEnd }) => {
+  const dispatch = useAppDispatch();
+  const call = useAppSelector(state => state.call);
+  const remoteAudioRef = useRef(null);
+  const callDuration = useCallDuration(call.status);
+
+  const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
+
   useEffect(() => {
-    let cancelled = false;
-    let stream = null;
-    let peer = null;
-
-    const initializeCall = async () => {
-      if (cancelled) return;
-
-      try {
-        console.log('Initializing audio call...');
-        setInitError(null);
-        setCallState('connecting');
-
-        // Get audio stream
-        stream = await getMedia({ audio: true, video: false });
-        if (cancelled) {
-          stream.getTracks().forEach(t => t.stop());
-          return;
-        }
-
-        // Create peer connection
-        peer = createPeer();
-
-        // Add tracks to peer
-        stream.getTracks().forEach(track => {
-          addTrack(track, stream);
-        });
-
-        // Setup peer event handlers
-        peer.ontrack = event => {
-          console.log('Received remote audio track');
-
-          if (remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = event.streams[0];
-          }
-
-          setCallState('connected');
-        };
-
-        // Handle call flow
-        if (isIncoming && offer) {
-          // Receiving call - set remote offer and create answer
-          await setRemoteDescription(offer);
-          const answer = await createAnswer();
-
-          dispatch({
-            type: 'socket/callAccepted',
-            payload: { to: user, answer },
-          });
-
-          console.log('Answer sent to caller');
-          setCallState('connected');
-        } else {
-          // Making call - create offer
-          const localOffer = await createOffer();
-
-          dispatch({
-            type: 'socket/callUser',
-            payload: {
-              username: user,
-              offer: localOffer,
-              type: 'audio',
-            },
-          });
-
-          console.log('Offer sent to callee');
-        }
-      } catch (error) {
-        if (cancelled) return;
-        console.error('Audio call initialization failed:', error);
-        const isPermissionError =
-          error?.code === 'NotAllowedError' || error?.name === 'NotAllowedError';
-        setInitError(error?.message || 'Unable to access microphone.');
-        if (isPermissionError) {
-          setCallState('permission');
-          return;
-        }
-        setCallState('failed');
-        setTimeout(() => onEnd(), 2000);
-      }
-    };
-
-    initializeCall();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [retryKey]);
-
-  // Handle call accepted event
-  useEffect(() => {
-    const handleCallAccepted = async event => {
-      try {
-        const { answer } = event.detail;
-        console.log('Call accepted, setting answer');
-        await setRemoteDescription(answer);
-        setCallState('connected');
-      } catch (error) {
-        console.error('Failed to set answer:', error);
-      }
-    };
-
-    window.addEventListener('call-accepted', handleCallAccepted);
-    return () => window.removeEventListener('call-accepted', handleCallAccepted);
-  }, []);
-
-  // Handle ICE candidates
-  useEffect(() => {
-    const handleIceCandidate = event => {
-      const { candidate } = event.detail;
-      dispatch({
-        type: 'socket/iceCandidate',
-        payload: { to: user, candidate },
-      });
-    };
-
-    const handleIncomingIceCandidate = event => {
-      const { candidate } = event.detail;
-      addIceCandidate(candidate);
-    };
-
-    window.addEventListener('ice-candidate-generated', handleIceCandidate);
-    window.addEventListener('ice-candidate', handleIncomingIceCandidate);
-
-    return () => {
-      window.removeEventListener('ice-candidate-generated', handleIceCandidate);
-      window.removeEventListener('ice-candidate', handleIncomingIceCandidate);
-    };
-  }, [user, dispatch]);
-
-  // Handle call end
-  useEffect(() => {
-    const handleRemoteEndCall = () => {
-      console.log('Call ended by remote peer');
-      handleEndCall();
-    };
-
-    window.addEventListener('end-call', handleRemoteEndCall);
-    return () => window.removeEventListener('end-call', handleRemoteEndCall);
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      console.log('🧹 Cleaning up audio call');
-      stopMedia();
-      closePeer();
-    };
-  }, []);
+    if (remoteAudioRef.current && call.remoteStream) {
+      remoteAudioRef.current.srcObject = call.remoteStream;
+    }
+  }, [call.remoteStream]);
 
   const handleMuteToggle = () => {
-    const newMuted = !isMuted;
-    toggleAudioTrack(!newMuted);
-    setIsMuted(newMuted);
-  };
-
-  const handleRetry = () => {
-    setInitError(null);
-    setCallState(isIncoming ? 'connecting' : 'calling');
-    stopMedia();
-    closePeer();
-    setRetryKey(prev => prev + 1);
+    const newMuted = !call.isMuted;
+    toggleAudio(!newMuted);
+    dispatch(setMuted(newMuted));
   };
 
   const handleEndCall = () => {
-    dispatch({
-      type: 'socket/endCall',
-      payload: { to: user },
-    });
-    stopMedia();
-    closePeer();
-    onEnd();
-  };
-
-  const formatDuration = seconds => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    dispatch(callEndRequested());
+    onEnd?.();
   };
 
   const getStatusText = () => {
-    switch (callState) {
-      case 'calling':
+    switch (call.status) {
+      case CALL_STATUS.CALLING:
         return 'Calling...';
-      case 'connecting':
-        return 'Connecting...';
-      case 'connected':
+      case CALL_STATUS.ACCEPTED:
         return formatDuration(callDuration);
-      case 'failed':
+      case CALL_STATUS.FAILED:
         return 'Call Failed';
-      case 'permission':
-        return 'Permission Required';
       default:
-        return 'Audio Call';
+        return 'Connecting...';
     }
   };
 
@@ -244,23 +83,13 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
     >
       <audio ref={remoteAudioRef} autoPlay playsInline />
       <div className="text-center space-y-6">
-        <div
-          className={`w-32 h-32 rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto ${callState === 'connecting' ? 'animate-pulse' : ''}`}
-        >
+        <div className="w-32 h-32 rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto animate-pulse">
           <Phone className="w-16 h-16 text-[#17E1FF]" />
         </div>
-        <h2 className="text-3xl font-light text-white">{user}</h2>
+        <h2 className="text-3xl font-light text-white">{peerName || 'Unknown'}</h2>
         <p className="text-xl text-gray-400">{getStatusText()}</p>
-        {initError && <p className="text-sm text-red-400 max-w-sm mx-auto">{initError}</p>}
-        {callState === 'permission' && (
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 rounded-lg bg-[#17E1FF] text-black hover:bg-[#17E1FF]/90 transition-all"
-          >
-            Retry
-          </button>
-        )}
-        {callState === 'connected' && (
+        {call.error && <p className="text-sm text-red-400 max-w-sm mx-auto">{call.error}</p>}
+        {call.status === CALL_STATUS.ACCEPTED && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-sm text-emerald-500">Connected</span>
@@ -271,9 +100,9 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
       <div className="absolute bottom-12 left-0 right-0 flex justify-center space-x-8">
         <button
           onClick={handleMuteToggle}
-          className={`p-6 rounded-full ${isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+          className={`p-6 rounded-full ${call.isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
         >
-          {isMuted ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+          {call.isMuted ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
         </button>
 
         <button
@@ -287,213 +116,42 @@ export const AudioCallPage = ({ user, isIncoming, offer, onEnd }) => {
   );
 };
 
-export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
+export const VideoCallPage = ({ onEnd }) => {
   const dispatch = useAppDispatch();
+  const call = useAppSelector(state => state.call);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-  const [callState, setCallState] = useState(isIncoming ? 'connecting' : 'calling');
-  const [initError, setInitError] = useState(null);
-  const [retryKey, setRetryKey] = useState(0);
+  const callDuration = useCallDuration(call.status);
 
-  // Call duration timer
+  const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (remoteVideoRef.current && call.remoteStream) {
+      remoteVideoRef.current.srcObject = call.remoteStream;
+    }
+  }, [call.remoteStream]);
 
-  // Initialize WebRTC for video call
   useEffect(() => {
-    let cancelled = false;
-    let stream = null;
-    let peer = null;
-
-    const initializeCall = async () => {
-      if (cancelled) return;
-
-      try {
-        console.log('🎥 Initializing video call...');
-        setInitError(null);
-        setCallState('connecting');
-
-        // Get video + audio stream
-        stream = await getMedia({ audio: true, video: true });
-        if (cancelled) {
-          stream.getTracks().forEach(t => t.stop());
-          return;
-        }
-
-        // Display local video
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-
-        // Create peer connection
-        peer = createPeer();
-
-        // Add tracks to peer
-        stream.getTracks().forEach(track => {
-          addTrack(track, stream);
-        });
-
-        // Setup peer event handlers
-        peer.ontrack = event => {
-          console.log('📹 Received remote track:', event.track.kind);
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-            setCallState('connected');
-          }
-        };
-
-        // Handle call flow
-        if (isIncoming && offer) {
-          // Receiving call - set remote offer and create answer
-          await setRemoteDescription(offer);
-          const answer = await createAnswer();
-
-          dispatch({
-            type: 'socket/callAccepted',
-            payload: { to: user, answer },
-          });
-
-          console.log('Answer sent to caller');
-          setCallState('connected');
-        } else {
-          // Making call - create offer
-          const localOffer = await createOffer();
-
-          dispatch({
-            type: 'socket/callUser',
-            payload: {
-              username: user,
-              offer: localOffer,
-              type: 'video',
-            },
-          });
-
-          console.log('Offer sent to callee');
-        }
-      } catch (error) {
-        if (cancelled) return;
-        console.error('Video call initialization failed:', error);
-        const isPermissionError =
-          error?.code === 'NotAllowedError' || error?.name === 'NotAllowedError';
-        setInitError(error?.message || 'Unable to access camera.');
-        if (isPermissionError) {
-          setCallState('permission');
-          return;
-        }
-        setCallState('failed');
-        setTimeout(() => onEnd(), 2000);
-      }
-    };
-
-    initializeCall();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [retryKey]);
-
-  // Handle call accepted event
-  useEffect(() => {
-    const handleCallAccepted = async event => {
-      try {
-        const { answer } = event.detail;
-        console.log('Call accepted, setting answer');
-        await setRemoteDescription(answer);
-        setCallState('connected');
-      } catch (error) {
-        console.error('Failed to set answer:', error);
-      }
-    };
-
-    window.addEventListener('call-accepted', handleCallAccepted);
-    return () => window.removeEventListener('call-accepted', handleCallAccepted);
-  }, []);
-
-  // Handle ICE candidates
-  useEffect(() => {
-    const handleIceCandidate = event => {
-      const { candidate } = event.detail;
-      dispatch({
-        type: 'socket/iceCandidate',
-        payload: { to: user, candidate },
-      });
-    };
-
-    const handleIncomingIceCandidate = event => {
-      const { candidate } = event.detail;
-      addIceCandidate(candidate);
-    };
-
-    window.addEventListener('ice-candidate-generated', handleIceCandidate);
-    window.addEventListener('ice-candidate', handleIncomingIceCandidate);
-
-    return () => {
-      window.removeEventListener('ice-candidate-generated', handleIceCandidate);
-      window.removeEventListener('ice-candidate', handleIncomingIceCandidate);
-    };
-  }, [user, dispatch]);
-
-  // Handle call end
-  useEffect(() => {
-    const handleRemoteEndCall = () => {
-      console.log('📞 Call ended by remote peer');
-      handleEndCall();
-    };
-
-    window.addEventListener('end-call', handleRemoteEndCall);
-    return () => window.removeEventListener('end-call', handleRemoteEndCall);
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      console.log('🧹 Cleaning up video call');
-      stopMedia();
-      closePeer();
-    };
-  }, []);
+    if (localVideoRef.current && call.localStream) {
+      localVideoRef.current.srcObject = call.localStream;
+    }
+  }, [call.localStream]);
 
   const handleMuteToggle = () => {
-    const newMuted = !isMuted;
-    toggleAudioTrack(!newMuted);
-    setIsMuted(newMuted);
+    const newMuted = !call.isMuted;
+    toggleAudio(!newMuted);
+    dispatch(setMuted(newMuted));
   };
 
   const handleVideoToggle = () => {
-    const newVideoOff = !isVideoOff;
-    toggleVideoTrack(!newVideoOff);
-    setIsVideoOff(newVideoOff);
-  };
-
-  const handleRetry = () => {
-    setInitError(null);
-    setCallState(isIncoming ? 'connecting' : 'calling');
-    stopMedia();
-    closePeer();
-    setRetryKey(prev => prev + 1);
+    const newVideoOff = !call.isVideoOff;
+    toggleVideo(!newVideoOff);
+    dispatch(setVideoOff(newVideoOff));
   };
 
   const handleEndCall = () => {
-    dispatch({
-      type: 'socket/endCall',
-      payload: { to: user },
-    });
-    stopMedia();
-    closePeer();
-    onEnd();
-  };
-
-  const formatDuration = seconds => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    dispatch(callEndRequested());
+    onEnd?.();
   };
 
   return (
@@ -506,54 +164,36 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
       {/* Remote Video */}
       <div className="absolute inset-0 flex items-center justify-center bg-[#0B0E12]">
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-        {callState !== 'connected' && (
+        {call.status !== CALL_STATUS.ACCEPTED && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="w-32 h-32 rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
                 <Video className="w-16 h-16 text-[#17E1FF]" />
               </div>
               <p className="text-white text-xl">
-                {callState === 'permission'
-                  ? 'Camera Permission Required'
-                  : callState === 'failed'
-                    ? 'Call Failed'
-                    : callState === 'calling'
-                      ? 'Calling...'
-                      : 'Connecting...'}
+                {call.status === CALL_STATUS.CALLING ? 'Calling...' : 'Connecting...'}
               </p>
-              {initError && <p className="text-sm text-red-400 mt-2 max-w-xs">{initError}</p>}
-              {callState === 'permission' && (
-                <button
-                  onClick={handleRetry}
-                  className="mt-4 px-4 py-2 rounded-lg bg-[#17E1FF] text-black hover:bg-[#17E1FF]/90 transition-all"
-                >
-                  Retry
-                </button>
-              )}
+              {call.error && <p className="text-sm text-red-400 mt-2 max-w-xs">{call.error}</p>}
             </div>
           </div>
         )}
       </div>
 
       {/* Local Video PIP */}
-      {!isVideoOff && (
+      {!call.isVideoOff && (
         <div className="absolute top-6 right-6 w-48 h-64 bg-black rounded-xl overflow-hidden border-2 border-[#17E1FF]/30 shadow-2xl">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
+          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
         </div>
       )}
 
       {/* Top Info */}
       <div className="absolute top-6 left-6 text-white z-10">
-        <h2 className="text-2xl font-light">{user}</h2>
+        <h2 className="text-2xl font-light">{peerName || 'Unknown'}</h2>
         <div className="flex items-center space-x-3 mt-1">
-          <p className="text-lg text-gray-300">{formatDuration(callDuration)}</p>
-          {callState === 'connected' && (
+          <p className="text-lg text-gray-300">
+            {call.status === CALL_STATUS.ACCEPTED ? formatDuration(callDuration) : '00:00'}
+          </p>
+          {call.status === CALL_STATUS.ACCEPTED && (
             <>
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-sm text-emerald-500">Connected</span>
@@ -566,16 +206,16 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
       <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-6 z-10">
         <button
           onClick={handleMuteToggle}
-          className={`p-5 rounded-full ${isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+          className={`p-5 rounded-full ${call.isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
         >
-          {isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+          {call.isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
         </button>
 
         <button
           onClick={handleVideoToggle}
-          className={`p-5 rounded-full ${isVideoOff ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+          className={`p-5 rounded-full ${call.isVideoOff ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
         >
-          {isVideoOff ? <VideoOff className="w-7 h-7" /> : <Video className="w-7 h-7" />}
+          {call.isVideoOff ? <VideoOff className="w-7 h-7" /> : <Video className="w-7 h-7" />}
         </button>
 
         <button
@@ -589,7 +229,6 @@ export const VideoCallPage = ({ user, isIncoming, offer, onEnd }) => {
   );
 };
 
-// Default export wrapper
 const CallingPage = ({ type = 'audio', ...props }) => {
   return type === 'video' ? <VideoCallPage {...props} /> : <AudioCallPage {...props} />;
 };

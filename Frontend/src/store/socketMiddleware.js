@@ -2,6 +2,22 @@
 import { io } from 'socket.io-client';
 import { notify } from '../lib/notify';
 import {
+  CALL_STATUS,
+  callAcceptRequested,
+  callCancelRequested,
+  callEndRequested,
+  callRejectRequested,
+  callStartRequested,
+  resetCallState,
+  setCallAccepted,
+  setCallEnded,
+  setIncomingCall,
+  setLocalStream,
+  setOutgoingCall,
+  setPeerConnection,
+  setRemoteStream,
+} from './slices/callSlice';
+import {
   addChatMessage,
   addTypingUser,
   removeTypingUser,
@@ -13,6 +29,14 @@ import {
   updateProjectReview,
 } from './slices/projectSlice';
 import {
+  acceptIncoming,
+  addRemoteIceCandidate,
+  applyAnswer,
+  cleanup as cleanupCallMedia,
+  handleRemoteOffer,
+  startOutgoing,
+} from '../webrtc/callManager';
+import {
   socketConnected,
   socketConnecting,
   socketDisconnected,
@@ -23,8 +47,255 @@ let socket = null;
 let pendingActions = [];
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
+let callTimeoutId = null;
+let callResetId = null;
+let iceCandidateListener = null;
+let peerStateListener = null;
+let iceRestartListener = null;
+
+const clearCallTimers = () => {
+  if (callTimeoutId) {
+    clearTimeout(callTimeoutId);
+    callTimeoutId = null;
+  }
+  if (callResetId) {
+    clearTimeout(callResetId);
+    callResetId = null;
+  }
+};
+
+const generateCallId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const removeCallListeners = () => {
+  if (iceCandidateListener) {
+    window.removeEventListener('ice-candidate-generated', iceCandidateListener);
+    iceCandidateListener = null;
+  }
+  if (peerStateListener) {
+    window.removeEventListener('peer-connection-state-change', peerStateListener);
+    peerStateListener = null;
+  }
+  if (iceRestartListener) {
+    window.removeEventListener('ice-restart-offer', iceRestartListener);
+    iceRestartListener = null;
+  }
+};
+
+const attachCallListeners = store => {
+  if (!iceCandidateListener) {
+    iceCandidateListener = event => {
+      const callId = store.getState().call.callId;
+      if (!callId || !socket?.connected) return;
+      socket.emit('call:ice-candidate', { callId, candidate: event.detail?.candidate });
+    };
+    window.addEventListener('ice-candidate-generated', iceCandidateListener);
+  }
+
+  if (!peerStateListener) {
+    peerStateListener = event => {
+      const state = event.detail?.state;
+      if (!state) return;
+      if (['failed', 'closed', 'disconnected'].includes(state)) {
+        store.dispatch(
+          setCallEnded({ status: CALL_STATUS.FAILED, reason: `peer-${state}` })
+        );
+        cleanupCall(store);
+      }
+    };
+    window.addEventListener('peer-connection-state-change', peerStateListener);
+  }
+
+  if (!iceRestartListener) {
+    iceRestartListener = event => {
+      const callId = store.getState().call.callId;
+      if (!callId || !socket?.connected) return;
+      const offer = event.detail?.offer;
+      if (!offer) return;
+      socket.emit('call:offer', { callId, offer });
+    };
+    window.addEventListener('ice-restart-offer', iceRestartListener);
+  }
+};
+
+const scheduleReset = store => {
+  if (callResetId) clearTimeout(callResetId);
+  callResetId = setTimeout(() => {
+    store.dispatch(resetCallState());
+  }, 1200);
+};
+
+const cleanupCall = store => {
+  cleanupCallMedia();
+  removeCallListeners();
+  clearCallTimers();
+  scheduleReset(store);
+};
+
+const logCall = (message, payload) => {
+  if (payload) {
+    console.log(`[CALL] ${message}`, payload);
+  } else {
+    console.log(`[CALL] ${message}`);
+  }
+};
 
 export const socketMiddleware = store => next => action => {
+  /* ========== CALL ACTIONS ========== */
+  if (action.type === callStartRequested.type) {
+    const { callee, callType = 'audio' } = action.payload || {};
+    const state = store.getState();
+
+    if (!callee) return next(action);
+    if (state.call.status !== CALL_STATUS.IDLE) {
+      notify('A call is already in progress', 'warning');
+      return next(action);
+    }
+    if (!socket?.connected) {
+      store.dispatch(
+        setCallEnded({ status: CALL_STATUS.FAILED, reason: 'socket-disconnected' })
+      );
+      cleanupCall(store);
+      return next(action);
+    }
+
+    const callId = generateCallId();
+    store.dispatch(
+      setOutgoingCall({
+        callId,
+        receiver: callee,
+        callType,
+        caller: state.auth.user?.username,
+      })
+    );
+    logCall('start', { callId, callee, callType });
+    attachCallListeners(store);
+
+    void (async () => {
+      try {
+        const { offer, localStream, peer } = await startOutgoing(callType, stream => {
+          store.dispatch(setRemoteStream(stream));
+        });
+
+        store.dispatch(setLocalStream(localStream));
+        store.dispatch(setPeerConnection(peer));
+
+        socket.emit('call:initiate', { callId, to: callee, offer, type: callType });
+
+        clearCallTimers();
+        callTimeoutId = setTimeout(() => {
+          const current = store.getState().call;
+          if (current.callId === callId && current.status === CALL_STATUS.CALLING) {
+            socket.emit('call:cancel', { callId, reason: 'timeout' });
+            store.dispatch(
+              setCallEnded({ status: CALL_STATUS.CANCELLED, reason: 'timeout' })
+            );
+            cleanupCall(store);
+          }
+        }, 30000);
+      } catch (error) {
+        store.dispatch(
+          setCallEnded({
+            status: CALL_STATUS.FAILED,
+            reason: 'init-failed',
+            error: error?.message || 'Failed to start call',
+          })
+        );
+        cleanupCall(store);
+      }
+    })();
+
+    return next(action);
+  }
+
+  if (action.type === callAcceptRequested.type) {
+    const state = store.getState().call;
+
+    if (state.status !== CALL_STATUS.RINGING) return next(action);
+    if (!socket?.connected) {
+      store.dispatch(
+        setCallEnded({ status: CALL_STATUS.FAILED, reason: 'socket-disconnected' })
+      );
+      cleanupCall(store);
+      return next(action);
+    }
+
+    attachCallListeners(store);
+    logCall('accept', { callId: state.callId });
+
+    void (async () => {
+      try {
+        const { answer, localStream, peer } = await acceptIncoming(
+          state.callType,
+          state.offer,
+          stream => {
+            store.dispatch(setRemoteStream(stream));
+          }
+        );
+
+        store.dispatch(setLocalStream(localStream));
+        store.dispatch(setPeerConnection(peer));
+        store.dispatch(setCallAccepted());
+
+        socket.emit('call:accept', { callId: state.callId, answer });
+      } catch (error) {
+        store.dispatch(
+          setCallEnded({
+            status: CALL_STATUS.FAILED,
+            reason: 'accept-failed',
+            error: error?.message || 'Failed to accept call',
+          })
+        );
+        cleanupCall(store);
+      }
+    })();
+
+    return next(action);
+  }
+
+  if (action.type === callRejectRequested.type) {
+    const { callId } = store.getState().call;
+    if (socket?.connected && callId) {
+      logCall('reject', { callId });
+      socket.emit('call:reject', { callId, reason: 'rejected' });
+    }
+    store.dispatch(setCallEnded({ status: CALL_STATUS.REJECTED, reason: 'rejected' }));
+    cleanupCall(store);
+    return next(action);
+  }
+
+  if (action.type === callCancelRequested.type) {
+    const { callId } = store.getState().call;
+    if (socket?.connected && callId) {
+      logCall('cancel', { callId });
+      socket.emit('call:cancel', { callId, reason: 'cancelled' });
+    }
+    store.dispatch(setCallEnded({ status: CALL_STATUS.CANCELLED, reason: 'cancelled' }));
+    cleanupCall(store);
+    return next(action);
+  }
+
+  if (action.type === callEndRequested.type) {
+    const current = store.getState().call;
+    if (socket?.connected && current.callId) {
+      if ([CALL_STATUS.CALLING, CALL_STATUS.RINGING].includes(current.status)) {
+        logCall('cancel', { callId: current.callId });
+        socket.emit('call:cancel', { callId: current.callId, reason: 'cancelled' });
+        store.dispatch(
+          setCallEnded({ status: CALL_STATUS.CANCELLED, reason: 'cancelled' })
+        );
+      } else {
+        logCall('end', { callId: current.callId });
+        socket.emit('call:end', { callId: current.callId, reason: 'ended' });
+        store.dispatch(setCallEnded({ status: CALL_STATUS.ENDED, reason: 'ended' }));
+      }
+    }
+    cleanupCall(store);
+    return next(action);
+  }
+
   /* ========== SOCKET INITIALIZATION ========== */
 
   if (action.type === 'socket/init') {
@@ -71,6 +342,14 @@ export const socketMiddleware = store => next => action => {
       if (reason === 'io server disconnect') {
         notify('Disconnected by server. Please refresh.', 'error');
       }
+
+      const current = store.getState().call;
+      if (current.status !== CALL_STATUS.IDLE) {
+        store.dispatch(
+          setCallEnded({ status: CALL_STATUS.FAILED, reason: 'socket-disconnected' })
+        );
+        cleanupCall(store);
+      }
     });
 
     socket.on('connect_error', err => {
@@ -97,6 +376,156 @@ export const socketMiddleware = store => next => action => {
     socket.on('error', err => {
       store.dispatch(socketError(err.message || 'Socket error'));
       notify(err.message || 'An error occurred', 'error');
+    });
+
+    /* ===== CALL EVENTS ===== */
+    socket.on('call:initiated', ({ callId }) => {
+      const current = store.getState().call;
+      if (current.status === CALL_STATUS.CALLING && current.callId && current.callId !== callId) {
+        store.dispatch(
+          setOutgoingCall({
+            callId,
+            receiver: current.receiver,
+            callType: current.callType,
+          })
+        );
+      }
+    });
+
+    socket.on('call:incoming', ({ callId, from, type, offer }) => {
+      const current = store.getState().call;
+      if (current.status !== CALL_STATUS.IDLE) {
+        socket.emit('call:reject', { callId, reason: 'busy' });
+        return;
+      }
+      logCall('incoming', { callId, from, type });
+      store.dispatch(
+        setIncomingCall({
+          callId,
+          caller: from,
+          receiver: store.getState().auth.user?.username,
+          callType: type || 'audio',
+          offer,
+        })
+      );
+      notify(`Incoming ${type || 'audio'} call from ${from}`, 'info');
+    });
+
+    socket.on('call:accepted', ({ callId }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('accepted', { callId });
+      clearCallTimers();
+      store.dispatch(setCallAccepted());
+    });
+
+    socket.on('call:answer', async ({ callId, answer }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('answer', { callId });
+      try {
+        await applyAnswer(answer);
+        store.dispatch(setCallAccepted());
+      } catch (error) {
+        store.dispatch(
+          setCallEnded({
+            status: CALL_STATUS.FAILED,
+            reason: 'answer-failed',
+            error: error?.message || 'Failed to apply answer',
+          })
+        );
+        cleanupCall(store);
+      }
+    });
+
+    socket.on('call:offer', async ({ callId, offer }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      if (current.status !== CALL_STATUS.ACCEPTED) return;
+      if (!socket?.connected) return;
+      logCall('offer', { callId });
+      try {
+        const answer = await handleRemoteOffer(offer);
+        if (answer) {
+          socket.emit('call:answer', { callId, answer });
+        }
+      } catch (error) {
+        store.dispatch(
+          setCallEnded({
+            status: CALL_STATUS.FAILED,
+            reason: 'offer-failed',
+            error: error?.message || 'Failed to handle offer',
+          })
+        );
+        cleanupCall(store);
+      }
+    });
+
+    socket.on('call:reject', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('rejected', { callId, reason });
+      store.dispatch(setCallEnded({ status: CALL_STATUS.REJECTED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:rejected', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      store.dispatch(setCallEnded({ status: CALL_STATUS.REJECTED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:cancel', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('cancelled', { callId, reason });
+      store.dispatch(setCallEnded({ status: CALL_STATUS.CANCELLED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:cancelled', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      store.dispatch(setCallEnded({ status: CALL_STATUS.CANCELLED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:end', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('ended', { callId, reason });
+      store.dispatch(setCallEnded({ status: CALL_STATUS.ENDED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:user-disconnected', ({ callId, reason }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      logCall('user-disconnected', { callId, reason });
+      store.dispatch(setCallEnded({ status: CALL_STATUS.FAILED, reason }));
+      cleanupCall(store);
+    });
+
+    socket.on('call:failed', ({ reason, message }) => {
+      const current = store.getState().call;
+      if (current.status === CALL_STATUS.IDLE) return;
+      logCall('failed', { reason, message });
+      store.dispatch(
+        setCallEnded({
+          status: CALL_STATUS.FAILED,
+          reason: reason || 'failed',
+          error: message || 'Call failed',
+        })
+      );
+      cleanupCall(store);
+      notify(message || 'Call failed', 'error');
+    });
+
+    socket.on('call:ice-candidate', async ({ callId, candidate }) => {
+      const current = store.getState().call;
+      if (current.callId !== callId) return;
+      await addRemoteIceCandidate(candidate);
     });
 
     /* ===== PROJECT ROOM EVENTS ===== */
@@ -239,65 +668,6 @@ export const socketMiddleware = store => next => action => {
       const errorReview = `❌ **AI Review Error**\n\n${message || error || 'An unknown error occurred'}\n\nTroubleshooting:\n- Check if GOOGLE_API_KEY is set in backend .env\n- Verify Gemini API is accessible\n- Check backend logs for details`;
       store.dispatch(updateProjectReview({ projectId, review: errorReview }));
       notify('Review generation failed', 'error');
-    });
-
-    /* ===== WEBRTC CALL SIGNALING EVENTS ===== */
-
-    socket.on('incoming-call', ({ from, offer, type, callerSocket }) => {
-      console.log('Incoming call from:', from, 'Type:', type);
-      notify(`Incoming ${type} call from ${from}`, 'info');
-
-      window.dispatchEvent(
-        new CustomEvent('incoming-call', {
-          detail: { from, offer, type, callerSocket },
-        })
-      );
-    });
-
-    socket.on('call-accepted', ({ answer, from }) => {
-      console.log('Call accepted by:', from);
-
-      window.dispatchEvent(
-        new CustomEvent('call-accepted', {
-          detail: { answer, from },
-        })
-      );
-    });
-
-    socket.on('call-rejected', ({ from }) => {
-      console.log('Call rejected by:', from);
-      notify(`${from} rejected the call`, 'warning');
-
-      window.dispatchEvent(
-        new CustomEvent('call-rejected', {
-          detail: { from },
-        })
-      );
-    });
-
-    socket.on('call-failed', ({ message }) => {
-      console.error('Call failed:', message);
-      notify(message || 'Call failed', 'error');
-    });
-
-    socket.on('end-call', ({ from }) => {
-      console.log('Call ended by:', from);
-
-      window.dispatchEvent(
-        new CustomEvent('end-call', {
-          detail: { from },
-        })
-      );
-    });
-
-    socket.on('ice-candidate', ({ candidate, from }) => {
-      console.log('Received ICE candidate from:', from);
-
-      window.dispatchEvent(
-        new CustomEvent('ice-candidate', {
-          detail: { candidate, from },
-        })
-      );
     });
 
     /* ===== TEAM EVENTS ===== */

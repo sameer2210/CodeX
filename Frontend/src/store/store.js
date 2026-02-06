@@ -4,6 +4,7 @@ import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { notify } from '../lib/notify';
 import authSlice from './slices/authSlice';
+import callSlice from './slices/callSlice';
 import projectSlice from './slices/projectSlice';
 import socketSlice from './slices/socketSlice';
 import { socketMiddleware } from './socketMiddleware';
@@ -18,6 +19,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   socket: socketSlice,
   auth: authSlice,
+  call: callSlice,
   projects: projectSlice,
 });
 
@@ -45,7 +47,11 @@ export const store = configureStore({
           'persist/PURGE',
           'persist/REGISTER',
         ],
-        ignoredPaths: ['some.nonSerializablePath'],
+        ignoredPaths: [
+          'call.localStream',
+          'call.remoteStream',
+          'call.peerConnection',
+        ],
       },
     }).concat(socketMiddleware, errorLogger),
   devTools: process.env.NODE_ENV !== 'production',

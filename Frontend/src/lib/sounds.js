@@ -47,22 +47,23 @@ export const playHorn = () => {
   if (!ctx) return;
   resumeAudio(ctx);
 
+  // Modified to a modern, short electronic beep (like a notification ping)
   createPulse(ctx, {
-    type: 'sawtooth',
-    frequency: 240,
-    sweepTo: 180,
-    duration: 0.22,
-    gain: 0.06,
+    type: 'sine', // Changed to sine for smoother, modern tone
+    frequency: 800, // Higher frequency for a modern feel
+    sweepTo: 600, // Gentle sweep down
+    duration: 0.15, // Shorter duration
+    gain: 0.08,
     startAt: 0,
   });
 
   createPulse(ctx, {
-    type: 'sawtooth',
-    frequency: 240,
-    sweepTo: 180,
-    duration: 0.22,
-    gain: 0.06,
-    startAt: 0.32,
+    type: 'sine',
+    frequency: 800,
+    sweepTo: 600,
+    duration: 0.15,
+    gain: 0.08,
+    startAt: 0.25, // Slightly shorter delay
   });
 };
 
@@ -71,20 +72,21 @@ const playRingtonePulse = () => {
   if (!ctx) return;
   resumeAudio(ctx);
 
+  // Modified to a modern, chime-like sequence (inspired by contemporary app ringtones)
   const base = [
-    { frequency: 520, sweepTo: 480, startAt: 0 },
-    { frequency: 660, sweepTo: 620, startAt: 0.25 },
-    { frequency: 520, sweepTo: 480, startAt: 0.55 },
-    { frequency: 660, sweepTo: 620, startAt: 0.8 },
+    { frequency: 440, sweepTo: 420, startAt: 0 }, // A note with slight drop
+    { frequency: 554, sweepTo: 534, startAt: 0.2 }, // C# note
+    { frequency: 659, sweepTo: 639, startAt: 0.45 }, // E note
+    { frequency: 554, sweepTo: 534, startAt: 0.7 }, // Back to C#
   ];
 
   base.forEach(tone => {
     createPulse(ctx, {
-      type: 'sine',
+      type: 'triangle', // Changed to triangle for a softer, modern electronic vibe (less harsh than sine or sawtooth)
       frequency: tone.frequency,
       sweepTo: tone.sweepTo,
-      duration: 0.18,
-      gain: 0.045,
+      duration: 0.15, // Shorter pulses for crispness
+      gain: 0.06, // Slightly higher gain for clarity
       startAt: tone.startAt,
     });
   });
@@ -97,7 +99,7 @@ export const createRingtoneLoop = () => {
     start() {
       if (intervalId) return;
       playRingtonePulse();
-      intervalId = setInterval(playRingtonePulse, 2400);
+      intervalId = setInterval(playRingtonePulse, 2000); // Shortened interval for a more modern, faster-paced ring
     },
     stop() {
       if (!intervalId) return;

@@ -442,7 +442,11 @@ export const socketMiddleware = store => next => action => {
     socket.on('call:answer', async ({ callId, answer, from }) => {
       const current = store.getState().call;
       if (current.callId !== callId) return;
-      if (current.status === CALL_STATUS.ACCEPTED) return;
+      const peer = current.peerConnection;
+      if (peer?.currentRemoteDescription || peer?.remoteDescription) {
+        logCall('answer skipped', { callId, reason: 'remote-description-already-set' });
+        return;
+      }
       logCall('answer', { callId });
       try {
         await applyAnswer(answer);

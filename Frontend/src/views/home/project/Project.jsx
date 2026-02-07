@@ -4,7 +4,7 @@ import {
   ChatBubbleLeftRightIcon,
   CodeBracketIcon,
   CommandLineIcon,
-  DocumentMagnifyingGlassIcon,
+  CpuChipIcon,
   HomeIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -271,7 +271,7 @@ const Project = () => {
     {
       key: 'review',
       label: 'Review',
-      icon: DocumentMagnifyingGlassIcon,
+      icon: CpuChipIcon,
       onClick: () => setActiveTab('review'),
     },
   ];
@@ -371,7 +371,7 @@ const Project = () => {
               activeTab === 'review' ? 'bg-[#17E1FF]/10' : 'hover:bg-white/10'
             }`}
           >
-            <DocumentMagnifyingGlassIcon className="w-6 h-6" />
+            <CpuChipIcon className="w-6 h-6" />
           </button>
 
           <button
@@ -492,7 +492,7 @@ const Project = () => {
                                 : 'hover:bg-[#0B0E11]/5'
                           }`}
                         >
-                          <DocumentMagnifyingGlassIcon className="w-5 h-5" />
+                          <CpuChipIcon className="w-5 h-5" />
                         </button>
                       </div>
 
@@ -575,7 +575,7 @@ const Project = () => {
                             : 'hover:bg-[#0B0E11]/5'
                       }`}
                     >
-                      <DocumentMagnifyingGlassIcon className="w-5 h-5" />
+                      <CpuChipIcon className="w-5 h-5" />
                     </button>
                   </div>
 

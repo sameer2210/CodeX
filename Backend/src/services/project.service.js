@@ -37,9 +37,28 @@ export async function reviewProject(id, teamName) {
 export async function executeLocalJavaScript(code) {
   const logs = [];
 
+  const formatArg = arg => {
+    if (typeof arg === 'string') return arg;
+    if (typeof arg === 'number' || typeof arg === 'boolean') return String(arg);
+    if (arg === null || arg === undefined) return String(arg);
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return String(arg);
+    }
+  };
+
+  const pushLog = (level, args) => {
+    const message = args.map(formatArg).join(' ');
+    logs.push(level ? `[${level}] ${message}` : message);
+  };
+
   const sandbox = {
     console: {
-      log: (...args) => logs.push(args.join(' ')),
+      log: (...args) => pushLog('', args),
+      info: (...args) => pushLog('INFO', args),
+      warn: (...args) => pushLog('WARN', args),
+      error: (...args) => pushLog('ERROR', args),
     },
   };
 

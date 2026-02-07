@@ -1,4 +1,5 @@
-import { Copy, Download, RefreshCw, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Copy, Download, RefreshCw, Sparkles, Terminal } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -10,18 +11,17 @@ import {
 } from '../../../../store/slices/projectSlice';
 import { notify } from '../../../../lib/notify';
 import { useTheme } from '../../../../context/ThemeContext';
+import { LEDIndicator, HUDLabel } from '../../../../components/HUD';
 
 const ReviewPanel = ({ projectId }) => {
   const dispatch = useAppDispatch();
+  const { isDarkMode } = useTheme();
 
-  // Selectors
   const review = useAppSelector(selectCurrentProjectReview);
   const code = useAppSelector(selectCurrentProjectCode);
   const language = useAppSelector(selectCurrentProjectLanguage);
   const socketConnected = useAppSelector(state => state.socket.connected);
-  const { isDarkMode, toggleTheme } = useTheme();
 
-  // Local state
   const [isGenerating, setIsGenerating] = useState(false);
 
   /* ========== GENERATE REVIEW ========== */
@@ -113,7 +113,7 @@ const ReviewPanel = ({ projectId }) => {
 - **Characters:** ${chars}
 - **Has Comments:** ${hasComments ? 'Yes' : 'No'}
 - **Has Functions:** ${hasFunctions ? 'Yes' : 'No'}
-- **Has Loops:** ${hasLoops ? 'Yes' : '❌ No'}
+- **Has Loops:** ${hasLoops ? 'Yes' : ' No'}
 - **Has Conditionals:** ${hasConditionals ? 'Yes' : 'No'}
 
 ### Strengths
@@ -171,210 +171,142 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
   /* ========== RENDER ========== */
   return (
     <div
-      className={`flex flex-col h-full rounded-lg overflow-hidden border ${
-        isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      }`}
+      className={`relative flex flex-col h-full rounded-2xl overflow-hidden border transition-colors duration-500
+      ${isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#F4F6F5] border-[#10120F]/10'}`}
     >
+      {/* Background Effects */}
+      <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-96 h-96 bg-[#17E1FF]/10 blur-[100px] rounded-full pointer-events-none" />
+
       {/* Header */}
-      <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center space-x-2">
-            <Sparkles
-              className={`w-4 h-4 md:w-5 md:h-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}
-            />
-            <h2
-              className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-            >
-              AI Code Review
-            </h2>
-            {!socketConnected && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600">
-                Offline
+      <div className="relative p-3  border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative flex items-center justify-center w-9 h- bg-white/5 rounded-xl border border-white/10">
+            <Terminal className="w-5 h-5 text-[#17E1FF]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <LEDIndicator />
+              <span className="text-[11px] font-mono tracking-[0.3em] text-white/50 uppercase">
+                AI ANALYSIS CODE REVIEW
               </span>
-            )}
+            </div>
+
           </div>
+          {!socketConnected && <HUDLabel label="MODE" value="OFFLINE" color="#F59E0B" />}
+        </div>
 
-          <div className="flex items-center space-x-2">
-            {review && (
-              <>
-                <button
-                  onClick={copyReview}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Copy review"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={downloadReview}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Download review"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={clearReview}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Clear review"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </>
-            )}
+        <div className="flex items-center gap-3">
+          {review && (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={copyReview}
+                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                title="Copy"
+              >
+                <Copy size={18} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={downloadReview}
+                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                title="Download"
+              >
+                <Download size={18} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={clearReview}
+                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                title="Clear"
+              >
+                <RefreshCw size={18} />
+              </motion.button>
+            </>
+          )}
 
-            <button
-              onClick={getReview}
-              disabled={!code.trim() || isGenerating}
-              className={`px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-sm ${
-                !code.trim() || isGenerating
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white'
-              }`}
-            >
+          <motion.button
+            onClick={getReview}
+            disabled={!code.trim() || isGenerating}
+            whileHover={!isGenerating ? { scale: 1.05 } : {}}
+            whileTap={!isGenerating ? { scale: 0.95 } : {}}
+            className="group relative h-11 px-8 rounded-full border border-white/20 hover:border-[#17E1FF] overflow-hidden font-mono uppercase tracking-wider text-sm font-medium disabled:opacity-40"
+          >
+            <motion.div className="absolute inset-0 bg-[#c6c6c6] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+            <span className="relative z-10 group-hover:text-black transition-colors">
               {isGenerating ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Analyzing...</span>
-                </div>
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ANALYZING
+                </span>
               ) : (
-                'Generate Review'
+                'GENERATE REVIEW'
               )}
-            </button>
-          </div>
+            </span>
+          </motion.button>
         </div>
       </div>
 
-      {/* Review Content */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-4">
-        {review ? (
-          <div
-            className={`prose prose-sm md:prose-base max-w-none ${isDarkMode ? 'prose-invert' : ''}`}
-          >
-            <ReactMarkdown
-              components={{
-                h1: ({ node, ...props }) => (
-                  <h1
-                    className={`text-xl md:text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                    {...props}
-                  />
-                ),
-                h2: ({ node, ...props }) => (
-                  <h2
-                    className={`text-lg md:text-xl font-bold mb-3 mt-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                    {...props}
-                  />
-                ),
-                h3: ({ node, ...props }) => (
-                  <h3
-                    className={`text-base md:text-lg font-semibold mb-2 mt-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                    {...props}
-                  />
-                ),
-                p: ({ node, ...props }) => (
-                  <p
-                    className={`mb-3 leading-relaxed text-sm md:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
-                    {...props}
-                  />
-                ),
-                ul: ({ node, ...props }) => (
-                  <ul
-                    className={`list-disc list-inside mb-3 space-y-1 text-sm md:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
-                    {...props}
-                  />
-                ),
-                ol: ({ node, ...props }) => (
-                  <ol
-                    className={`list-decimal list-inside mb-3 space-y-1 text-sm md:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
-                    {...props}
-                  />
-                ),
-                code: ({ node, inline, ...props }) =>
-                  inline ? (
-                    <code
-                      className={`px-1.5 py-0.5 rounded text-xs md:text-sm font-mono ${
-                        isDarkMode ? 'bg-gray-800 text-purple-400' : 'bg-gray-100 text-purple-600'
-                      }`}
-                      {...props}
-                    />
-                  ) : (
-                    <code
-                      className={`block p-3 rounded-lg text-xs md:text-sm font-mono overflow-x-auto ${
-                        isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-800'
-                      }`}
+      {/* Review Content Area */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <AnimatePresence mode="wait">
+          {review ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="prose prose-invert max-w-none"
+            >
+              <ReactMarkdown
+                components={{
+                  h1: ({ ...props }) => (
+                    <h1
+                      className="text-3xl font-black tracking-tighter text-white mb-4"
                       {...props}
                     />
                   ),
-                pre: ({ node, ...props }) => (
-                  <pre
-                    className={`rounded-lg p-4 mb-3 overflow-x-auto ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}
-                    {...props}
-                  />
-                ),
-                strong: ({ node, ...props }) => (
-                  <strong
-                    className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                    {...props}
-                  />
-                ),
-                blockquote: ({ node, ...props }) => (
-                  <blockquote
-                    className={`border-l-4 pl-4 italic my-3 ${
-                      isDarkMode
-                        ? 'border-purple-500 text-gray-400'
-                        : 'border-purple-600 text-gray-600'
-                    }`}
-                    {...props}
-                  />
-                ),
-              }}
+                  h2: ({ ...props }) => (
+                    <h2 className="text-2xl font-bold text-[#17E1FF] mt-8 mb-3" {...props} />
+                  ),
+                  code: ({ inline, ...props }) =>
+                    inline ? (
+                      <code
+                        className="bg-white/10 px-2 py-0.5 rounded text-[#17E1FF] font-mono"
+                        {...props}
+                      />
+                    ) : (
+                      <code
+                        className="block font-mono text-sm overflow-x-auto"
+                        {...props}
+                      />
+                    ),
+                }}
+              >
+                {review}
+              </ReactMarkdown>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center h-full text-center"
             >
-              {review}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div
-              className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-4 ${
-                isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'
-              }`}
-            >
-              <Sparkles
-                className={`w-6 h-6 md:w-8 md:h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}
-              />
-            </div>
-            <h3
-              className={`text-base md:text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-            >
-              No Review Yet
-            </h3>
-            <p
-              className={`text-xs md:text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}
-            >
-              Write some code and click "Generate Review" to get AI-powered feedback
-            </p>
-            <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-              <p className="mb-2">💡 AI will analyze:</p>
-              <ul className="list-disc list-inside space-y-1 text-left inline-block">
-                <li>Code quality & best practices</li>
-                <li>Potential bugs & improvements</li>
-                <li>Security considerations</li>
-                <li>Performance optimization tips</li>
-                <li>Code structure & organization</li>
-              </ul>
-            </div>
-          </div>
-        )}
+              <div className="w-20 h-20 rounded-2xl bg-[#17E1FF]/10 flex items-center justify-center mb-6">
+              {/* <Sparkles className="w-10 h-10 text-[#17E1FF]" /> */}
+              </div>
+              <h3 className="text-2xl font-bold tracking-tight text-white mb-2">
+                Ready for Analysis
+              </h3>
+              <p className="text-white/50 max-w-xs">
+                Write code and press "Generate Review" to get advanced AI feedback powered by Gemini
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

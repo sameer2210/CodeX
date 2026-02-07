@@ -6,9 +6,9 @@ import {
   Download,
   Maximize2,
   Minimize2,
-  Play,
   RotateCcw,
   Settings,
+  Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -205,16 +205,22 @@ const CodeEditor = ({ projectId }) => {
   /* ========== CODE EXECUTION ========== */
 
   const executeCode = () => {
-    if (language !== 'javascript') {
+    const latestCode = editorRef.current?.getValue() ?? code;
+    const execLanguage = language || 'javascript';
+    if (!projectId) {
+      notify({ message: 'Project is not ready yet', type: 'error' });
+      return;
+    }
+    if (execLanguage !== 'javascript') {
       notify({ message: 'Only JavaScript execution is supported currently', type: 'warning' });
       return;
     }
 
-    if (!code.trim()) {
+    if (!latestCode.trim()) {
       notify({ message: 'Please write some code first!', type: 'warning' });
       return;
     }
-    dispatch(executeProjectCode({ projectId, code, language }));
+    dispatch(executeProjectCode({ projectId, code: latestCode, language: execLanguage }));
   };
 
   /* ========== LANGUAGE CHANGE ========== */
@@ -325,15 +331,24 @@ const CodeEditor = ({ projectId }) => {
       <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="flex items-center justify-between mb-2 md:mb-3 gap-2 flex-wrap">
           <div className="flex items-center space-x-2">
-            <Code2
-              className={`w-4 h-4 md:w-5 md:h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}
-            />
-            <h2
+            <button
               onClick={() => navigate('/dashboard')}
-              className={`text-base cursor-pointer md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/5 transition-colors"
+              aria-label="Go to dashboard"
             >
-              CodeX Editor
-            </h2>
+              <img
+                src="/logo.png"
+                alt="CodeX"
+                className="w-6 h-6 md:w-7 md:h-7 object-contain"
+              />
+              <span
+                className={`text-base md:text-lg font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                Editor
+              </span>
+            </button>
             {isSaving && <span className="text-xs text-yellow-400 ml-2">Saving…</span>}
             {!socketConnected && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600">
@@ -349,15 +364,15 @@ const CodeEditor = ({ projectId }) => {
               disabled={isExecuting || language !== 'javascript'}
               className={`p-2 rounded-lg transition-all ${
                 isExecuting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
-              } text-white`}
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-gradient-to-r from-[#17E1FF] to-[#11B6FF] hover:from-[#34E7FF] hover:to-[#1EC5FF] text-[#0B0E11] shadow-[0_8px_24px_rgba(23,225,255,0.35)]'
+              }`}
               title="Run Code (Ctrl+Enter)"
             >
               {isExecuting ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <Play className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
               )}
             </button>
 

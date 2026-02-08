@@ -11,6 +11,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 const EASE = [0.22, 1, 0.36, 1];
 
 const HUDLabel = ({ children, className = '' }) => (
@@ -34,7 +35,7 @@ const GlassCard = ({ children, className = '', delay = 0 }) => (
   </motion.div>
 );
 
-const Hero = () => {
+const Hero = ({ onInitialize }) => {
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 400], [1, 0]);
@@ -90,7 +91,11 @@ const Hero = () => {
         </motion.p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-          <button className="px-12 py-5 bg-[#17E1FF] text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_40px_rgba(23,225,255,0.3)]">
+          <button
+            type="button"
+            onClick={onInitialize}
+            className="px-12 py-5 bg-[#17E1FF] text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_40px_rgba(23,225,255,0.3)]"
+          >
             Initialize Session
           </button>
           <div className="flex items-center gap-4 text-white/30 font-mono text-xs uppercase tracking-[0.2em]">
@@ -317,6 +322,87 @@ const ProcessSection = () => {
   );
 };
 
+const OnboardingSection = () => {
+  const tracks = [
+    {
+      id: 'A',
+      title: 'Already Have a Team?',
+      desc: 'Use your existing team name and password to jump straight into your workspace.',
+      steps: ['Go to Login', 'Enter team name + password', 'Sync and start collaborating'],
+      accent: 'text-[#17E1FF]',
+    },
+    {
+      id: 'B',
+      title: 'Starting Fresh?',
+      desc: 'Create a new team, set secure credentials, and invite members in minutes.',
+      steps: ['Create team name', 'Set team password', 'Invite members and share credentials'],
+      accent: 'text-[#FFB020]',
+    },
+  ];
+
+  return (
+    <section className="py-36 px-6 sm:px-8 relative overflow-hidden bg-[#0B0E11]/60">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute left-1/2 top-6 sm:top-10 -translate-x-1/2 w-[320px] h-[320px] sm:w-[520px] sm:h-[520px] bg-[#17E1FF]/10 blur-[140px] sm:blur-[160px] rounded-full opacity-30" />
+        <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_60%)]" />
+      </div>
+
+      <div className="max-w-[1440px] mx-auto relative z-10">
+        <div className="text-center mb-20">
+          <HUDLabel className="text-[#17E1FF] mb-4 block">First-Time Guidance</HUDLabel>
+          <h2 className="text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4">
+            Choose Your Path.
+          </h2>
+          <p className="text-white/50 max-w-2xl mx-auto font-light">
+            If you already have a team, sign in with your team name and password. If not, create a
+            new team and generate credentials for your members.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {tracks.map((track, i) => (
+            <GlassCard
+              key={track.id}
+              delay={i * 0.1}
+              className="flex flex-col gap-6 bg-[#0B0E11]/70 border-white/10 shadow-[0_0_60px_rgba(23,225,255,0.05)]"
+            >
+              <div className="flex items-center justify-between">
+                <HUDLabel className={`opacity-70 ${track.accent}`}>Path {track.id}</HUDLabel>
+                <span className="text-[10px] uppercase tracking-[0.4em] text-white/30 font-mono">
+                  TEAM_FLOW
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-3xl font-black uppercase tracking-tight mb-3">{track.title}</h3>
+                <p className="text-white/50 font-light leading-relaxed">{track.desc}</p>
+              </div>
+
+              <div className="space-y-3">
+                {track.steps.map((step, idx) => (
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.1 + idx * 0.12, ease: EASE }}
+                    className="flex items-center gap-3 text-sm text-white/70"
+                  >
+                    <div className="w-6 h-6 rounded-full border border-white/15 flex items-center justify-center text-[10px] font-mono text-white/70">
+                      {idx + 1}
+                    </div>
+                    <span>{step}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const Footer = () => {
   return (
     <footer className="pt-32 pb-12 px-8 border-t border-white/5 bg-[#0B0E11]">
@@ -436,6 +522,8 @@ const Footer = () => {
 // --- Main View ---
 
 const Landing = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-[#0B0E11] dark:text-[#E6E8E5] font-['Inter',_sans-serif] selection:bg-[#17E1FF] selection:text-black">
       {/* Noise Texture Overlay */}
@@ -444,7 +532,7 @@ const Landing = () => {
         style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }}
       />
       <main>
-        <Hero />
+        <Hero onInitialize={() => navigate('/login')} />
         <StatsSection />
         <BentoGrid />
 
@@ -462,6 +550,7 @@ const Landing = () => {
         </section>
 
         <ProcessSection />
+        <OnboardingSection />
 
         {/* Cinematic CTA */}
         <section className="py-60 px-8 relative overflow-hidden bg-gradient-to-t from-[#17E1FF]/10 via-transparent to-transparent">
@@ -470,7 +559,11 @@ const Landing = () => {
             <h2 className="text-5xl md:text-[100px] font-black uppercase tracking-tighter leading-[0.9] mb-16">
               Empower <br /> Your Team.
             </h2>
-            <button className="px-16 py-7 bg-white text-black font-black uppercase tracking-widest rounded-full hover:bg-[#17E1FF] transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_80px_rgba(255,255,255,0.2)]">
+            <button
+              type="button"
+              onClick={() => navigate('/register')}
+              className="px-16 py-7 bg-white text-black font-black uppercase tracking-widest rounded-full hover:bg-[#17E1FF] transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_80px_rgba(255,255,255,0.2)]"
+            >
               Launch Free Instance
             </button>
           </div>
@@ -486,34 +579,3 @@ const Landing = () => {
 };
 
 export default Landing;
-
-// import { useEffect } from 'react';
-// import { useTheme } from '../context/ThemeContext';
-// import { notify } from '../lib/notify';
-
-// const Landing = () => {
-//   const { isDarkMode, toggleTheme } = useTheme();
-
-//   useEffect(() => {
-//     notify('Welcome to CodeX', 'success');
-//   }, []);
-
-//   return (
-//     <div className="min-h-screen flex flex-col items-center justify-center gap-6
-//                     bg-white text-black dark:bg-black dark:text-white transition-colors">
-
-//       <h1 className="text-4xl font-bold">Basic Landing Page</h1>
-
-//       <p>Theme is currently: <b>{isDarkMode ? 'Dark' : 'Light'}</b></p>
-
-//       <button
-//         onClick={toggleTheme}
-//         className="px-6 py-3 rounded bg-black text-white dark:bg-white dark:text-black"
-//       >
-//         Toggle Theme
-//       </button>
-//     </div>
-//   );
-// };
-
-// export default Landing;

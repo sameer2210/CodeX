@@ -295,9 +295,9 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center h-full text-center"
             >
-              <div className="w-20 h-20 rounded-2xl bg-[#17E1FF]/10 flex items-center justify-center mb-6">
-              {/* <Sparkles className="w-10 h-10 text-[#17E1FF]" /> */}
-              </div>
+
+              <Sparkles className="w-10 h-10 " />
+
               <h3 className="text-2xl font-bold tracking-tight text-white mb-2">
                 Ready for Analysis
               </h3>

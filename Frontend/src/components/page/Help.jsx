@@ -47,6 +47,14 @@ const PLACEHOLDERS = [
   'Beep boop? Beep boop!',
 ];
 
+const QUICK_PROMPTS = [
+  'Reset my password',
+  'Invite a new team member',
+  'Billing and invoices help',
+  'Report a bug in a project',
+  'Best practices for code review',
+];
+
 const Help = () => {
   const { isDarkMode } = useTheme();
   const [socket, setSocket] = useState(null);
@@ -62,6 +70,7 @@ const Help = () => {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const idRef = useRef(1);
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -81,7 +90,15 @@ const Help = () => {
   }, []);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3000');
+    const socketUrl = import.meta.env.VITE_BACKEND_URL;
+    if (!socketUrl) {
+      setConnected(false);
+      return;
+    }
+
+    const newSocket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+    });
     setSocket(newSocket);
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
@@ -157,6 +174,11 @@ const Help = () => {
     }
   };
 
+  const handleQuickPrompt = prompt => {
+    setInput(prompt);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   return (
     <div
       className={`min-h-screen font-sans transition-colors duration-500 relative flex ${
@@ -195,23 +217,37 @@ const Help = () => {
         className="relative z-10 flex-1 p-4 sm:p-6 lg:p-12 min-h-screen flex flex-col"
       >
         {/* Header */}
-        <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div>
-              <ChatBubbleLeftRightIcon className="w-8 h-8" />
+        <header className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="flex items-start gap-4">
+            <div
+              className={`p-3 rounded-2xl border backdrop-blur-xl ${
+                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/70 border-white/30'
+              }`}
+            >
+              <ChatBubbleLeftRightIcon className="w-7 h-7" />
             </div>
             <div>
-              <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
-                Operational support & intelligent assistance.
+              <p className="text-xs font-mono uppercase tracking-[0.4em] text-[#17E1FF]">
+                Help Center
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight mt-2">
+                Support & Guidance
+              </h1>
+              <p
+                className={`text-sm mt-2 max-w-xl ${
+                  isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                }`}
+              >
+                Ask questions, troubleshoot issues, and get quick answers from the CodeX assistant.
               </p>
             </div>
           </div>
 
           <div
-            className={`flex items-center gap-2 px-4 py-2 rounded border text-xs font-bold uppercase tracking-wider transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-wider transition-colors ${
               connected
-                ? 'bg-green-500/10 border-green-500/20 text-green-500'
-                : 'bg-red-500/10 border-red-500/20 text-red-500'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-500'
             }`}
           >
             {connected ? (
@@ -224,125 +260,153 @@ const Help = () => {
         </header>
 
         {/* Chat Interface */}
-        <div className="flex-1 flex flex-col max-w-5xl w-full mx-auto">
+        <div className="flex-1 flex flex-col max-w-5xl w-full mx-auto gap-4">
+          {/* Quick Prompts */}
+          <div className="flex flex-wrap gap-2">
+            {QUICK_PROMPTS.map(prompt => (
+              <button
+                key={prompt}
+                onClick={() => handleQuickPrompt(prompt)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all border ${
+                  isDarkMode
+                    ? 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                    : 'bg-white/80 border-black/10 text-black/60 hover:text-black'
+                }`}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+
           {/* Messages Area */}
-          <div
-            className={`flex-1 overflow-y-auto mb-6 p-4 sm:p-6 rounded border backdrop-blur-2xl transition-all h-[60vh] custom-scrollbar ${
-              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
-            }`}
-          >
-            <div className="flex flex-col gap-6">
-              {messages.map(m => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={m.id}
-                  className={`flex items-end gap-4 ${m.sender === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  <div
-                    className={`w-10 h-10 rounded flex-shrink-0 border-2 overflow-hidden ${
-                      m.sender === 'user'
-                        ? 'border-[#17E1FF] shadow-[0_0_10px_rgba(23,225,255,0.3)]'
-                        : isDarkMode
-                          ? 'border-white/20'
-                          : 'border-black/10'
+          <div className="rounded-3xl p-[1px] bg-gradient-to-br from-[#17E1FF]/40 via-transparent to-transparent">
+            <div
+              className={`flex-1 overflow-y-auto p-4 sm:p-6 rounded-[calc(1.5rem-1px)] backdrop-blur-2xl transition-all h-[60vh] custom-scrollbar ${
+                isDarkMode ? 'bg-white/5' : 'bg-white/70'
+              }`}
+            >
+              <div className="flex flex-col gap-6">
+                {messages.map(m => (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={m.id}
+                    className={`flex items-end gap-4 ${
+                      m.sender === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   >
-                    <img
-                      src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${m.sender === 'user' ? 'Felix' : m.seed}`}
-                      alt="avatar"
-                      className="w-full h-full bg-black/10"
-                    />
-                  </div>
+                    <div
+                      className={`w-10 h-10 rounded-full flex-shrink-0 border-2 overflow-hidden ${
+                        m.sender === 'user'
+                          ? 'border-[#17E1FF] shadow-[0_0_10px_rgba(23,225,255,0.3)]'
+                          : isDarkMode
+                            ? 'border-white/20'
+                            : 'border-black/10'
+                      }`}
+                    >
+                      <img
+                        src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${m.sender === 'user' ? 'Felix' : m.seed}`}
+                        alt="avatar"
+                        className="w-full h-full bg-black/10"
+                      />
+                    </div>
 
-                  <div
-                    className={`max-w-[80%] p-4 rounded text-sm font-medium leading-relaxed ${
-                      m.sender === 'user'
-                        ? 'bg-[#17E1FF] text-[#0B0E11] rounded-br-none'
-                        : isDarkMode
-                          ? 'bg-white/10 text-[#E6E8E5] rounded-bl-none'
-                          : 'bg-white text-[#0B0E11] rounded-bl-none shadow-sm'
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </motion.div>
-              ))}
+                    <div
+                      className={`max-w-[80%] p-4 rounded-2xl text-sm font-medium leading-relaxed ${
+                        m.sender === 'user'
+                          ? 'bg-[#17E1FF] text-[#0B0E11] rounded-br-md'
+                          : isDarkMode
+                            ? 'bg-white/10 text-[#E6E8E5] rounded-bl-md'
+                            : 'bg-white text-[#0B0E11] rounded-bl-md shadow-sm'
+                      }`}
+                    >
+                      {m.text}
+                    </div>
+                  </motion.div>
+                ))}
 
-              {/* Typing Indicator */}
-              {sending && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-end gap-4"
-                >
-                  <div
-                    className={`w-10 h-10 rounded flex-shrink-0 border-2 overflow-hidden ${isDarkMode ? 'border-white/20' : 'border-black/10'}`}
+                {/* Typing Indicator */}
+                {sending && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-end gap-4"
                   >
-                    <img
-                      src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=thinking"
-                      alt="thinking"
-                      className="w-full h-full bg-black/10"
-                    />
-                  </div>
-                  <div
-                    className={`p-4 rounded rounded-bl-none flex gap-1 ${
-                      isDarkMode ? 'bg-white/10' : 'bg-white'
-                    }`}
-                  >
-                    <motion.div
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                      className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
-                    />
-                    <motion.div
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-                      className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
-                    />
-                    <motion.div
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-                      className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
-                    />
-                  </div>
-                </motion.div>
-              )}
-              <div ref={messagesEndRef} />
+                    <div
+                      className={`w-10 h-10 rounded-full flex-shrink-0 border-2 overflow-hidden ${
+                        isDarkMode ? 'border-white/20' : 'border-black/10'
+                      }`}
+                    >
+                      <img
+                        src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=thinking"
+                        alt="thinking"
+                        className="w-full h-full bg-black/10"
+                      />
+                    </div>
+                    <div
+                      className={`p-4 rounded-2xl rounded-bl-md flex gap-1 ${
+                        isDarkMode ? 'bg-white/10' : 'bg-white'
+                      }`}
+                    >
+                      <motion.div
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                        className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
+                      />
+                      <motion.div
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                        className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
+                      />
+                      <motion.div
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                        className={`w-2 h-2 rounded ${isDarkMode ? 'bg-white/50' : 'bg-black/40'}`}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
           </div>
 
           {/* Input Area */}
-          <div
-            className={`p-2 rounded border backdrop-blur-2xl flex items-center gap-2 ${
-              isDarkMode
-                ? 'bg-white/5 border-white/10 focus-within:border-[#17E1FF]/50'
-                : 'bg-white/80 border-[#0B0E11]/10 focus-within:border-[#17E1FF]/50'
-            }`}
-          >
+          <div className="rounded-2xl p-[1px] bg-gradient-to-r from-[#17E1FF]/40 via-transparent to-transparent">
             <div
-              className={`p-3 rounded ${isDarkMode ? 'bg-black/20 text-[#17E1FF]' : 'bg-black/5 text-[#17E1FF]'}`}
-            >
-              <SparklesIcon className="w-6 h-6" />
-            </div>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={cyclePlaceholder}
-              placeholder={placeholder}
-              rows={1}
-              className={`flex-1 bg-transparent border-none outline-none resize-none py-3 px-2 text-sm font-medium ${
-                isDarkMode ? 'text-white placeholder-white/30' : 'text-black placeholder-black/40'
+              className={`p-2 rounded-[calc(1rem-1px)] backdrop-blur-2xl flex items-center gap-2 ${
+                isDarkMode
+                  ? 'bg-white/5 border border-white/10 focus-within:border-[#17E1FF]/50'
+                  : 'bg-white/90 border border-[#0B0E11]/10 focus-within:border-[#17E1FF]/50'
               }`}
-            />
-            <button
-              onClick={handleSend}
-              disabled={sending}
-              className="p-3 bg-[#17E1FF] text-[#0B0E11] rounded hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <PaperAirplaneIcon className="w-5 h-5 -rotate-45 translate-x-0.5 -translate-y-0.5" />
-            </button>
+              <div
+                className={`p-3 rounded-xl ${
+                  isDarkMode ? 'bg-black/30 text-[#17E1FF]' : 'bg-black/5 text-[#17E1FF]'
+                }`}
+              >
+                <SparklesIcon className="w-6 h-6" />
+              </div>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={cyclePlaceholder}
+                placeholder={placeholder}
+                rows={1}
+                className={`flex-1 bg-transparent border-none outline-none resize-none py-3 px-2 text-sm font-medium ${
+                  isDarkMode ? 'text-white placeholder-white/30' : 'text-black placeholder-black/40'
+                }`}
+              />
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="p-3 bg-[#17E1FF] text-[#0B0E11] rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PaperAirplaneIcon className="w-5 h-5 -rotate-45 translate-x-0.5 -translate-y-0.5" />
+              </button>
+            </div>
           </div>
         </div>
       </motion.main>

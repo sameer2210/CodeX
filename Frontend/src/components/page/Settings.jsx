@@ -71,6 +71,7 @@ const Settings = () => {
     name: 'Admin User',
     email: 'admin@industry.inc',
     bio: 'Senior Systems Architect | Nexus Lead',
+    avatar: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -105,6 +106,10 @@ const Settings = () => {
     visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: EASE } },
     exit: { opacity: 0, x: -20, transition: { duration: 0.2 } },
   };
+
+  const profileAvatar = profile.avatar?.trim()
+    ? profile.avatar.trim()
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=random`;
 
   return (
     <div
@@ -213,7 +218,7 @@ const Settings = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all whitespace-nowrap text-sm font-bold tracking-wide relative overflow-hidden group ${
+                    className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all whitespace-nowrap text-sm font-bold tracking-wide relative overflow-hidden group flex-shrink-0 min-w-max ${
                       isActive
                         ? isDarkMode
                           ? 'bg-white/10 text-[#17E1FF]'
@@ -256,8 +261,8 @@ const Settings = () => {
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                       <div className="relative group cursor-pointer">
                         <img
-                          src=""
-                          alt=""
+                          src={profileAvatar}
+                          alt={`${profile.name || 'User'} avatar`}
                           className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-[#17E1FF]/20"
                         />
                         <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

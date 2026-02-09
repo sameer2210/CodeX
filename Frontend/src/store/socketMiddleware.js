@@ -323,15 +323,21 @@ export const socketMiddleware = store => next => action => {
   /* ========== SOCKET INITIALIZATION ========== */
 
   if (action.type === 'socket/init') {
-    if (socket?.connected) {
-      console.log('Socket already connected');
-      return next(action);
-    }
-
     const token = localStorage.getItem('codex_token');
 
     if (!token) {
       console.warn('No auth token found');
+      return next(action);
+    }
+
+    if (socket) {
+      socket.auth = { token };
+      if (!socket.connected) {
+        store.dispatch(socketConnecting());
+        socket.connect();
+      } else {
+        console.log('Socket already connected');
+      }
       return next(action);
     }
 

@@ -2,6 +2,33 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../../api/config';
 import { dashboardService } from '../../services/dashboardService';
 
+const buildDashboardStats = projects => {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const stats = {
+    totalProjects: safeProjects.length,
+    endedProjects: 0,
+    runningProjects: 0,
+    pendingProjects: 0,
+    totalGrowth: 0,
+    endedGrowth: 0,
+    runningGrowth: 0,
+  };
+
+  safeProjects.forEach(project => {
+    const status = (project?.status || project?.state || '').toString().toLowerCase();
+
+    if (status === 'completed' || status === 'done' || status === 'ended') {
+      stats.endedProjects += 1;
+    } else if (status === 'pending' || status === 'queued' || status === 'on-hold') {
+      stats.pendingProjects += 1;
+    } else {
+      stats.runningProjects += 1;
+    }
+  });
+
+  return stats;
+};
+
 /* ========== ASYNC THUNKS ========== */
 
 export const fetchDashboardData = createAsyncThunk(
@@ -9,14 +36,15 @@ export const fetchDashboardData = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Parallel fetch for dashboard performance
-      const [stats, projects, team] = await Promise.all([
-        dashboardService.getStats(),
+      const [projects, team] = await Promise.all([
         api
           .get('/projects/get-all')
           .then(res => res.data.data || [])
           .catch(() => []),
         dashboardService.getTeamMembers(),
       ]);
+
+      const stats = buildDashboardStats(projects);
 
       return { stats, projects, team };
     } catch (error) {

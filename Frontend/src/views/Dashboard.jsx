@@ -556,7 +556,7 @@ const Dashboard = () => {
                 Weekly Analytics
               </h3>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%" minHeight={1}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                   <BarChart data={weeklyData} barSize={50}>
                     <defs>
                       <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
@@ -661,7 +661,7 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="relative w-40 h-40 lg:w-48 lg:h-48">
-                <ResponsiveContainer width="100%" height="100%" minHeight={1}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                   <PieChart>
                     <Pie
                       data={pieData}

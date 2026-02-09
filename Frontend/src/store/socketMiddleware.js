@@ -43,6 +43,13 @@ import {
   socketError,
 } from './slices/socketSlice';
 
+const INTERNAL_SOCKET_ACTIONS = new Set([
+  socketConnecting.type,
+  socketConnected.type,
+  socketDisconnected.type,
+  socketError.type,
+]);
+
 let socket = null;
 let pendingActions = [];
 let reconnectAttempts = 0;
@@ -830,7 +837,11 @@ export const socketMiddleware = store => next => action => {
       default:
         break;
     }
-  } else if (action.type.startsWith('socket/') && action.type !== 'socket/init') {
+  } else if (
+    action.type.startsWith('socket/') &&
+    action.type !== 'socket/init' &&
+    !INTERNAL_SOCKET_ACTIONS.has(action.type)
+  ) {
     pendingActions.push(action);
     console.warn('⚠️ Socket not connected, queuing action:', action.type);
   }

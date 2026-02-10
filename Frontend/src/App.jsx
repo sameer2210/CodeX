@@ -9,15 +9,32 @@ const App = () => {
   const dispatch = useAppDispatch();
   const { isDarkMode } = useTheme();
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  const authToken = useAppSelector(state => state.auth.token);
+  const authUser = useAppSelector(state => state.auth.user);
   const socketConnected = useAppSelector(state => state.socket.connected);
   const socketConnecting = useAppSelector(state => state.socket.isConnecting);
 
   // Initialize socket connection once on mount
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && authToken) {
       dispatch({ type: 'socket/init' });
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, authToken]);
+
+  useEffect(() => {
+    if (authToken) {
+      localStorage.setItem('codex_token', authToken);
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    if (authUser?.teamName) {
+      localStorage.setItem('codex_team', authUser.teamName);
+    }
+    if (authUser?.username) {
+      localStorage.setItem('codex_username', authUser.username);
+    }
+  }, [authUser]);
 
   useEffect(() => {
     const tryReconnect = () => {

@@ -88,11 +88,16 @@ class AuthService {
       }
 
       // Find or add member
-      let member = team.members.find(m => m.username === username);
+      const normalizedUsername = username?.toLowerCase();
+      let member = team.members.find(
+        m => m.username?.toLowerCase() === normalizedUsername
+      );
       if (!member) {
         // Add new team member
         await team.addMember(username, false);
-        member = team.members.find(m => m.username === username);
+        member = team.members.find(
+          m => m.username?.toLowerCase() === normalizedUsername
+        );
       } else {
         // Update last login
         member.lastLogin = new Date();
@@ -131,19 +136,20 @@ class AuthService {
         throw new Error('Team not found');
       }
 
-      const activeMembers = team.getActiveMembers().map(member => ({
+      const members = team.members.map(member => ({
         username: member.username,
         isAdmin: member.isAdmin,
         lastLogin: member.lastLogin,
         joinedAt: member.joinedAt,
-        isActive: member.isActive,
+        isActive: !!member.isActive,
       }));
 
       return {
         success: true,
         teamName: team.teamName,
-        members: activeMembers,
-        totalMembers: activeMembers.length,
+        members,
+        totalMembers: members.length,
+        activeCount: members.filter(member => member.isActive).length,
       };
     } catch (error) {
       throw new Error(error.message || 'Failed to get team members');
@@ -158,7 +164,10 @@ class AuthService {
         throw new Error('Team not found');
       }
 
-      const member = team.members.find(m => m.username === username);
+      const normalizedUsername = username?.toLowerCase();
+      const member = team.members.find(
+        m => m.username?.toLowerCase() === normalizedUsername
+      );
       if (!member) {
         throw new Error('Member not found');
       }
@@ -184,7 +193,9 @@ class AuthService {
         return false;
       }
 
-      const member = team.members.find(m => m.username === username && m.isActive);
+      const member = team.members.find(
+        m => m.username?.toLowerCase() === username?.toLowerCase()
+      );
       return !!member;
     } catch (error) {
       return false;

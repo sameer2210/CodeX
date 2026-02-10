@@ -24,15 +24,19 @@ export const dashboardService = {
   },
 
   // Fetch team members
-  getTeamMembers: async () => {
+  getTeamMembers: async teamNameOverride => {
     try {
-      const teamName = localStorage.getItem('codex_team');
+      const teamName =
+        teamNameOverride ||
+        localStorage.getItem('codex_team') ||
+        localStorage.getItem('codex_team_name');
       if (!teamName) {
         console.warn('No team name found, skipping team members fetch');
         return [];
       }
 
-      const response = await api.get(`/auth/team/${teamName}/members`);
+      const safeTeamName = encodeURIComponent(teamName);
+      const response = await api.get(`/auth/team/${safeTeamName}/members`);
       const members = response.data.members || response.data.data || [];
 
       return members.map(member => ({

@@ -42,6 +42,7 @@ import {
   socketDisconnected,
   socketError,
 } from './slices/socketSlice';
+import { logout } from './slices/authSlice';
 
 const INTERNAL_SOCKET_ACTIONS = new Set([
   socketConnecting.type,
@@ -323,7 +324,8 @@ export const socketMiddleware = store => next => action => {
   /* ========== SOCKET INITIALIZATION ========== */
 
   if (action.type === 'socket/init') {
-    const token = localStorage.getItem('codex_token');
+    const token =
+      localStorage.getItem('codex_token') || store.getState().auth?.token;
 
     if (!token) {
       console.warn('No auth token found');
@@ -386,6 +388,13 @@ export const socketMiddleware = store => next => action => {
       reconnectAttempts++;
       store.dispatch(socketError(err.message));
       console.error('Connection error:', err.message);
+
+      if (
+        err.message?.toLowerCase().includes('authentication') ||
+        err.message?.toLowerCase().includes('invalid token')
+      ) {
+        store.dispatch(logout());
+      }
 
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         notify('Unable to connect. Please check your connection.', 'error');
@@ -734,6 +743,37 @@ export const socketMiddleware = store => next => action => {
         })
       );
       console.log('User offline:', username);
+    });
+
+    socket.on('team-presence', ({ users }) => {
+      if (!Array.isArray(users)) return;
+      const normalizedUsers = users.filter(Boolean);
+      const onlineSet = new Set(normalizedUsers.map(user => user.toLowerCase()));
+      const currentMembers = store.getState().projects.teamMembers || [];
+
+      normalizedUsers.forEach(username => {
+        store.dispatch(
+          updateTeamMemberStatus({
+            username,
+            status: 'online',
+            isActive: true,
+          })
+        );
+      });
+
+      currentMembers.forEach(member => {
+        const name = member.username || member.email;
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (onlineSet.has(key)) return;
+        store.dispatch(
+          updateTeamMemberStatus({
+            username: name,
+            status: 'offline',
+            isActive: false,
+          })
+        );
+      });
     });
   }
 

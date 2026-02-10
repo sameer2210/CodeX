@@ -21,6 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 import { notify } from '../lib/notify';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchDashboardData } from '../store/slices/projectSlice';
+import ChatSection from './home/project/components/ChatSection';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { stats, teamMembers, projects, isLoading } = useAppSelector(state => state.projects);
   const { user, isAuthenticated } = useAppSelector(state => state.auth);
+  const socketConnected = useAppSelector(state => state.socket.connected);
 
   const [timerActive, setTimerActive] = useState(false);
   const [time, setTime] = useState(5048);
@@ -56,6 +58,11 @@ const Dashboard = () => {
   useEffect(() => {
     dispatch(fetchDashboardData());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !socketConnected) return;
+    dispatch(fetchDashboardData());
+  }, [dispatch, isAuthenticated, socketConnected]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -103,16 +110,42 @@ const Dashboard = () => {
   const openMobileSidebar = () => setIsMobileSidebarOpen(true);
   const closeMobileSidebar = () => setIsMobileSidebarOpen(false);
 
+  const normalizeStatus = status =>
+    status ? status.toString().trim().toLowerCase() : '';
+
   const resolveMemberStatus = member => {
     if (!member) return 'offline';
-    if (member.status) return member.status;
+    const normalized = normalizeStatus(member.status);
+    if (normalized) return normalized;
     if (typeof member.isActive === 'boolean') return member.isActive ? 'online' : 'offline';
     return 'offline';
   };
 
-  const activeTeamMembers = (teamMembers || []).filter(member => {
+  const isMemberOnline = member => {
+    if (member?.isActive === true) return true;
     const status = resolveMemberStatus(member);
-    return status === 'online' || status === 'active';
+    return ['online', 'active', 'active now', 'available'].includes(status);
+  };
+
+  const buildAvatarFallback = displayName =>
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
+  const resolveAvatarSrc = (avatar, displayName) => {
+    if (!avatar) return buildAvatarFallback(displayName);
+    const cleaned = String(avatar).trim();
+    if (!cleaned || cleaned === 'undefined' || cleaned === 'null') {
+      return buildAvatarFallback(displayName);
+    }
+    return cleaned;
+  };
+
+  const orderedTeamMembers = [...(teamMembers || [])].sort((a, b) => {
+    const aOnline = isMemberOnline(a) ? 1 : 0;
+    const bOnline = isMemberOnline(b) ? 1 : 0;
+    if (aOnline !== bOnline) return bOnline - aOnline;
+    const aName = (a?.username || a?.email || '').toString().toLowerCase();
+    const bName = (b?.username || b?.email || '').toString().toLowerCase();
+    return aName.localeCompare(bName);
   });
 
   const containerVariants = {
@@ -492,15 +525,17 @@ const Dashboard = () => {
             >
               <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">Active Team</h3>
               <div className="space-y-6">
-                {activeTeamMembers.length === 0 ? (
-                  <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
-                    No active members right now.
+                {orderedTeamMembers.length === 0 ? (
+                  <p
+                    className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                  >
+                    No team members found.
                   </p>
                 ) : (
-                  activeTeamMembers.slice(0, 5).map((member, i) => {
-                    const status = resolveMemberStatus(member);
-                    const isOnline = status === 'online' || status === 'active';
+                  orderedTeamMembers.slice(0, 5).map((member, i) => {
+                    const isOnline = isMemberOnline(member);
                     const displayName = member.username || member.email || 'Unknown';
+                    const avatarSrc = resolveAvatarSrc(member.avatar, displayName);
 
                     return (
                       <motion.div
@@ -512,12 +547,17 @@ const Dashboard = () => {
                       >
                         <div className="relative">
                           <img
-                            src={
-                              member.avatar ||
-                              `https://ui-avatars.com/api/?name=${displayName}&background=random`
-                            }
+                            src={avatarSrc}
                             alt={displayName}
-                            className="w-12 h-12 rounded-full object-cover ring-2 ring-[#17E1FF]/30"
+                            onError={event => {
+                              event.currentTarget.onerror = null;
+                              event.currentTarget.src = buildAvatarFallback(displayName);
+                            }}
+                            className={`w-12 h-12 rounded-full object-cover ring-2 ${
+                              isOnline
+                                ? 'ring-[#17E1FF] shadow-[0_0_12px_rgba(23,225,255,0.35)]'
+                                : 'ring-yellow-500/40'
+                            }`}
                           />
                           <span
                             className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${
@@ -527,13 +567,20 @@ const Dashboard = () => {
                         </div>
                         <div className="flex-1">
                           <p className="font-bold text-sm">{displayName}</p>
-                          <p
-                            className={`text-xs ${
-                              isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
-                            }`}
-                          >
-                            {isOnline ? 'Active now' : 'Away'}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`h-2 w-2 rounded-full ${
+                                isOnline ? 'bg-[#17E1FF]' : 'bg-yellow-500'
+                              }`}
+                            />
+                            <p
+                              className={`text-xs ${
+                                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                              }`}
+                            >
+                              {isOnline ? 'Active now' : 'Away'}
+                            </p>
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -702,7 +749,7 @@ const Dashboard = () => {
             >
               <div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-4 lg:mb-6 tracking-tight">
-                  Next Meeting
+                  Start Meeting
                 </h3>
                 <h4 className="text-lg lg:text-xl font-bold mb-2">Arc Company Review</h4>
                 <p
@@ -710,11 +757,12 @@ const Dashboard = () => {
                     isDarkMode ? 'text-[#C2CABB]/60' : 'text-[#10120F]/60'
                   }`}
                 >
-                  02:00 PM - 04:00 PM
+                  now
                 </p>
               </div>
               <button
-                onClick={() => notify('Meeting started', 'success')}
+                // onClick={() => notify('Meeting started', 'success')}
+                onClick={() => navigate(ChatSection)}
                 className="w-full py-4 lg:py-5 bg-[#10120F] text-[#C2CABB] rounded-2xl lg:rounded-3xl font-bold hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 text-sm lg:text-base mt-6"
               >
                 <VideoCameraIcon className="w-5 lg:w-6 h-5 lg:h-6" />

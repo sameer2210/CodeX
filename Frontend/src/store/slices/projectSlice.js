@@ -33,15 +33,16 @@ const buildDashboardStats = projects => {
 
 export const fetchDashboardData = createAsyncThunk(
   'projects/fetchDashboardData',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
+      const teamName = getState().auth?.user?.teamName;
       // Parallel fetch for dashboard performance
       const [projects, team] = await Promise.all([
         api
           .get('/projects/get-all')
           .then(res => res.data.data || [])
           .catch(() => []),
-        dashboardService.getTeamMembers(),
+        dashboardService.getTeamMembers(teamName),
       ]);
 
       const stats = buildDashboardStats(projects);

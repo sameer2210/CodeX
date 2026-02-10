@@ -5,6 +5,7 @@ import app from './src/app.js';
 import config from './src/config/config.js';
 import connectToDb from './src/db/db.js';
 import callService from './src/services/call.service.js';
+import authService from './src/services/auth.service.js';
 import messageService from './src/services/message.service.js';
 
 connectToDb();
@@ -28,7 +29,7 @@ class SocketRoomManager {
   constructor() {
     // Map: socketId -> { username, teamName, currentProjectId }
     this.connections = new Map();
-    // Map: teamName-username -> socketId
+    // Map: teamName-username -> Set<socketId>
     this.userSockets = new Map();
     // Map: projectRoomId -> Set of socketIds
     this.projectRooms = new Map();
@@ -36,13 +37,26 @@ class SocketRoomManager {
 
   addConnection(socketId, userData) {
     this.connections.set(socketId, userData);
-    this.userSockets.set(`${userData.teamName}-${userData.username}`, socketId);
+    const key = `${userData.teamName}-${userData.username}`;
+    const existing = this.userSockets.get(key);
+    if (existing) {
+      existing.add(socketId);
+    } else {
+      this.userSockets.set(key, new Set([socketId]));
+    }
   }
 
   removeConnection(socketId) {
     const userData = this.connections.get(socketId);
     if (userData) {
-      this.userSockets.delete(`${userData.teamName}-${userData.username}`);
+      const key = `${userData.teamName}-${userData.username}`;
+      const sockets = this.userSockets.get(key);
+      if (sockets) {
+        sockets.delete(socketId);
+        if (sockets.size === 0) {
+          this.userSockets.delete(key);
+        }
+      }
       this.connections.delete(socketId);
     }
   }
@@ -63,7 +77,14 @@ class SocketRoomManager {
   }
 
   getUserSocketId(teamName, username) {
-    return this.userSockets.get(`${teamName}-${username}`);
+    const sockets = this.userSockets.get(`${teamName}-${username}`);
+    if (!sockets || sockets.size === 0) return undefined;
+    return sockets.values().next().value;
+  }
+
+  hasUserConnection(teamName, username) {
+    const sockets = this.userSockets.get(`${teamName}-${username}`);
+    return !!sockets && sockets.size > 0;
   }
 
   getConnection(socketId) {
@@ -72,18 +93,15 @@ class SocketRoomManager {
 
   getProjectUsers(teamName, projectId) {
     const roomId = this.getProjectRoomId(teamName, projectId);
-    const users = [];
+    const users = new Set();
 
     for (const [socketId, userData] of this.connections.entries()) {
       if (userData.teamName === teamName && userData.currentProjectId === projectId) {
-        users.push({
-          username: userData.username,
-          socketId,
-        });
+        users.add(userData.username);
       }
     }
 
-    return users;
+    return Array.from(users);
   }
 }
 
@@ -121,6 +139,10 @@ io.on('connection', socket => {
 
   console.log(`🔌 Client connected: ${username} from ${teamName}`);
 
+  void authService.updateMemberActivity(teamName, username, true).catch(error => {
+    console.error('Failed to mark member active:', error.message);
+  });
+
   // Add connection to manager
   roomManager.addConnection(socket.id, {
     username,
@@ -133,8 +155,19 @@ io.on('connection', socket => {
   socket.join(teamRoom);
 
   // Notify team about user joining
-  socket.to(teamRoom).emit('user-online', {
+  io.to(teamRoom).emit('user-online', {
     username,
+    timestamp: Date.now(),
+  });
+
+  // Send current online team presence to the connecting user
+  const onlineUsers = Array.from(roomManager.connections.values())
+    .filter(connection => connection.teamName === teamName)
+    .map(connection => connection.username);
+  const uniqueOnlineUsers = Array.from(new Set(onlineUsers));
+  socket.emit('team-presence', {
+    teamName,
+    users: uniqueOnlineUsers,
     timestamp: Date.now(),
   });
 
@@ -189,7 +222,7 @@ io.on('connection', socket => {
       const activeUsers = roomManager.getProjectUsers(teamName, projectId);
       io.to(projectRoom).emit('active-users', {
         projectId,
-        users: activeUsers.map(u => u.username),
+        users: activeUsers,
       });
 
       // Acknowledge join
@@ -223,7 +256,7 @@ io.on('connection', socket => {
     const activeUsers = roomManager.getProjectUsers(teamName, projectId);
     io.to(projectRoom).emit('active-users', {
       projectId,
-      users: activeUsers.map(u => u.username),
+      users: activeUsers,
     });
 
     console.log(`${username} left project: ${projectId}`);
@@ -688,6 +721,14 @@ io.on('connection', socket => {
     console.log(`🔌 Client disconnected: ${username} (${reason})`);
 
     const connection = roomManager.getConnection(socket.id);
+    roomManager.removeConnection(socket.id);
+    const isStillOnline = roomManager.hasUserConnection(teamName, username);
+
+    if (!isStillOnline) {
+      void authService.updateMemberActivity(teamName, username, false).catch(error => {
+        console.error('Failed to mark member inactive:', error.message);
+      });
+    }
 
     const activeCall = callService.findActiveCallByUser(teamName, username);
     if (activeCall && !['REJECTED', 'CANCELLED', 'ENDED', 'FAILED'].includes(activeCall.status)) {
@@ -711,31 +752,32 @@ io.on('connection', socket => {
 
     if (connection?.currentProjectId) {
       const projectRoom = roomManager.getProjectRoomId(teamName, connection.currentProjectId);
+      const activeUsers = roomManager.getProjectUsers(teamName, connection.currentProjectId);
+      const stillInProject = activeUsers.includes(username);
 
       // Notify project room
-      socket.to(projectRoom).emit('user-left-project', {
-        username,
-        projectId: connection.currentProjectId,
-      });
+      if (!stillInProject) {
+        socket.to(projectRoom).emit('user-left-project', {
+          username,
+          projectId: connection.currentProjectId,
+        });
+      }
 
       // Update active users
-      setTimeout(() => {
-        const activeUsers = roomManager.getProjectUsers(teamName, connection.currentProjectId);
-        io.to(projectRoom).emit('active-users', {
-          projectId: connection.currentProjectId,
-          users: activeUsers.map(u => u.username),
-        });
-      }, 100);
+      io.to(projectRoom).emit('active-users', {
+        projectId: connection.currentProjectId,
+        users: activeUsers,
+      });
     }
 
     // Notify team
-    const teamRoom = roomManager.getTeamRoomId(teamName);
-    socket.to(teamRoom).emit('user-offline', {
-      username,
-      timestamp: Date.now(),
-    });
-
-    roomManager.removeConnection(socket.id);
+    if (!isStillOnline) {
+      const teamRoom = roomManager.getTeamRoomId(teamName);
+      io.to(teamRoom).emit('user-offline', {
+        username,
+        timestamp: Date.now(),
+      });
+    }
   });
 
   /* ========== ERROR HANDLING ========== */

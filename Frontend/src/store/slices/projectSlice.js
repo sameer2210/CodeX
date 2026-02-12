@@ -51,6 +51,18 @@ export const fetchDashboardData = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard data');
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const { projects } = getState();
+      if (projects.isLoading) return false;
+      const now = Date.now();
+      const lastFetch = projects.lastDashboardFetchAt;
+      const lastError = projects.lastDashboardErrorAt;
+      if (lastFetch && now - lastFetch < 15000) return false;
+      if (lastError && now - lastError < 15000) return false;
+      return true;
+    },
   }
 );
 
@@ -148,6 +160,8 @@ const projectSlice = createSlice({
     // UI state
     isLoading: false,
     error: null,
+    lastDashboardFetchAt: null,
+    lastDashboardErrorAt: null,
   },
   reducers: {
     /* ===== PROJECT MANAGEMENT ===== */
@@ -354,6 +368,8 @@ const projectSlice = createSlice({
         state.stats = action.payload.stats;
         state.projects = action.payload.projects;
         state.teamMembers = action.payload.team;
+        state.lastDashboardFetchAt = Date.now();
+        state.lastDashboardErrorAt = null;
 
         // Calculate derived stats if API didn't provide specific fields
         if (state.stats.totalProjects === 0 && action.payload.projects.length > 0) {
@@ -372,6 +388,7 @@ const projectSlice = createSlice({
       .addCase(fetchDashboardData.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+        state.lastDashboardErrorAt = Date.now();
       })
 
       // Fetch Projects

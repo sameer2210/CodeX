@@ -2,6 +2,7 @@ import {
   ArrowUpRightIcon,
   Bars3Icon,
   BellIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
   FolderIcon,
   MagnifyingGlassIcon,
   MoonIcon,
@@ -10,25 +11,23 @@ import {
   PlusIcon,
   SunIcon,
   VideoCameraIcon,
-  // Zap,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import Sidebar from '../components/layout/Sidebar';
+import ActiveMember from '../components/page/ActiveMember';
 import { useTheme } from '../context/ThemeContext';
-import { notify } from '../lib/notify';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchDashboardData } from '../store/slices/projectSlice';
-import ChatSection from './home/project/components/ChatSection';
 
 const EASE = [0.22, 1, 0.36, 1];
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { stats, teamMembers, projects, isLoading } = useAppSelector(state => state.projects);
+  const { stats, projects } = useAppSelector(state => state.projects);
   const { user, isAuthenticated } = useAppSelector(state => state.auth);
   const socketConnected = useAppSelector(state => state.socket.connected);
 
@@ -109,44 +108,6 @@ const Dashboard = () => {
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const openMobileSidebar = () => setIsMobileSidebarOpen(true);
   const closeMobileSidebar = () => setIsMobileSidebarOpen(false);
-
-  const normalizeStatus = status =>
-    status ? status.toString().trim().toLowerCase() : '';
-
-  const resolveMemberStatus = member => {
-    if (!member) return 'offline';
-    const normalized = normalizeStatus(member.status);
-    if (normalized) return normalized;
-    if (typeof member.isActive === 'boolean') return member.isActive ? 'online' : 'offline';
-    return 'offline';
-  };
-
-  const isMemberOnline = member => {
-    if (member?.isActive === true) return true;
-    const status = resolveMemberStatus(member);
-    return ['online', 'active', 'active now', 'available'].includes(status);
-  };
-
-  const buildAvatarFallback = displayName =>
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
-
-  const resolveAvatarSrc = (avatar, displayName) => {
-    if (!avatar) return buildAvatarFallback(displayName);
-    const cleaned = String(avatar).trim();
-    if (!cleaned || cleaned === 'undefined' || cleaned === 'null') {
-      return buildAvatarFallback(displayName);
-    }
-    return cleaned;
-  };
-
-  const orderedTeamMembers = [...(teamMembers || [])].sort((a, b) => {
-    const aOnline = isMemberOnline(a) ? 1 : 0;
-    const bOnline = isMemberOnline(b) ? 1 : 0;
-    if (aOnline !== bOnline) return bOnline - aOnline;
-    const aName = (a?.username || a?.email || '').toString().toLowerCase();
-    const bName = (b?.username || b?.email || '').toString().toLowerCase();
-    return aName.localeCompare(bName);
-  });
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -287,6 +248,7 @@ const Dashboard = () => {
             {/* Header Actions */}
             <div className="flex items-center gap-4">
               <motion.button
+                onClick={() => navigate('/notifications')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
@@ -312,21 +274,42 @@ const Dashboard = () => {
               >
                 {isDarkMode ? <SunIcon className="w-6 h-6" /> : <MoonIcon className="w-6 h-6" />}
               </motion.button>
-
+              <motion.button
+                onClick={() => navigate('/meeting')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
+                  isDarkMode
+                    ? 'hover:bg-white/5 border-white/5'
+                    : 'hover:bg-white/80 border-[#0B0E11]/5'
+                }`}
+                aria-label="Open meeting chat"
+              >
+                <ChatBubbleOvalLeftEllipsisIcon className="w-6 h-6" />
+              </motion.button>
               <div
+                onClick={() => navigate('/settings')}
                 className={`flex items-center gap-3 pl-4 ml-4 border-l ${
                   isDarkMode ? 'border-white/10' : 'border-[#0B0E11]/10'
                 }`}
               >
                 <img
-                  src={user?.avatar || 'https://i.pravatar.cc/150?img=12'}
+                  src={
+                    user?.avatar ||
+                    (isDarkMode
+                      ? 'https://img.icons8.com/?size=100&id=Wfmeg9dVsvca&format=png&color=FFFFFF'
+                      : 'https://img.icons8.com/?size=100&id=Wfmeg9dVsvca&format=png&color=000000')
+                  }
                   alt="Profile"
                   className="w-11 h-11 rounded-full object-cover ring-2 ring-[#17E1FF]/30"
                 />
-                <div className="hidden lg:block">
+
+                <div className="block">
                   <p className="text-sm font-bold">{user?.username || 'Guest User'}</p>
                   <p
-                    className={`text-xs ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                    className={`text-xs hidden sm:block ${
+                      isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                    }`}
                   >
                     {user?.email || 'guest@example.com'}
                   </p>
@@ -450,11 +433,11 @@ const Dashboard = () => {
             {/* Recent Projects */}
             <motion.div
               variants={itemVariants}
-              className={`lg:col-span-8 rounded-3xl p-10 backdrop-blur-2xl border ${
+              className={`lg:col-span-8 lg:h-[520px] rounded-3xl p-10 backdrop-blur-2xl border flex flex-col min-h-0 ${
                 isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
               }`}
             >
-              <div className="flex justify-between items-center mb-10">
+              <div className="flex justify-between items-center mb-6 shrink-0">
                 <h3 className="text-3xl font-black uppercase tracking-tighter">Recent Projects</h3>
                 <button
                   className={`px-5 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all ${
@@ -466,7 +449,7 @@ const Dashboard = () => {
                   View All
                 </button>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
                 {(projects || []).slice(0, 4).map((proj, i) => (
                   <motion.div
                     key={proj._id || i}
@@ -517,164 +500,11 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Active Team */}
-            <motion.div
-              variants={itemVariants}
-              className={`lg:col-span-4 rounded-3xl p-10 backdrop-blur-2xl border ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
-              }`}
-            >
-              <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">Active Team</h3>
-              <div className="space-y-6">
-                {orderedTeamMembers.length === 0 ? (
-                  <p
-                    className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
-                  >
-                    No team members found.
-                  </p>
-                ) : (
-                  orderedTeamMembers.slice(0, 5).map((member, i) => {
-                    const isOnline = isMemberOnline(member);
-                    const displayName = member.username || member.email || 'Unknown';
-                    const avatarSrc = resolveAvatarSrc(member.avatar, displayName);
-
-                    return (
-                      <motion.div
-                        key={member._id || member.username || i}
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: i * 0.1, ease: EASE }}
-                        className="flex items-center gap-4"
-                      >
-                        <div className="relative">
-                          <img
-                            src={avatarSrc}
-                            alt={displayName}
-                            onError={event => {
-                              event.currentTarget.onerror = null;
-                              event.currentTarget.src = buildAvatarFallback(displayName);
-                            }}
-                            className={`w-12 h-12 rounded-full object-cover ring-2 ${
-                              isOnline
-                                ? 'ring-[#17E1FF] shadow-[0_0_12px_rgba(23,225,255,0.35)]'
-                                : 'ring-yellow-500/40'
-                            }`}
-                          />
-                          <span
-                            className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${
-                              isDarkMode ? 'border-[#0B0E11]' : 'border-white'
-                            } ${isOnline ? 'bg-[#17E1FF]' : 'bg-yellow-500'}`}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm">{displayName}</p>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`h-2 w-2 rounded-full ${
-                                isOnline ? 'bg-[#17E1FF]' : 'bg-yellow-500'
-                              }`}
-                            />
-                            <p
-                              className={`text-xs ${
-                                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
-                              }`}
-                            >
-                              {isOnline ? 'Active now' : 'Away'}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })
-                )}
-              </div>
+            <motion.div variants={itemVariants} className="lg:col-span-4 lg:h-[520px]">
+              <ActiveMember className="h-full" />
             </motion.div>
           </div>
 
-          {/* Analytics & Timer */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Analytics with Gradient Bars */}
-            <motion.div
-              variants={itemVariants}
-              className={`lg:col-span-2 rounded-3xl p-10 backdrop-blur-2xl border ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
-              }`}
-            >
-              <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">
-                Weekly Analytics
-              </h3>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
-                  <BarChart data={weeklyData} barSize={50}>
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10120F" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#5a6152" stopOpacity={0.6} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip content={<CustomTooltip />} cursor={false} />
-                    <Bar dataKey="value" radius={[20, 20, 0, 0]} fill="url(#barGradient)">
-                      {weeklyData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          className="transition-opacity hover:opacity-70"
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div
-                className={`flex justify-between px-4 lg:px-8 mt-4 text-xs lg:text-sm font-medium ${
-                  isDarkMode ? 'text-[#C2CABB]/50' : 'text-[#10120F]/50'
-                }`}
-              >
-                {weeklyData.map(d => (
-                  <span key={d.name}>{d.name}</span>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Time Tracker */}
-            <motion.div
-              variants={itemVariants}
-              className={`rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-10 flex flex-col justify-between ${
-                isDarkMode ? 'bg-[#10120F]' : 'bg-[#10120F]'
-              } text-[#C2CABB]`}
-            >
-              <div>
-                <h3 className="text-sm lg:text-lg font-light mb-8 lg:mb-10 opacity-60 uppercase tracking-widest">
-                  Time Tracker
-                </h3>
-                <div className="text-center mb-8 lg:mb-12">
-                  <h2 className="text-4xl lg:text-5xl font-mono font-bold tracking-wider">
-                    {formatTime(time)}
-                  </h2>
-                </div>
-              </div>
-
-              <div className="flex justify-center gap-3 lg:gap-4">
-                <button
-                  onClick={() => setTimerActive(!timerActive)}
-                  className="w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-[#C2CABB] text-[#10120F] flex items-center justify-center hover:scale-110 transition-transform"
-                >
-                  {timerActive ? (
-                    <PauseIcon className="w-5 lg:w-6 h-5 lg:h-6" />
-                  ) : (
-                    <PlayIcon className="w-5 lg:w-6 h-5 lg:h-6 ml-1" />
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    setTimerActive(false);
-                    setTime(0);
-                  }}
-                  className="w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:scale-110 transition-transform"
-                >
-                  <div className="w-4 lg:w-5 h-4 lg:h-5 bg-current rounded-sm"></div>
-                </button>
-              </div>
-            </motion.div>
-          </div>
           {/* Project Progress & Reminder */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             {/* Project Progress */}
@@ -761,13 +591,98 @@ const Dashboard = () => {
                 </p>
               </div>
               <button
-                // onClick={() => notify('Meeting started', 'success')}
-                onClick={() => navigate(ChatSection)}
+                onClick={() => navigate('/meeting')}
                 className="w-full py-4 lg:py-5 bg-[#10120F] text-[#C2CABB] rounded-2xl lg:rounded-3xl font-bold hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 text-sm lg:text-base mt-6"
               >
                 <VideoCameraIcon className="w-5 lg:w-6 h-5 lg:h-6" />
                 Join Meeting
               </button>
+            </motion.div>
+          </div>
+
+          {/* Analytics & Timer */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Analytics with Gradient Bars */}
+            <motion.div
+              variants={itemVariants}
+              className={`lg:col-span-2 rounded-3xl p-10 backdrop-blur-2xl border ${
+                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
+              }`}
+            >
+              <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">
+                Weekly Analytics
+              </h3>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
+                  <BarChart data={weeklyData} barSize={50}>
+                    <defs>
+                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10120F" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#5a6152" stopOpacity={0.6} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip content={<CustomTooltip />} cursor={false} />
+                    <Bar dataKey="value" radius={[20, 20, 0, 0]} fill="url(#barGradient)">
+                      {weeklyData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          className="transition-opacity hover:opacity-70"
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div
+                className={`flex justify-between px-4 lg:px-8 mt-4 text-xs lg:text-sm font-medium ${
+                  isDarkMode ? 'text-[#C2CABB]/50' : 'text-[#10120F]/50'
+                }`}
+              >
+                {weeklyData.map(d => (
+                  <span key={d.name}>{d.name}</span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Time Tracker */}
+            <motion.div
+              variants={itemVariants}
+              className={`rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-10 flex flex-col justify-between ${
+                isDarkMode ? 'bg-[#10120F]' : 'bg-[#10120F]'
+              } text-[#C2CABB]`}
+            >
+              <div>
+                <h3 className="text-sm lg:text-lg font-light mb-8 lg:mb-10 opacity-60 uppercase tracking-widest">
+                  Time Tracker
+                </h3>
+                <div className="text-center mb-8 lg:mb-12">
+                  <h2 className="text-4xl lg:text-5xl font-mono font-bold tracking-wider">
+                    {formatTime(time)}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-3 lg:gap-4">
+                <button
+                  onClick={() => setTimerActive(!timerActive)}
+                  className="w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-[#C2CABB] text-[#10120F] flex items-center justify-center hover:scale-110 transition-transform"
+                >
+                  {timerActive ? (
+                    <PauseIcon className="w-5 lg:w-6 h-5 lg:h-6" />
+                  ) : (
+                    <PlayIcon className="w-5 lg:w-6 h-5 lg:h-6 ml-1" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setTimerActive(false);
+                    setTime(0);
+                  }}
+                  className="w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:scale-110 transition-transform"
+                >
+                  <div className="w-4 lg:w-5 h-4 lg:h-5 bg-current rounded-sm"></div>
+                </button>
+              </div>
             </motion.div>
           </div>
         </motion.div>

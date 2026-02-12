@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { saveProjectCode } from '../../../../api/project.api';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -53,6 +54,12 @@ const CodeEditor = ({ projectId }) => {
   });
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const layoutEditor = useCallback(() => {
+    if (!editorRef.current) return;
+    requestAnimationFrame(() => {
+      editorRef.current?.layout();
+    });
+  }, []);
 
   const languages = [
     {
@@ -104,11 +111,31 @@ const CodeEditor = ({ projectId }) => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setEditorSettings(prev => ({ ...prev, minimap: !mobile }));
+      layoutEditor();
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [layoutEditor]);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const frame = requestAnimationFrame(layoutEditor);
+    const timeout = setTimeout(layoutEditor, 60);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timeout);
+    };
+  }, [isFullscreen, layoutEditor]);
 
   /* ========== INITIALIZE LANGUAGE + CODE (ONE TIME) ========== */
   useEffect(() => {
@@ -321,11 +348,11 @@ const CodeEditor = ({ projectId }) => {
   };
 
   /* ========== RENDER ========== */
-  return (
+  const editorShell = (
     <div
-      className={`flex flex-col h-full rounded-lg overflow-hidden border ${
+      className={`flex flex-col h-full overflow-hidden border ${
         isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+      } ${isFullscreen ? 'fixed inset-0 z-[1000] rounded-none' : 'rounded-lg'}`}
     >
       {/* Header */}
       <div className={`p-3 md:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -333,14 +360,9 @@ const CodeEditor = ({ projectId }) => {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/5 transition-colors"
+              className="flex items-center cursor-pointer gap-2 rounded-lg px-2 py-1 hover:bg-white/5 transition-colors"
               aria-label="Go to dashboard"
             >
-              <img
-                src="/logo.png"
-                alt="CodeX"
-                className="w-6 h-6 md:w-7 md:h-7 object-contain"
-              />
               <span
                 className={`text-base md:text-lg font-semibold ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
@@ -357,12 +379,12 @@ const CodeEditor = ({ projectId }) => {
             )}
           </div>
 
-          <div className="flex items-center space-x-1 md:space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-3 px-3 ">
             {/* Mobile-optimized buttons */}
             <button
               onClick={executeCode}
               disabled={isExecuting || language !== 'javascript'}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all cursor-pointer ${
                 isExecuting
                   ? 'bg-gray-400 cursor-not-allowed text-white'
                   : 'bg-gradient-to-r from-[#17E1FF] to-[#11B6FF] hover:from-[#34E7FF] hover:to-[#1EC5FF] text-[#0B0E11] shadow-[0_8px_24px_rgba(23,225,255,0.35)]'
@@ -380,21 +402,21 @@ const CodeEditor = ({ projectId }) => {
               <>
                 <button
                   onClick={copyCode}
-                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
                   title="Copy"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
                 <button
                   onClick={downloadCode}
-                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
                   title="Download"
                 >
                   <Download className="w-4 h-4" />
                 </button>
                 <button
                   onClick={formatCode}
-                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
                   title="Format"
                 >
                   <Code2 className="w-4 h-4" />
@@ -404,7 +426,7 @@ const CodeEditor = ({ projectId }) => {
 
             <button
               onClick={resetCode}
-              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
               title="Reset"
             >
               <RotateCcw className="w-4 h-4" />
@@ -412,7 +434,7 @@ const CodeEditor = ({ projectId }) => {
 
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
               title="Settings"
             >
               <Settings className="w-4 h-4" />
@@ -420,7 +442,7 @@ const CodeEditor = ({ projectId }) => {
 
             <button
               onClick={toggleFullscreen}
-              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -428,7 +450,7 @@ const CodeEditor = ({ projectId }) => {
             <select
               value={language}
               onChange={e => changeLanguage(e.target.value)}
-              className={`px-2 md:px-3 py-1.5 md:py-2 border rounded-lg text-xs md:text-sm ${
+              className={`px-2 md:px-3 py-1.5 md:py-2 border cursor-pointer rounded-lg text-xs md:text-sm ${
                 isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'
               }`}
             >
@@ -508,6 +530,12 @@ const CodeEditor = ({ projectId }) => {
       </div>
     </div>
   );
+
+  if (isFullscreen && typeof document !== 'undefined') {
+    return createPortal(editorShell, document.body);
+  }
+
+  return editorShell;
 };
 
 export default CodeEditor;

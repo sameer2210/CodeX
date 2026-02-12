@@ -1,11 +1,9 @@
 import {
   ArrowLeftStartOnRectangleIcon,
-  ArrowRightStartOnRectangleIcon,
-  ChatBubbleLeftRightIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
   CodeBracketIcon,
   CommandLineIcon,
   CpuChipIcon,
-  HomeIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Phone, PhoneOff, Video } from 'lucide-react';
@@ -33,6 +31,7 @@ import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import OutputPanel from './components/OutputPanel';
 import ReviewPanel from './components/ReviewPanel';
+import Sidebar from '../../../components/layout/Sidebar';
 
 const EASE = [0.22, 1, 0.36, 1];
 const DEFAULT_EDITOR_SPLIT = 70;
@@ -69,6 +68,12 @@ const Project = () => {
     return 'mobile';
   };
   const [layoutMode, setLayoutMode] = useState(getLayoutMode);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
+  const expandSidebar = () => setIsSidebarCollapsed(false);
+  const collapseSidebar = () => setIsSidebarCollapsed(true);
+  const desktopMargin = layoutMode === 'desktop' ? (isSidebarCollapsed ? 80 : 256) : 0;
 
   const clampEditorSplit = useCallback(() => {
     if (!splitRef.current) return;
@@ -100,6 +105,14 @@ const Project = () => {
       requestAnimationFrame(clampEditorSplit);
     }
   }, [layoutMode, clampEditorSplit]);
+
+  useEffect(() => {
+    if (layoutMode === 'desktop') {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  }, [layoutMode]);
 
   useEffect(() => {
     ringtoneRef.current = createRingtoneLoop();
@@ -247,7 +260,7 @@ const Project = () => {
     },
   };
 
-  const mobileTab = activeTab === 'output' ? 'review' : activeTab;
+  const mobileTab = activeTab;
   const mobileNavItems = [
     {
       key: 'logout',
@@ -259,7 +272,7 @@ const Project = () => {
     {
       key: 'chat',
       label: 'Chat',
-      icon: ChatBubbleLeftRightIcon,
+      icon: ChatBubbleOvalLeftEllipsisIcon,
       onClick: () => setActiveTab('chat'),
     },
     {
@@ -267,6 +280,12 @@ const Project = () => {
       label: 'Code',
       icon: CodeBracketIcon,
       onClick: () => setActiveTab('code'),
+    },
+    {
+      key: 'output',
+      label: 'Output',
+      icon: CommandLineIcon,
+      onClick: () => setActiveTab('output'),
     },
     {
       key: 'review',
@@ -332,75 +351,32 @@ const Project = () => {
       {/* Ambient Glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#17E1FF]/10 rounded-full blur-[200px] opacity-30 pointer-events-none z-[1]" />
 
-      {/* Sidebar + Main Content */}
-      <div className="flex min-h-screen">
-        {/* Sidebar - Icons Only (Tablet/Desktop) */}
-        <div
-          className={`hidden md:flex w-16 flex-col items-center py-4 gap-6 border-r ${
-            isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#E6E8E5] border-[#0B0E11]/15'
-          }`}
-        >
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="p-2 hover:bg-white/10 rounded-full transition-all"
-          >
-            <HomeIcon className="w-6 h-6" />
-          </button>
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onHoverExpand={expandSidebar}
+          onHoverCollapse={collapseSidebar}
+        />
+      </div>
 
-          <button
-            onClick={() => setActiveTab('code')}
-            className={`p-2 rounded-full transition-all ${
-              activeTab === 'code' ? 'bg-[#17E1FF]/10' : 'hover:bg-white/10'
-            }`}
-          >
-            <CodeBracketIcon className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('output')}
-            className={`p-2 rounded-full transition-all ${
-              activeTab === 'output' ? 'bg-[#17E1FF]/10' : 'hover:bg-white/10'
-            }`}
-          >
-            <CommandLineIcon className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`p-2 rounded-full transition-all ${
-              activeTab === 'review' ? 'bg-[#17E1FF]/10' : 'hover:bg-white/10'
-            }`}
-          >
-            <CpuChipIcon className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`p-2 rounded-full transition-all ${
-              activeTab === 'chat' ? 'bg-[#17E1FF]/10' : 'hover:bg-white/10'
-            }`}
-          >
-            <ChatBubbleLeftRightIcon className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => navigate('/login')}
-            className="p-2 hover:bg-white/10 rounded-full transition-all mt-auto"
-          >
-            <ArrowRightStartOnRectangleIcon className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Main Content */}
-        <motion.main
+      {/* Main Content */}
+      <motion.main
+        animate={{ marginLeft: desktopMargin }}
+        transition={{ duration: 0.3, ease: EASE }}
+        className={`p-1 sm:p-2 lg:p-4 relative z-10 flex flex-col min-h-0 ${
+          layoutMode === 'desktop'
+            ? 'h-[100dvh] overflow-hidden'
+            : layoutMode === 'mobile'
+              ? 'h-[100dvh] pb-[calc(72px+env(safe-area-inset-bottom))]'
+              : 'min-h-screen'
+        }`}
+      >
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className={`flex-1 p-1 sm:p-2 lg:p-4 relative z-10 flex flex-col min-h-0 ${
-            layoutMode === 'mobile'
-              ? 'h-[100dvh] pb-[calc(72px+env(safe-area-inset-bottom))]'
-              : 'min-h-screen'
-          }`}
+          className="flex flex-col min-h-0 h-full"
         >
           {/* Desktop Layout: ≥1024px - Split View */}
           {layoutMode === 'desktop' && (
@@ -596,7 +572,7 @@ const Project = () => {
                     : 'bg-[#0B0E11]/10 text-[#0B0E11] hover:bg-[#0B0E11]/15'
                 }`}
               >
-                <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
                 {isChatOpen ? 'Collapse Chat' : 'Expand Chat'}
               </button>
               {isChatOpen && (
@@ -638,13 +614,14 @@ const Project = () => {
                       onStartGroupCall={startGroupCall}
                     />
                   )}
+                  {mobileTab === 'output' && <OutputPanel projectId={currentProject._id} />}
                   {mobileTab === 'review' && <ReviewPanel projectId={currentProject._id} />}
                 </div>
               </div>
             </motion.div>
           )}
-        </motion.main>
-      </div>
+        </motion.div>
+      </motion.main>
 
       {/* Incoming Call Banner */}
       <AnimatePresence>
@@ -701,7 +678,7 @@ const Project = () => {
                   : 'bg-white/88 border-[#0B0E11]/15 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
               }`}
             >
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {mobileNavItems.map(item => {
                   const Icon = item.icon;
                   const isActive = item.key === mobileTab;

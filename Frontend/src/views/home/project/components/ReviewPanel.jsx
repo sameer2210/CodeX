@@ -252,7 +252,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
       </div>
 
       {/* Review Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
         <AnimatePresence mode="wait">
           {review ? (
             <motion.div

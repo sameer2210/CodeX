@@ -43,7 +43,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
   const [attachments, setAttachments] = useState([]);
 
   // --- Refs ---
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messageInputRef = useRef(null);
   const userListRef = useRef(null);
@@ -51,11 +51,14 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
 
   /* ========== UTILS ========== */
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    const frame = requestAnimationFrame(scrollToBottom);
+    return () => cancelAnimationFrame(frame);
   }, [messages, scrollToBottom, attachments]);
 
   useEffect(() => {
@@ -453,7 +456,10 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
         </AnimatePresence>
 
         {/* MESSAGES AREA */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 custom-scrollbar overscroll-contain">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 min-h-0 overflow-y-auto px-4 py-4 custom-scrollbar overscroll-contain"
+        >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full opacity-30">
               <div
@@ -498,7 +504,6 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                   </span>
                 </motion.div>
               )}
-              <div ref={messagesEndRef} />
             </>
           )}
         </div>

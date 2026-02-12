@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [time, setTime] = useState(5048);
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, toggleTheme } = useTheme();
+  const [chartsReady, setChartsReady] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
     window.matchMedia('(min-width: 1024px)').matches
   );
@@ -119,6 +120,11 @@ const Dashboard = () => {
       setIsSidebarCollapsed(false);
     }
   }, [isLargeScreen]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setChartsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -553,25 +559,27 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="relative w-40 h-40 lg:w-48 lg:h-48">
-                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      innerRadius={60}
-                      outerRadius={75}
-                      startAngle={90}
-                      endAngle={-270}
-                      paddingAngle={3}
-                      dataKey="value"
-                      cornerRadius={8}
-                      stroke="none"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                {chartsReady && (
+                  <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        innerRadius={60}
+                        outerRadius={75}
+                        startAngle={90}
+                        endAngle={-270}
+                        paddingAngle={3}
+                        dataKey="value"
+                        cornerRadius={8}
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
                   <h2 className="text-3xl lg:text-4xl font-bold">41%</h2>
                   <p
@@ -628,25 +636,27 @@ const Dashboard = () => {
                 Weekly Analytics
               </h3>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
-                  <BarChart data={weeklyData} barSize={50}>
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10120F" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#5a6152" stopOpacity={0.6} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip content={<CustomTooltip />} cursor={false} />
-                    <Bar dataKey="value" radius={[20, 20, 0, 0]} fill="url(#barGradient)">
-                      {weeklyData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          className="transition-opacity hover:opacity-70"
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                {chartsReady && (
+                  <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
+                    <BarChart data={weeklyData} barSize={50}>
+                      <defs>
+                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10120F" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#5a6152" stopOpacity={0.6} />
+                        </linearGradient>
+                      </defs>
+                      <Tooltip content={<CustomTooltip />} cursor={false} />
+                      <Bar dataKey="value" radius={[20, 20, 0, 0]} fill="url(#barGradient)">
+                        {weeklyData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            className="transition-opacity hover:opacity-70"
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div
                 className={`flex justify-between px-4 lg:px-8 mt-4 text-xs lg:text-sm font-medium ${

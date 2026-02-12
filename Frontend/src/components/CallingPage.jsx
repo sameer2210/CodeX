@@ -3,12 +3,7 @@ import { motion } from 'framer-motion';
 import { Maximize2, Mic, MicOff, Minimize2, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import {
-  CALL_STATUS,
-  callEndRequested,
-  setMuted,
-  setVideoOff,
-} from '../store/slices/callSlice';
+import { CALL_STATUS, callEndRequested, setMuted, setVideoOff } from '../store/slices/callSlice';
 import { toggleAudio, toggleVideo } from '../webrtc/callManager';
 
 const useCallDuration = status => {
@@ -37,8 +32,8 @@ const formatDuration = seconds => {
 };
 
 const useIsDesktop = () => {
-  const [isDesktop, setIsDesktop] = useState(() =>
-    window.matchMedia('(min-width: 1024px)').matches
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 1024px)').matches
   );
 
   useEffect(() => {
@@ -70,12 +65,6 @@ export const AudioCallPage = ({ onEnd }) => {
   const [isCompact, setIsCompact] = useState(false);
 
   const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
-
-  useEffect(() => {
-    if (!isDesktop) {
-      setIsCompact(false);
-    }
-  }, [isDesktop]);
 
   useEffect(() => {
     if (remoteAudioRef.current && call.remoteStream) {
@@ -113,11 +102,11 @@ export const AudioCallPage = ({ onEnd }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed z-50 transition-all duration-300 ${
-        isDesktop
-          ? isCompact
-            ? 'bottom-6 right-6'
-            : 'top-6 left-1/2 -translate-x-1/2'
-          : 'inset-0'
+        isCompact
+          ? 'bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]'
+          : isDesktop
+            ? 'top-6 left-1/2 -translate-x-1/2'
+            : 'inset-0'
       }`}
       style={
         isDesktop
@@ -128,27 +117,33 @@ export const AudioCallPage = ({ onEnd }) => {
               minHeight: isCompact ? '180px' : '360px',
               maxWidth: 'calc(100vw - 2.5rem)',
               maxHeight: 'calc(100vh - 2.5rem)',
-              resize: 'both',
+              resize: isCompact ? 'none' : 'both',
               overflow: 'hidden',
             }
-          : undefined
+          : isCompact
+            ? {
+                width: '280px',
+                height: '190px',
+                maxWidth: 'calc(100vw - 2rem)',
+                maxHeight: 'calc(100vh - 2rem)',
+                overflow: 'hidden',
+              }
+            : undefined
       }
-      >
-        <audio ref={remoteAudioRef} autoPlay playsInline />
+    >
+      <audio ref={remoteAudioRef} autoPlay playsInline />
       <div
         className={`relative h-full w-full flex flex-col items-center justify-center bg-[#0B0E12] ${
           isDesktop ? 'rounded-3xl border border-white/10 shadow-2xl' : ''
         }`}
       >
-        {isDesktop && (
-          <button
-            onClick={() => setIsCompact(prev => !prev)}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-            aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
-          >
-            {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </button>
-        )}
+        <button
+          onClick={() => setIsCompact(prev => !prev)}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+          aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
+        >
+          {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+        </button>
         <div className="text-center space-y-4 px-4">
           <div
             className={`rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto animate-pulse ${
@@ -160,12 +155,8 @@ export const AudioCallPage = ({ onEnd }) => {
           <h2 className={`${isCompact ? 'text-xl' : 'text-3xl'} font-light text-white`}>
             {peerName || 'Unknown'}
           </h2>
-          <p className={`${isCompact ? 'text-sm' : 'text-xl'} text-gray-400`}>
-            {getStatusText()}
-          </p>
-          {call.error && (
-            <p className="text-xs text-red-400 max-w-sm mx-auto">{call.error}</p>
-          )}
+          <p className={`${isCompact ? 'text-sm' : 'text-xl'} text-gray-400`}>{getStatusText()}</p>
+          {call.error && <p className="text-xs text-red-400 max-w-sm mx-auto">{call.error}</p>}
           {call.status === CALL_STATUS.ACCEPTED && (
             <div className="flex items-center justify-center space-x-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -218,12 +209,6 @@ export const VideoCallPage = ({ onEnd }) => {
   const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
 
   useEffect(() => {
-    if (!isDesktop) {
-      setIsCompact(false);
-    }
-  }, [isDesktop]);
-
-  useEffect(() => {
     if (remoteVideoRef.current && call.remoteStream) {
       remoteVideoRef.current.srcObject = call.remoteStream;
     }
@@ -258,11 +243,11 @@ export const VideoCallPage = ({ onEnd }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed z-50 transition-all duration-300 ${
-        isDesktop
-          ? isCompact
-            ? 'bottom-6 right-6'
-            : 'top-6 left-1/2 -translate-x-1/2'
-          : 'inset-0'
+        isCompact
+          ? 'bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]'
+          : isDesktop
+            ? 'top-6 left-1/2 -translate-x-1/2'
+            : 'inset-0'
       }`}
       style={
         isDesktop
@@ -273,10 +258,18 @@ export const VideoCallPage = ({ onEnd }) => {
               minHeight: isCompact ? '200px' : '420px',
               maxWidth: 'calc(100vw - 2.5rem)',
               maxHeight: 'calc(100vh - 2.5rem)',
-              resize: 'both',
+              resize: isCompact ? 'none' : 'both',
               overflow: 'hidden',
             }
-          : undefined
+          : isCompact
+            ? {
+                width: '320px',
+                height: '200px',
+                maxWidth: 'calc(100vw - 2rem)',
+                maxHeight: 'calc(100vh - 2rem)',
+                overflow: 'hidden',
+              }
+            : undefined
       }
     >
       {/* Remote Video */}
@@ -285,15 +278,13 @@ export const VideoCallPage = ({ onEnd }) => {
           isDesktop ? 'rounded-3xl border border-white/10 shadow-2xl' : ''
         }`}
       >
-        {isDesktop && (
-          <button
-            onClick={() => setIsCompact(prev => !prev)}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-            aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
-          >
-            {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </button>
-        )}
+        <button
+          onClick={() => setIsCompact(prev => !prev)}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+          aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
+        >
+          {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+        </button>
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
         {call.status !== CALL_STATUS.ACCEPTED && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -321,7 +312,13 @@ export const VideoCallPage = ({ onEnd }) => {
             isCompact ? 'top-3 right-3 w-24 h-32' : 'top-6 right-6 w-48 h-64'
           }`}
         >
-          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
         </div>
       )}
 

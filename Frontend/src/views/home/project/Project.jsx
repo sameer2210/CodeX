@@ -1,5 +1,4 @@
 import {
-  ArrowLeftStartOnRectangleIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   CodeBracketIcon,
   CommandLineIcon,
@@ -10,6 +9,7 @@ import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AudioCallPage, VideoCallPage } from '../../../components/CallingPage';
+import Sidebar from '../../../components/layout/Sidebar';
 import ResizableContainer from '../../../components/ui/ResizableContainer';
 import { useTheme } from '../../../context/ThemeContext';
 import { notify } from '../../../lib/notify';
@@ -31,7 +31,6 @@ import ChatSection from './components/ChatSection';
 import CodeEditor from './components/CodeEditor';
 import OutputPanel from './components/OutputPanel';
 import ReviewPanel from './components/ReviewPanel';
-import Sidebar from '../../../components/layout/Sidebar';
 
 const EASE = [0.22, 1, 0.36, 1];
 const DEFAULT_EDITOR_SPLIT = 70;
@@ -68,8 +67,8 @@ const Project = () => {
     return 'mobile';
   };
   const [layoutMode, setLayoutMode] = useState(getLayoutMode);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
-    window.matchMedia('(min-width: 1024px)').matches
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    () => window.matchMedia('(min-width: 1024px)').matches
   );
   const expandSidebar = () => setIsSidebarCollapsed(false);
   const collapseSidebar = () => setIsSidebarCollapsed(true);
@@ -262,13 +261,6 @@ const Project = () => {
 
   const mobileTab = activeTab;
   const mobileNavItems = [
-    {
-      key: 'logout',
-      label: 'Logout',
-      icon: ArrowLeftStartOnRectangleIcon,
-      onClick: () => navigate('/login'),
-      tone: 'danger',
-    },
     {
       key: 'chat',
       label: 'Chat',
@@ -678,7 +670,7 @@ const Project = () => {
                   : 'bg-white/88 border-[#0B0E11]/15 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
               }`}
             >
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {mobileNavItems.map(item => {
                   const Icon = item.icon;
                   const isActive = item.key === mobileTab;
@@ -747,4 +739,3 @@ const Project = () => {
 };
 
 export default Project;
-

@@ -133,7 +133,7 @@ const Dashboard = () => {
           className={`px-4 py-2 rounded-xl shadow-2xl border backdrop-blur-xl ${
             isDarkMode
               ? 'bg-[#0B0E11]/90 text-[#E6E8E5] border-[#17E1FF]/20'
-              : 'bg-white/90 text-[#0B0E11] border-[#0B0E11]/10'
+              : 'bg-white/90 text-[#0B0E11] border-[#0B0E11]/15'
           }`}
         >
           <p className="font-bold text-sm">{payload[0].value} hours</p>
@@ -216,7 +216,7 @@ const Dashboard = () => {
                 className={`lg:hidden p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
-                    : 'hover:bg-white/80 border-[#0B0E11]/5'
+                    : 'hover:bg-white/95 border-[#0B0E11]/15'
                 }`}
                 aria-label="Open sidebar"
               >
@@ -228,7 +228,7 @@ const Dashboard = () => {
                   className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
                     isDarkMode
                       ? 'text-[#E6E8E5]/40 group-focus-within:text-[#17E1FF]'
-                      : 'text-[#0B0E11]/40 group-focus-within:text-[#17E1FF]'
+                      : 'text-[#0B0E11]/80 group-focus-within:text-[#17E1FF]'
                   }`}
                 />
                 <input
@@ -239,7 +239,7 @@ const Dashboard = () => {
                   className={`w-full pl-14 pr-6 py-4 rounded-3xl text-sm font-medium outline-none transition-all backdrop-blur-xl border ${
                     isDarkMode
                       ? 'bg-white/5 text-[#E6E8E5] placeholder-[#E6E8E5]/30 border-white/10 focus:border-[#17E1FF]/30 focus:bg-white/10'
-                      : 'bg-white/60 text-[#0B0E11] placeholder-[#0B0E11]/30 border-[#0B0E11]/5 focus:border-[#17E1FF]/30 focus:bg-white'
+                      : 'bg-white/90 text-[#0B0E11] placeholder-[#0B0E11]/30 border-[#0B0E11]/15 focus:border-[#17E1FF]/30 focus:bg-white'
                   }`}
                 />
               </div>
@@ -254,7 +254,7 @@ const Dashboard = () => {
                 className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
-                    : 'hover:bg-white/80 border-[#0B0E11]/5'
+                    : 'hover:bg-white/95 border-[#0B0E11]/15'
                 }`}
               >
                 <BellIcon className="w-6 h-6" />
@@ -269,7 +269,7 @@ const Dashboard = () => {
                 className={`p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
-                    : 'hover:bg-white/80 border-[#0B0E11]/5'
+                    : 'hover:bg-white/95 border-[#0B0E11]/15'
                 }`}
               >
                 {isDarkMode ? <SunIcon className="w-6 h-6" /> : <MoonIcon className="w-6 h-6" />}
@@ -281,7 +281,7 @@ const Dashboard = () => {
                 className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
-                    : 'hover:bg-white/80 border-[#0B0E11]/5'
+                    : 'hover:bg-white/95 border-[#0B0E11]/15'
                 }`}
                 aria-label="Open meeting chat"
               >
@@ -290,7 +290,7 @@ const Dashboard = () => {
               <div
                 onClick={() => navigate('/settings')}
                 className={`flex items-center gap-3 pl-4 ml-4 border-l ${
-                  isDarkMode ? 'border-white/10' : 'border-[#0B0E11]/10'
+                  isDarkMode ? 'border-white/10' : 'border-[#0B0E11]/15'
                 }`}
               >
                 <img
@@ -308,7 +308,7 @@ const Dashboard = () => {
                   <p className="text-sm font-bold">{user?.username || 'Guest User'}</p>
                   <p
                     className={`text-xs hidden sm:block ${
-                      isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                      isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                     }`}
                   >
                     {user?.email || 'guest@example.com'}
@@ -334,7 +334,7 @@ const Dashboard = () => {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.8 }}
                 className={`text-base sm:text-lg lg:text-xl font-light ${
-                  isDarkMode ? 'text-[#E6E8E5]/40' : 'text-[#0B0E11]/40'
+                  isDarkMode ? 'text-[#E6E8E5]/40' : 'text-[#0B0E11]/80'
                 }`}
               >
                 High-performance workspace for distributed teams
@@ -377,7 +377,7 @@ const Dashboard = () => {
               <div className="relative z-10">
                 <p
                   className={`text-xs font-mono uppercase tracking-widest mb-2 ${
-                    isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                    isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                   }`}
                 >
                   Total Projects
@@ -402,7 +402,7 @@ const Dashboard = () => {
                 className={`rounded-3xl p-8 relative group backdrop-blur-2xl border transition-all ${
                   isDarkMode
                     ? 'bg-white/5 border-white/10 hover:border-white/20'
-                    : 'bg-white/60 border-white/20 hover:border-[#0B0E11]/10'
+                    : 'bg-white/90 border-[#0B0E11]/15 hover:border-[#0B0E11]/20'
                 }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -410,7 +410,7 @@ const Dashboard = () => {
                 <div className="relative z-10">
                   <p
                     className={`text-xs font-mono uppercase tracking-widest mb-2 ${
-                      isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                      isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                     }`}
                   >
                     {card.label}
@@ -418,7 +418,7 @@ const Dashboard = () => {
                   <h2 className="text-5xl font-black mb-6">{card.value}</h2>
                   <span
                     className={`text-xs font-medium ${
-                      isDarkMode ? 'text-[#E6E8E5]/60' : 'text-[#0B0E11]/60'
+                      isDarkMode ? 'text-[#E6E8E5]/60' : 'text-[#0B0E11]/80'
                     }`}
                   >
                     {card.trend}
@@ -434,7 +434,7 @@ const Dashboard = () => {
             <motion.div
               variants={itemVariants}
               className={`lg:col-span-8 lg:h-[520px] rounded-3xl p-10 backdrop-blur-2xl border flex flex-col min-h-0 ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
+                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-[#0B0E11]/15'
               }`}
             >
               <div className="flex justify-between items-center mb-6 shrink-0">
@@ -443,7 +443,7 @@ const Dashboard = () => {
                   className={`px-5 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all ${
                     isDarkMode
                       ? 'bg-white/5 text-[#E6E8E5] hover:bg-white/10'
-                      : 'bg-[#0B0E11]/5 text-[#0B0E11] hover:bg-[#0B0E11]/10'
+                      : 'bg-[#0B0E11]/10 text-[#0B0E11] hover:bg-[#0B0E11]/15'
                   }`}
                 >
                   View All
@@ -461,7 +461,7 @@ const Dashboard = () => {
                     className={`group flex items-center justify-between p-6 rounded-2xl transition-all cursor-pointer border ${
                       isDarkMode
                         ? 'hover:bg-white/5 border-transparent hover:border-[#17E1FF]/20'
-                        : 'hover:bg-white border-transparent hover:border-[#0B0E11]/10'
+                        : 'hover:bg-white border-transparent hover:border-[#0B0E11]/15'
                     }`}
                   >
                     <div className="flex items-center gap-5">
@@ -469,7 +469,7 @@ const Dashboard = () => {
                         className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
                           isDarkMode
                             ? 'bg-[#17E1FF]/10 group-hover:bg-[#17E1FF]/20'
-                            : 'bg-[#0B0E11]/5 group-hover:bg-[#0B0E11]/10'
+                            : 'bg-[#0B0E11]/10 group-hover:bg-[#0B0E11]/15'
                         }`}
                       >
                         <FolderIcon className="w-7 h-7 text-[#17E1FF]" />
@@ -480,7 +480,7 @@ const Dashboard = () => {
                         </h4>
                         <p
                           className={`text-sm ${
-                            isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                            isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                           }`}
                         >
                           Due:{' '}
@@ -501,7 +501,7 @@ const Dashboard = () => {
 
             {/* Active Team */}
             <motion.div variants={itemVariants} className="lg:col-span-4 lg:h-[520px]">
-              <ActiveMember className="h-full" />
+              <ActiveMember className="h-full" onClick={() => navigate('/active-members')} />
             </motion.div>
           </div>
 
@@ -511,7 +511,7 @@ const Dashboard = () => {
             <motion.div
               variants={itemVariants}
               className={`rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-6 ${
-                isDarkMode ? 'bg-[#1a1c19]' : 'bg-white/60'
+                isDarkMode ? 'bg-[#1a1c19]' : 'bg-white/90'
               }`}
             >
               <div className="w-full lg:w-auto">
@@ -574,7 +574,7 @@ const Dashboard = () => {
             <motion.div
               variants={itemVariants}
               className={`rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-10 flex flex-col justify-between ${
-                isDarkMode ? 'bg-[#1a1c19]' : 'bg-white/60'
+                isDarkMode ? 'bg-[#1a1c19]' : 'bg-white/90'
               }`}
             >
               <div>
@@ -606,7 +606,7 @@ const Dashboard = () => {
             <motion.div
               variants={itemVariants}
               className={`lg:col-span-2 rounded-3xl p-10 backdrop-blur-2xl border ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
+                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-[#0B0E11]/15'
               }`}
             >
               <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">
@@ -692,3 +692,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+

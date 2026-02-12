@@ -83,9 +83,9 @@ const Meeting = () => {
       >
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#17E1FF] border-t-transparent rounded-full animate-spin" />
-          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
-            Loading meeting...
-          </p>
+            <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}>
+              Loading meeting...
+            </p>
         </div>
       </div>
     );
@@ -100,11 +100,11 @@ const Meeting = () => {
       >
         <div
           className={`max-w-md text-center rounded-3xl border p-8 ${
-            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/10'
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-black/15'
           }`}
         >
           <h2 className="text-2xl font-bold mb-3">No projects available</h2>
-          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
+          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}>
             Create a project first to start a meeting chat.
           </p>
           <button
@@ -149,9 +149,9 @@ const Meeting = () => {
               {activeProjectName}
             </h1>
             <p
-              className={`mt-2 text-sm sm:text-base ${
-                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
-              }`}
+            className={`mt-2 text-sm sm:text-base ${
+              isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
+            }`}
             >
               Team chat powered by your project room.
             </p>
@@ -162,7 +162,7 @@ const Meeting = () => {
             className={`px-5 py-3 rounded-2xl font-semibold text-sm uppercase tracking-wide border transition-all ${
               isDarkMode
                 ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                : 'bg-white/60 border-black/10 hover:bg-white'
+                : 'bg-white/90 border-black/15 hover:bg-white'
             }`}
           >
             Back to Dashboard
@@ -176,9 +176,9 @@ const Meeting = () => {
         >
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 h-full min-h-0 overflow-hidden">
             <div
-              className={`h-full min-h-0 rounded-3xl border backdrop-blur-2xl overflow-hidden ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/10'
-              }`}
+            className={`h-full min-h-0 rounded-3xl border backdrop-blur-2xl overflow-hidden ${
+              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-black/15'
+            }`}
             >
               <ChatSection projectId={activeProjectId} />
             </div>

@@ -215,7 +215,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
             className={`text-xs px-3 py-1 rounded-full border ${
               isDarkMode
                 ? 'bg-white/5 text-gray-400 border-white/10'
-                : 'bg-black/5 text-slate-500 border-black/10'
+                : 'bg-black/15 text-slate-500 border-black/15'
             }`}
           >
             {msg.message}
@@ -251,7 +251,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                   : 'bg-[#0B0E11] text-white rounded-br-sm'
                 : isDarkMode
                   ? 'bg-[#111418] text-gray-200 rounded-bl-sm border border-white/5'
-                  : 'bg-white text-[#0B0E11] rounded-bl-sm border border-black/5 shadow-sm'
+                  : 'bg-white text-[#0B0E11] rounded-bl-sm border border-black/15 shadow-sm'
             }`}
           >
             <ReactMarkdown
@@ -294,7 +294,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
         {/* HEADER */}
         <div
           className={`flex items-center justify-between shrink-0 px-4 sm:px-6 py-4 border-b backdrop-blur-md z-20 sticky top-0 ${
-            isDarkMode ? 'border-white/10 bg-[#0B0E12]/85' : 'border-black/10 bg-white/85'
+            isDarkMode ? 'border-white/10 bg-[#0B0E12]/85' : 'border-black/15 bg-white/85'
           }`}
         >
           <div className="flex items-center gap-4">
@@ -323,7 +323,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
               className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isDarkMode
                   ? 'border-white/10 text-gray-300 hover:text-white hover:bg-white/5'
-                  : 'border-black/10 text-slate-600 hover:text-black hover:bg-black/5'
+                  : 'border-black/15 text-slate-600 hover:text-black hover:bg-black/15'
               }`}
             >
               <Phone className="w-4 h-4" />
@@ -335,7 +335,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
               className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isDarkMode
                   ? 'border-white/10 text-gray-300 hover:text-white hover:bg-white/5'
-                  : 'border-black/10 text-slate-600 hover:text-black hover:bg-black/5'
+                  : 'border-black/15 text-slate-600 hover:text-black hover:bg-black/15'
               }`}
             >
               <Video className="w-4 h-4" />
@@ -347,8 +347,8 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
               className={`p-2 rounded-xl border transition-all ${
                 isDarkMode
                   ? 'border-white/10 text-gray-300 hover:text-white hover:bg-white/5'
-                  : 'border-black/10 text-slate-600 hover:text-black hover:bg-black/5'
-              } ${showUserList ? (isDarkMode ? 'bg-white/5 text-white' : 'bg-black/5 text-black') : ''}`}
+                  : 'border-black/15 text-slate-600 hover:text-black hover:bg-black/15'
+              } ${showUserList ? (isDarkMode ? 'bg-white/5 text-white' : 'bg-black/15 text-black') : ''}`}
             >
               <MoreVertical className="w-5 h-5" />
             </button>
@@ -364,7 +364,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               ref={userListRef}
               className={`absolute top-20 right-6 w-64 rounded-xl shadow-2xl z-20 overflow-hidden border ${
-                isDarkMode ? 'bg-[#111418] border-white/10' : 'bg-white border-black/10'
+                isDarkMode ? 'bg-[#111418] border-white/10' : 'bg-white border-black/15'
               }`}
             >
               <div className="p-3">
@@ -379,7 +379,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                   {/* You */}
                   <div
                     className={`flex items-center justify-between p-2 rounded-lg ${
-                      isDarkMode ? 'bg-white/5' : 'bg-black/5'
+                      isDarkMode ? 'bg-white/5' : 'bg-black/15'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -400,7 +400,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                     <div
                       key={user}
                       className={`flex items-center justify-between p-2 rounded-lg group transition-colors ${
-                        isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/5'
+                        isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/15'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -408,7 +408,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
                             isDarkMode
                               ? 'bg-gray-800 text-gray-400 border-white/5'
-                              : 'bg-slate-100 text-slate-500 border-black/5'
+                              : 'bg-slate-100 text-slate-500 border-black/15'
                           }`}
                         >
                           {user.charAt(0).toUpperCase()}
@@ -427,7 +427,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                           className={`relative z-10 p-1.5 rounded-md transition-colors ${
                             isDarkMode
                               ? 'text-gray-300 hover:text-[#17E1FF] hover:bg-white/10'
-                              : 'text-slate-500 hover:text-[#17E1FF] hover:bg-black/5'
+                              : 'text-slate-500 hover:text-[#17E1FF] hover:bg-black/15'
                           }`}
                         >
                           <Phone className="w-3.5 h-3.5" />
@@ -438,7 +438,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                           className={`relative z-10 p-1.5 rounded-md transition-colors ${
                             isDarkMode
                               ? 'text-gray-300 hover:text-[#17E1FF] hover:bg-white/10'
-                              : 'text-slate-500 hover:text-[#17E1FF] hover:bg-black/5'
+                              : 'text-slate-500 hover:text-[#17E1FF] hover:bg-black/15'
                           }`}
                         >
                           <Video className="w-3.5 h-3.5" />
@@ -458,7 +458,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
             <div className="flex flex-col items-center justify-center h-full opacity-30">
               <div
                 className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
-                  isDarkMode ? 'bg-white/5' : 'bg-black/5'
+                  isDarkMode ? 'bg-white/5' : 'bg-black/15'
                 }`}
               >
                 <Send className={`${isDarkMode ? 'text-gray-400' : 'text-slate-400'} w-8 h-8`} />
@@ -506,7 +506,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
         {/* COMPOSER */}
         <div
           className={`px-4 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shrink-0 sticky bottom-0 z-20 backdrop-blur-md border-t ${
-            isDarkMode ? 'bg-[#0B0E12]/95 border-white/10' : 'bg-white/90 border-black/10'
+            isDarkMode ? 'bg-[#0B0E12]/95 border-white/10' : 'bg-white/90 border-black/15'
           }`}
         >
           {attachments.length > 0 && (
@@ -520,7 +520,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 >
                   <div
                     className={`w-20 h-20 rounded-lg border flex items-center justify-center overflow-hidden ${
-                      isDarkMode ? 'bg-[#1C1F26] border-white/10' : 'bg-white border-black/10'
+                      isDarkMode ? 'bg-[#1C1F26] border-white/10' : 'bg-white border-black/15'
                     }`}
                   >
                     {file.type === 'image' ? (
@@ -547,7 +547,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                     className={`absolute -top-2 -right-2 border rounded-full p-1 shadow-md transition-colors ${
                       isDarkMode
                         ? 'bg-[#1C1F26] border-white/10 text-gray-400 hover:text-red-500'
-                        : 'bg-white border-black/10 text-slate-500 hover:text-rose-500'
+                        : 'bg-white border-black/15 text-slate-500 hover:text-rose-500'
                     }`}
                   >
                     <Circle className="w-3 h-3" />
@@ -559,12 +559,12 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
 
           <div
             className={`relative rounded-xl border focus-within:border-white/20 ${
-              isDarkMode ? 'bg-[#111418] border-white/10' : 'bg-white border-black/10'
+              isDarkMode ? 'bg-[#111418] border-white/10' : 'bg-white border-black/15'
             }`}
           >
             <div
               className={`flex items-center px-4 py-2 border-b space-x-1 ${
-                isDarkMode ? 'border-white/5' : 'border-black/5'
+                isDarkMode ? 'border-white/5' : 'border-black/15'
               }`}
             >
               <button
@@ -573,7 +573,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 className={`p-1.5 rounded transition-colors ${
                   isDarkMode
                     ? 'hover:bg-white/5 text-gray-500 hover:text-white'
-                    : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                    : 'hover:bg-black/15 text-slate-500 hover:text-black'
                 }`}
               >
                 <Bold className="w-4 h-4" />
@@ -584,7 +584,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 className={`p-1.5 rounded transition-colors ${
                   isDarkMode
                     ? 'hover:bg-white/5 text-gray-500 hover:text-white'
-                    : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                    : 'hover:bg-black/15 text-slate-500 hover:text-black'
                 }`}
               >
                 <Italic className="w-4 h-4" />
@@ -595,7 +595,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 className={`p-1.5 rounded transition-colors ${
                   isDarkMode
                     ? 'hover:bg-white/5 text-gray-500 hover:text-white'
-                    : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                    : 'hover:bg-black/15 text-slate-500 hover:text-black'
                 }`}
               >
                 <Strikethrough className="w-4 h-4" />
@@ -606,7 +606,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 className={`p-1.5 rounded transition-colors ${
                   isDarkMode
                     ? 'hover:bg-white/5 text-gray-500 hover:text-white'
-                    : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                    : 'hover:bg-black/15 text-slate-500 hover:text-black'
                 }`}
               >
                 <Code className="w-4 h-4" />
@@ -617,7 +617,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                 className={`p-1.5 rounded transition-colors ${
                   isDarkMode
                     ? 'hover:bg-white/5 text-gray-500 hover:text-white'
-                    : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                    : 'hover:bg-black/15 text-slate-500 hover:text-black'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -651,7 +651,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                   className={`p-2 rounded-lg cursor-pointer transition-colors ${
                     isDarkMode
                       ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
-                      : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                      : 'hover:bg-black/15 text-slate-500 hover:text-black'
                   }`}
                 >
                   <Paperclip className="w-5 h-5" />
@@ -661,7 +661,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
                   className={`p-2 rounded-lg cursor-pointer transition-colors ${
                     isDarkMode
                       ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
-                      : 'hover:bg-black/5 text-slate-500 hover:text-black'
+                      : 'hover:bg-black/15 text-slate-500 hover:text-black'
                   }`}
                 >
                   <ImageIcon className="w-5 h-5" />
@@ -691,3 +691,4 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
 };
 
 export default ChatSection;
+

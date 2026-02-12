@@ -41,7 +41,7 @@ const Notification = () => {
             </h1>
             <p
               className={`mt-3 text-sm sm:text-base ${
-                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
               }`}
             >
               Stay on top of project activity and team alerts.
@@ -52,7 +52,7 @@ const Notification = () => {
             className={`px-5 py-3 rounded-2xl font-semibold text-sm uppercase tracking-wide border transition-all ${
               isDarkMode
                 ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                : 'bg-white/60 border-black/10 hover:bg-white'
+                : 'bg-white/90 border-black/15 hover:bg-white'
             }`}
           >
             Back to Dashboard
@@ -63,12 +63,12 @@ const Notification = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className={`rounded-3xl border backdrop-blur-2xl p-10 min-h-[320px] flex flex-col items-center justify-center text-center ${
-            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/10'
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-black/15'
           }`}
         >
           <div
             className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
-              isDarkMode ? 'bg-white/5' : 'bg-black/5'
+              isDarkMode ? 'bg-white/5' : 'bg-black/15'
             }`}
           >
             <BellIcon className="w-9 h-9 text-[#17E1FF]" />
@@ -76,7 +76,7 @@ const Notification = () => {
           <h2 className="text-xl font-bold mb-2">No notifications yet</h2>
           <p
             className={`text-sm ${
-              isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+              isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
             }`}
           >
             When there is new activity, it will appear here.
@@ -88,3 +88,4 @@ const Notification = () => {
 };
 
 export default Notification;
+

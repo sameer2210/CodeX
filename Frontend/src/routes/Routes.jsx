@@ -16,6 +16,7 @@ const CreateProject = lazy(() => import('../views/create-project/CreateProject')
 const Dashboard = lazy(() => import('../views/Dashboard'));
 const Settings = lazy(() => import('../components/page/Settings'));
 const Help = lazy(() => import('../components/page/Help'));
+const ActiveMemberPage = lazy(() => import('../components/page/ActiveMemberPage'));
 const Notification = lazy(() => import('../components/page/Notification'));
 const Meeting = lazy(() => import('../components/page/Meeting'));
 const Project = lazy(() => import('../views/home/project/Project'));
@@ -73,6 +74,7 @@ const Routes = () => {
             <Route path="/project/:id" element={<Project />} />
             <Route path="/meeting" element={<Meeting />} />
             <Route path="/meeting/:projectId" element={<Meeting />} />
+            <Route path="/active-members" element={<ActiveMemberPage />} />
             <Route path="/team" element={<Dashboard />} />
             <Route path="/activity" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />

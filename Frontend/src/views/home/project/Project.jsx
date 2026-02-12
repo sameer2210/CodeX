@@ -220,7 +220,7 @@ const Project = () => {
       >
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#17E1FF] border-t-transparent rounded-full animate-spin"></div>
-          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
+          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}>
             Loading project...
           </p>
         </div>
@@ -337,7 +337,7 @@ const Project = () => {
         {/* Sidebar - Icons Only (Tablet/Desktop) */}
         <div
           className={`hidden md:flex w-16 flex-col items-center py-4 gap-6 border-r ${
-            isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#E6E8E5] border-[#0B0E11]/10'
+            isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#E6E8E5] border-[#0B0E11]/15'
           }`}
         >
           <button
@@ -421,7 +421,7 @@ const Project = () => {
                   <div className="min-h-[300px]">
                     <div
                       className={`h-full rounded-xl border-2 border-white/10 overflow-hidden ${
-                        isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                        isDarkMode ? 'bg-white/5' : 'bg-white/90'
                       }`}
                     >
                       <CodeEditor projectId={currentProject._id} />
@@ -465,7 +465,7 @@ const Project = () => {
                   <div className="min-h-[120px]">
                     <div
                       className={`h-full rounded-xl border border-white/10 overflow-hidden ${
-                        isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                        isDarkMode ? 'bg-white/5' : 'bg-white/90'
                       }`}
                     >
                       {/* Tabs with Icons */}
@@ -477,7 +477,7 @@ const Project = () => {
                               ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
                               : isDarkMode
                                 ? 'hover:bg-white/5'
-                                : 'hover:bg-[#0B0E11]/5'
+                                : 'hover:bg-[#0B0E11]/15'
                           }`}
                         >
                           <CommandLineIcon className="w-5 h-5" />
@@ -489,7 +489,7 @@ const Project = () => {
                               ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
                               : isDarkMode
                                 ? 'hover:bg-white/5'
-                                : 'hover:bg-[#0B0E11]/5'
+                                : 'hover:bg-[#0B0E11]/15'
                           }`}
                         >
                           <CpuChipIcon className="w-5 h-5" />
@@ -514,7 +514,7 @@ const Project = () => {
               <ResizableContainer minWidth={200} className="flex-[1]">
                 <div
                   className={`h-full rounded-xl border border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    isDarkMode ? 'bg-white/5' : 'bg-white/90'
                   }`}
                 >
                   <ChatSection
@@ -537,7 +537,7 @@ const Project = () => {
               <ResizableContainer minHeight={300} className="flex-grow">
                 <div
                   className={`h-full rounded-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    isDarkMode ? 'bg-white/5' : 'bg-white/90'
                   }`}
                 >
                   <CodeEditor projectId={currentProject._id} />
@@ -548,7 +548,7 @@ const Project = () => {
               <ResizableContainer minHeight={100}>
                 <div
                   className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    isDarkMode ? 'bg-white/5' : 'bg-white/90'
                   }`}
                 >
                   {/* Tabs with Icons */}
@@ -560,7 +560,7 @@ const Project = () => {
                           ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
                           : isDarkMode
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-[#0B0E11]/5'
+                            : 'hover:bg-[#0B0E11]/15'
                       }`}
                     >
                       <CommandLineIcon className="w-5 h-5" />
@@ -572,7 +572,7 @@ const Project = () => {
                           ? 'bg-[#17E1FF]/10 border-b-2 border-[#17E1FF]'
                           : isDarkMode
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-[#0B0E11]/5'
+                            : 'hover:bg-[#0B0E11]/15'
                       }`}
                     >
                       <CpuChipIcon className="w-5 h-5" />
@@ -593,7 +593,7 @@ const Project = () => {
                 className={` rounded-t-2xl flex items-center justify-center text-sm font-medium transition-all ${
                   isDarkMode
                     ? 'bg-white/5 text-[#E6E8E5] hover:bg-white/10'
-                    : 'bg-[#0B0E11]/5 text-[#0B0E11] hover:bg-[#0B0E11]/10'
+                    : 'bg-[#0B0E11]/10 text-[#0B0E11] hover:bg-[#0B0E11]/15'
                 }`}
               >
                 <ChatBubbleLeftRightIcon className="w-5 h-5" />
@@ -603,7 +603,7 @@ const Project = () => {
                 <ResizableContainer minHeight={200} className="flex-grow">
                   <div
                     className={`h-full rounded-b-3xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                      isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                      isDarkMode ? 'bg-white/5' : 'bg-white/90'
                     }`}
                   >
                     <ChatSection
@@ -627,7 +627,7 @@ const Project = () => {
               <div className="flex-1 min-h-0">
                 <div
                   className={`h-full rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden ${
-                    isDarkMode ? 'bg-white/5' : 'bg-white/60'
+                    isDarkMode ? 'bg-white/5' : 'bg-white/90'
                   }`}
                 >
                   {mobileTab === 'code' && <CodeEditor projectId={currentProject._id} />}
@@ -698,7 +698,7 @@ const Project = () => {
               className={`rounded-t-2xl border backdrop-blur-2xl px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-[0_16px_40px_rgba(0,0,0,0.28)] ${
                 isDarkMode
                   ? 'bg-[#0B0E11]/88 border-white/10'
-                  : 'bg-white/88 border-[#0B0E11]/10 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
+                  : 'bg-white/88 border-[#0B0E11]/15 shadow-[0_16px_40px_rgba(15,15,15,0.12)]'
               }`}
             >
               <div className="grid grid-cols-4 gap-2">
@@ -720,7 +720,7 @@ const Project = () => {
                               : 'text-red-500/70 hover:text-red-500'
                             : isDarkMode
                               ? 'text-[#E6E8E5]/60 hover:text-[#E6E8E5]'
-                              : 'text-[#0B0E11]/60 hover:text-[#0B0E11]'
+                              : 'text-[#0B0E11]/80 hover:text-[#0B0E11]'
                       }`}
                       aria-label={item.label}
                       aria-current={isActive ? 'page' : undefined}
@@ -729,7 +729,7 @@ const Project = () => {
                         <motion.span
                           layoutId="mobileNavActive"
                           className={`absolute inset-0 rounded-xl ${
-                            isDarkMode ? 'bg-white/5' : 'bg-[#0B0E11]/5'
+                            isDarkMode ? 'bg-white/5' : 'bg-[#0B0E11]/10'
                           }`}
                         />
                       )}
@@ -770,3 +770,4 @@ const Project = () => {
 };
 
 export default Project;
+

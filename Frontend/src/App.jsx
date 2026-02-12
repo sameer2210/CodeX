@@ -84,7 +84,7 @@ const App = () => {
         'tracking-[0.01em]',
         'rounded-xl',
         'border',
-        isDarkMode ? 'border-white/10' : 'border-black/10',
+        isDarkMode ? 'border-white/10' : 'border-black/15',
         'data-[type=success]:border-emerald-500/40',
         'data-[type=error]:border-rose-500/40',
         'data-[type=warning]:border-amber-500/40',
@@ -117,3 +117,4 @@ const App = () => {
 };
 
 export default App;
+

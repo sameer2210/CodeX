@@ -40,7 +40,7 @@ const OutputPanel = () => {
   return (
     <div
       className={`h-full flex flex-col rounded-2xl border backdrop-blur-xl ${
-        isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/70 border-black/10'
+        isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-black/15'
       }`}
     >
       {/* Header */}
@@ -62,3 +62,4 @@ const OutputPanel = () => {
 };
 
 export default OutputPanel;
+

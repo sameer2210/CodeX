@@ -221,7 +221,7 @@ const Help = () => {
           <div className="flex items-start gap-4">
             <div
               className={`p-3 rounded-2xl border backdrop-blur-xl ${
-                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/70 border-white/30'
+                isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/30'
               }`}
             >
               <ChatBubbleLeftRightIcon className="w-7 h-7" />
@@ -235,7 +235,7 @@ const Help = () => {
               </h1>
               <p
                 className={`text-sm mt-2 max-w-xl ${
-                  isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                  isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                 }`}
               >
                 Ask questions, troubleshoot issues, and get quick answers from the CodeX assistant.
@@ -270,7 +270,7 @@ const Help = () => {
                 className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all border ${
                   isDarkMode
                     ? 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                    : 'bg-white/80 border-black/10 text-black/60 hover:text-black'
+                    : 'bg-white/95 border-black/15 text-black/60 hover:text-black'
                 }`}
               >
                 {prompt}
@@ -282,7 +282,7 @@ const Help = () => {
           <div className="rounded-3xl p-[1px] bg-gradient-to-br from-[#17E1FF]/40 via-transparent to-transparent">
             <div
               className={`flex-1 overflow-y-auto p-4 sm:p-6 rounded-[calc(1.5rem-1px)] backdrop-blur-2xl transition-all h-[60vh] custom-scrollbar ${
-                isDarkMode ? 'bg-white/5' : 'bg-white/70'
+                isDarkMode ? 'bg-white/5' : 'bg-white/90'
               }`}
             >
               <div className="flex flex-col gap-6">
@@ -301,13 +301,13 @@ const Help = () => {
                           ? 'border-[#17E1FF] shadow-[0_0_10px_rgba(23,225,255,0.3)]'
                           : isDarkMode
                             ? 'border-white/20'
-                            : 'border-black/10'
+                            : 'border-black/15'
                       }`}
                     >
                       <img
                         src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${m.sender === 'user' ? 'Felix' : m.seed}`}
                         alt="avatar"
-                        className="w-full h-full bg-black/10"
+                        className="w-full h-full bg-black/15"
                       />
                     </div>
 
@@ -334,13 +334,13 @@ const Help = () => {
                   >
                     <div
                       className={`w-10 h-10 rounded-full flex-shrink-0 border-2 overflow-hidden ${
-                        isDarkMode ? 'border-white/20' : 'border-black/10'
+                        isDarkMode ? 'border-white/20' : 'border-black/15'
                       }`}
                     >
                       <img
                         src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=thinking"
                         alt="thinking"
-                        className="w-full h-full bg-black/10"
+                        className="w-full h-full bg-black/15"
                       />
                     </div>
                     <div
@@ -377,12 +377,12 @@ const Help = () => {
               className={`p-2 rounded-[calc(1rem-1px)] backdrop-blur-2xl flex items-center gap-2 ${
                 isDarkMode
                   ? 'bg-white/5 border border-white/10 focus-within:border-[#17E1FF]/50'
-                  : 'bg-white/90 border border-[#0B0E11]/10 focus-within:border-[#17E1FF]/50'
+                  : 'bg-white/90 border border-[#0B0E11]/15 focus-within:border-[#17E1FF]/50'
               }`}
             >
               <div
                 className={`p-3 rounded-xl ${
-                  isDarkMode ? 'bg-black/30 text-[#17E1FF]' : 'bg-black/5 text-[#17E1FF]'
+                  isDarkMode ? 'bg-black/30 text-[#17E1FF]' : 'bg-black/15 text-[#17E1FF]'
                 }`}
               >
                 <SparklesIcon className="w-6 h-6" />
@@ -415,3 +415,4 @@ const Help = () => {
 };
 
 export default Help;
+

@@ -35,7 +35,7 @@ const Toggle = ({ enabled, onChange, isDarkMode }) => (
   <button
     onClick={onChange}
     className={`relative h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none ${
-      enabled ? 'bg-[#17E1FF]' : isDarkMode ? 'bg-white/10' : 'bg-black/10'
+      enabled ? 'bg-[#17E1FF]' : isDarkMode ? 'bg-white/10' : 'bg-black/15'
     }`}
   >
     <motion.span
@@ -178,7 +178,7 @@ const Settings = () => {
               className={`lg:hidden p-3 rounded-2xl transition-all backdrop-blur-xl border ${
                 isDarkMode
                   ? 'hover:bg-white/5 border-white/5'
-                  : 'hover:bg-white/80 border-[#0B0E11]/5'
+                  : 'hover:bg-white/95 border-[#0B0E11]/15'
               }`}
               aria-label="Open sidebar"
             >
@@ -189,7 +189,7 @@ const Settings = () => {
                 Settings
               </h1>
               <p
-                className={`text-sm lg:text-base ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                className={`text-sm lg:text-base ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}
               >
                 Manage your workspace preferences and team access.
               </p>
@@ -222,10 +222,10 @@ const Settings = () => {
                       isActive
                         ? isDarkMode
                           ? 'bg-white/10 text-[#17E1FF]'
-                          : 'bg-white/80 text-[#17E1FF] shadow-lg'
+                          : 'bg-white/95 text-[#17E1FF] shadow-lg'
                         : isDarkMode
                           ? 'text-[#E6E8E5]/40 hover:text-[#E6E8E5] hover:bg-white/5'
-                          : 'text-[#0B0E11]/40 hover:text-[#0B0E11] hover:bg-white/40'
+                          : 'text-[#0B0E11]/80 hover:text-[#0B0E11] hover:bg-white/40'
                     }`}
                   >
                     <tab.icon className={`w-5 h-5 ${isActive ? 'text-[#17E1FF]' : ''}`} />
@@ -256,7 +256,7 @@ const Settings = () => {
                 >
                   {/* Profile Header */}
                   <div
-                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                   >
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                       <div className="relative group cursor-pointer">
@@ -265,14 +265,14 @@ const Settings = () => {
                           alt={`${profile.name || 'User'} avatar`}
                           className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-[#17E1FF]/20"
                         />
-                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-0 bg-black/150 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <PhotoIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
                       </div>
                       <div className="text-center sm:text-left">
                         <h3 className="text-lg sm:text-xl font-bold">{profile.name}</h3>
                         <p
-                          className={`text-xs sm:text-sm mb-4 ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                          className={`text-xs sm:text-sm mb-4 ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}
                         >
                           {profile.email}
                         </p>
@@ -281,7 +281,7 @@ const Settings = () => {
                             Change Avatar
                           </button>
                           <button
-                            className={`px-4 py-2 border text-xs font-bold uppercase rounded-lg transition-all ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-[#0B0E11]/20 hover:bg-[#0B0E11]/5'}`}
+                            className={`px-4 py-2 border text-xs font-bold uppercase rounded-lg transition-all ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-[#0B0E11]/20 hover:bg-[#0B0E11]/15'}`}
                           >
                             Remove
                           </button>
@@ -292,7 +292,7 @@ const Settings = () => {
 
                   {/* Form */}
                   <div
-                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl space-y-6 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl space-y-6 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
@@ -303,7 +303,7 @@ const Settings = () => {
                           type="text"
                           value={profile.name}
                           onChange={e => setProfile({ ...profile, name: e.target.value })}
-                          className={`w-full px-5 py-4 rounded-xl outline-none transition-all ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/10 focus:border-[#17E1FF]/50'}`}
+                          className={`w-full px-5 py-4 rounded-xl outline-none transition-all ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/15 focus:border-[#17E1FF]/50'}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -314,7 +314,7 @@ const Settings = () => {
                           type="email"
                           value={profile.email}
                           onChange={e => setProfile({ ...profile, email: e.target.value })}
-                          className={`w-full px-5 py-4 rounded-xl outline-none transition-all ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/10 focus:border-[#17E1FF]/50'}`}
+                          className={`w-full px-5 py-4 rounded-xl outline-none transition-all ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/15 focus:border-[#17E1FF]/50'}`}
                         />
                       </div>
                     </div>
@@ -326,7 +326,7 @@ const Settings = () => {
                         rows={3}
                         value={profile.bio}
                         onChange={e => setProfile({ ...profile, bio: e.target.value })}
-                        className={`w-full px-5 py-4 rounded-xl outline-none transition-all resize-none ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/10 focus:border-[#17E1FF]/50'}`}
+                        className={`w-full px-5 py-4 rounded-xl outline-none transition-all resize-none ${isDarkMode ? 'bg-black/20 focus:bg-black/40 text-white border border-white/10 focus:border-[#17E1FF]/50' : 'bg-white/50 focus:bg-white border border-[#0B0E11]/15 focus:border-[#17E1FF]/50'}`}
                       />
                     </div>
                     <div className="flex justify-end pt-4">
@@ -337,12 +337,12 @@ const Settings = () => {
                   </div>
                   {/* Appearance */}
                   <div
-                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                    className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                   >
                     <div>
                       <h3 className="font-bold text-lg mb-1">Appearance</h3>
                       <p
-                        className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                        className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}
                       >
                         Toggle between light and dark themes
                       </p>
@@ -368,13 +368,13 @@ const Settings = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                  className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                 >
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
                       <h3 className="text-xl font-bold">Team Management</h3>
                       <p
-                        className={`text-sm mt-1 ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                        className={`text-sm mt-1 ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}
                       >
                         Control access and roles for your workspace.
                       </p>
@@ -387,7 +387,7 @@ const Settings = () => {
                   <div className="space-y-4">
                     {(teamMembers || []).length === 0 ? (
                       <p
-                        className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}
+                        className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}
                       >
                         {isLoading ? 'Loading team members…' : 'No team members found.'}
                       </p>
@@ -400,7 +400,7 @@ const Settings = () => {
                         return (
                       <div
                         key={member._id || member.id || member.username}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 ${isDarkMode ? 'bg-black/20 border-white/5 hover:border-[#17E1FF]/30' : 'bg-white/40 border-[#0B0E11]/5 hover:border-[#17E1FF]/30'}`}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 ${isDarkMode ? 'bg-black/20 border-white/5 hover:border-[#17E1FF]/30' : 'bg-white/40 border-[#0B0E11]/15 hover:border-[#17E1FF]/30'}`}
                       >
                         <div className="flex items-center gap-4">
                           <img
@@ -448,7 +448,7 @@ const Settings = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                  className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                 >
                   <h3 className="text-xl font-bold mb-8">Notification Preferences</h3>
                   <div className="space-y-6">
@@ -486,7 +486,7 @@ const Settings = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className={`p-8 sm:p-12 rounded-3xl border backdrop-blur-2xl text-center ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'}`}
+                  className={`p-8 sm:p-12 rounded-3xl border backdrop-blur-2xl text-center ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-white/20'}`}
                 >
                   <div className="w-16 h-16 rounded-full bg-[#17E1FF]/10 text-[#17E1FF] flex items-center justify-center mx-auto mb-4">
                     <KeyIcon className="w-8 h-8" />
@@ -509,3 +509,4 @@ const Settings = () => {
 };
 
 export default Settings;
+

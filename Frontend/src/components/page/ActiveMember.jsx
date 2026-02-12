@@ -30,9 +30,10 @@ const resolveAvatarSrc = (avatar, displayName) => {
   return cleaned;
 };
 
-const ActiveMember = ({ title = 'Active Team', className = '' }) => {
+const ActiveMember = ({ title = 'Active Team', className = '', onClick }) => {
   const { teamMembers, isLoading } = useAppSelector(state => state.projects);
   const { isDarkMode } = useTheme();
+  const isInteractive = typeof onClick === 'function';
 
   const orderedTeamMembers = useMemo(() => {
     const members = Array.isArray(teamMembers) ? [...teamMembers] : [];
@@ -48,14 +49,31 @@ const ActiveMember = ({ title = 'Active Team', className = '' }) => {
 
   return (
     <div
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onClick={isInteractive ? onClick : undefined}
+      onKeyDown={
+        isInteractive
+          ? event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={`rounded-3xl p-10 backdrop-blur-2xl border flex flex-col min-h-0 ${
-        isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'
+        isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-[#0B0E11]/15'
+      } ${
+        isInteractive
+          ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17E1FF]/60'
+          : ''
       } ${className}`}
     >
       <h3 className="text-2xl font-black mb-8 uppercase tracking-tighter">{title}</h3>
       <div className="space-y-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
         {orderedTeamMembers.length === 0 ? (
-          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'}`}>
+          <p className={`text-sm ${isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'}`}>
             {isLoading ? 'Loading team members...' : 'No team members found.'}
           </p>
         ) : (
@@ -96,7 +114,7 @@ const ActiveMember = ({ title = 'Active Team', className = '' }) => {
                     />
                     <p
                       className={`text-xs ${
-                        isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/50'
+                        isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
                       }`}
                     >
                       {isOnline ? 'Active' : 'Inactive'}

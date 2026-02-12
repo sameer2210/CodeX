@@ -5,6 +5,7 @@ class PeerManager {
   constructor() {
     this.peer = null;
     this.iceCandidateQueue = [];
+    this.prePeerCandidateQueue = [];
     this.remoteDescriptionSet = false;
     this.isProcessingCandidates = false;
   }
@@ -32,7 +33,10 @@ class PeerManager {
 
     this.peer = new RTCPeerConnection(configuration);
     this.remoteDescriptionSet = false;
-    this.iceCandidateQueue = [];
+    this.iceCandidateQueue = this.prePeerCandidateQueue.length
+      ? [...this.prePeerCandidateQueue]
+      : [];
+    this.prePeerCandidateQueue = [];
 
     // Set up event handlers
     this.setupEventHandlers();
@@ -121,7 +125,8 @@ class PeerManager {
    */
   async addIceCandidate(candidate) {
     if (!this.peer) {
-      console.warn('No peer connection to add ICE candidate');
+      console.warn('No peer connection to add ICE candidate, queueing');
+      this.prePeerCandidateQueue.push(candidate);
       return;
     }
 
@@ -293,6 +298,7 @@ class PeerManager {
       this.peer = null;
       this.remoteDescriptionSet = false;
       this.iceCandidateQueue = [];
+      this.prePeerCandidateQueue = [];
       console.log('✅ Peer connection closed and cleaned up');
     }
   }

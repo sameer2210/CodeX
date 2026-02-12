@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit';
 import api from '../../api/config';
 import { dashboardService } from '../../services/dashboardService';
 
@@ -503,35 +503,45 @@ const projectSlice = createSlice({
 
 /* ========== SELECTORS ========== */
 
-export const selectCurrentProjectMessages = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.messages || [] : [];
-};
+const EMPTY_ARRAY = [];
 
-export const selectCurrentProjectActiveUsers = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.activeUsers || [] : [];
-};
+const selectCurrentProjectId = state => state.projects.currentProject?._id;
+const selectProjectDataMap = state => state.projects.projectData;
 
-export const selectCurrentProjectTypingUsers = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.typingUsers || [] : [];
-};
+const selectCurrentProjectData = createSelector(
+  [selectProjectDataMap, selectCurrentProjectId],
+  (projectData, projectId) => (projectId ? projectData[projectId] : undefined)
+);
 
-export const selectCurrentProjectCode = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.code || '' : '';
-};
+export const selectCurrentProjectMessages = createSelector(
+  [selectCurrentProjectData],
+  project => project?.messages || EMPTY_ARRAY
+);
 
-export const selectCurrentProjectReview = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.review || '' : '';
-};
+export const selectCurrentProjectActiveUsers = createSelector(
+  [selectCurrentProjectData],
+  project => project?.activeUsers || EMPTY_ARRAY
+);
 
-export const selectCurrentProjectLanguage = state => {
-  const projectId = state.projects.currentProject?._id;
-  return projectId ? state.projects.projectData[projectId]?.language || 'javascript' : 'javascript';
-};
+export const selectCurrentProjectTypingUsers = createSelector(
+  [selectCurrentProjectData],
+  project => project?.typingUsers || EMPTY_ARRAY
+);
+
+export const selectCurrentProjectCode = createSelector(
+  [selectCurrentProjectData],
+  project => project?.code || ''
+);
+
+export const selectCurrentProjectReview = createSelector(
+  [selectCurrentProjectData],
+  project => project?.review || ''
+);
+
+export const selectCurrentProjectLanguage = createSelector(
+  [selectCurrentProjectData],
+  project => project?.language || 'javascript'
+);
 
 export const selectProjectById = projectId => state => {
   return state.projects.projects.find(p => p._id === projectId);

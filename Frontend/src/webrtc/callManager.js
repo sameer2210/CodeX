@@ -26,8 +26,17 @@ const cleanup = () => {
 const attachRemoteTrackHandler = onRemoteStream => {
   const peer = createPeer();
   peer.ontrack = event => {
-    if (!event.streams?.[0]) return;
-    remoteStream = event.streams[0];
+    if (event.streams?.[0]) {
+      remoteStream = event.streams[0];
+      onRemoteStream?.(remoteStream);
+      return;
+    }
+
+    if (!event.track) return;
+    if (!remoteStream) {
+      remoteStream = new MediaStream();
+    }
+    remoteStream.addTrack(event.track);
     onRemoteStream?.(remoteStream);
   };
   return peer;

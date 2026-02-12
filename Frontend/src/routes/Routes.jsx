@@ -63,12 +63,7 @@ const Routes = () => {
           </Route>
 
           <Route element={<PrivateRoute />}>
-            {/* Routes WITH Navigation */}
-            <Route element={<Layout />}>
-              <Route path="/projects" element={<Dashboard />} />
-            </Route>
-
-            {/* Routes WITHOUT Navigation */}
+            <Route path="/projects" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/project/:id" element={<Project />} />

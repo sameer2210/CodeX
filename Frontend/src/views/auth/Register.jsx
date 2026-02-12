@@ -127,7 +127,7 @@ const Register = () => {
           onClick={() => navigate('/')}
         >
           <div
-            className={`group relative w-10 h-10 flex items-center justify-center rounded-xl border overflow-hidden transition-colors ${
+            className={`group relative w-10 h-10 flex items-center justify-center rounded-full border overflow-hidden transition-colors ${
               isDarkMode
                 ? 'bg-[#C2CABB]/5 border-[#C2CABB]/10 group-hover:border-[#C2CABB]/30 group-hover:shadow-[0_0_12px_rgba(194,202,187,0.2)]'
                 : 'bg-white/90 border-[#0B0E11]/15 group-hover:border-[#0B0E11]/30 group-hover:shadow-[0_0_12px_rgba(11,14,17,0.15)]'

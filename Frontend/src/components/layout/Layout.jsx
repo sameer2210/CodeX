@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
+import { useLocation } from 'react-router-dom';
 import Navigation from './Navigation';
 
 const Layout = () => {
-  const { isDarkMode } = useTheme();
+  const location = useLocation();
+  const showNavigation = location.pathname === '/';
   return (
     <div className="min-h-screen bg-[#10120F] text-[#C2CABB] selection:bg-[#C2CABB] selection:text-[#10120F] font-sans antialiased">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -12,7 +13,7 @@ const Layout = () => {
       </div>
 
       <div className="relative z-10">
-        <Navigation />
+        {showNavigation && <Navigation />}
         {/* <main className="pt-24 sm:pt-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <Outlet />
         </main> */}

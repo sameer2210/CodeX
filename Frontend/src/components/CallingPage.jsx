@@ -1,6 +1,6 @@
 // src/components/CallingPage.jsx
 import { motion } from 'framer-motion';
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Maximize2, Mic, MicOff, Minimize2, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
@@ -36,13 +36,46 @@ const formatDuration = seconds => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
+const useIsDesktop = () => {
+  const [isDesktop, setIsDesktop] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const handler = () => setIsDesktop(media.matches);
+    if (media.addEventListener) {
+      media.addEventListener('change', handler);
+    } else {
+      media.addListener(handler);
+    }
+    return () => {
+      if (media.removeEventListener) {
+        media.removeEventListener('change', handler);
+      } else {
+        media.removeListener(handler);
+      }
+    };
+  }, []);
+
+  return isDesktop;
+};
+
 export const AudioCallPage = ({ onEnd }) => {
   const dispatch = useAppDispatch();
   const call = useAppSelector(state => state.call);
   const remoteAudioRef = useRef(null);
   const callDuration = useCallDuration(call.status);
+  const isDesktop = useIsDesktop();
+  const [isCompact, setIsCompact] = useState(false);
 
   const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
+
+  useEffect(() => {
+    if (!isDesktop) {
+      setIsCompact(false);
+    }
+  }, [isDesktop]);
 
   useEffect(() => {
     if (remoteAudioRef.current && call.remoteStream) {
@@ -79,38 +112,95 @@ export const AudioCallPage = ({ onEnd }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#0B0E12] z-50 flex flex-col items-center justify-center"
-    >
-      <audio ref={remoteAudioRef} autoPlay playsInline />
-      <div className="text-center space-y-6">
-        <div className="w-32 h-32 rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto animate-pulse">
-          <Phone className="w-16 h-16 text-[#17E1FF]" />
-        </div>
-        <h2 className="text-3xl font-light text-white">{peerName || 'Unknown'}</h2>
-        <p className="text-xl text-gray-400">{getStatusText()}</p>
-        {call.error && <p className="text-sm text-red-400 max-w-sm mx-auto">{call.error}</p>}
-        {call.status === CALL_STATUS.ACCEPTED && (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-sm text-emerald-500">Connected</span>
-          </div>
+      className={`fixed z-50 transition-all duration-300 ${
+        isDesktop
+          ? isCompact
+            ? 'bottom-6 right-6'
+            : 'top-6 left-1/2 -translate-x-1/2'
+          : 'inset-0'
+      }`}
+      style={
+        isDesktop
+          ? {
+              width: isCompact ? '320px' : 'min(1100px, calc(100vw - 4rem))',
+              height: isCompact ? '220px' : 'min(720px, calc(100vh - 4rem))',
+              minWidth: isCompact ? '260px' : '520px',
+              minHeight: isCompact ? '180px' : '360px',
+              maxWidth: 'calc(100vw - 2.5rem)',
+              maxHeight: 'calc(100vh - 2.5rem)',
+              resize: 'both',
+              overflow: 'hidden',
+            }
+          : undefined
+      }
+      >
+        <audio ref={remoteAudioRef} autoPlay playsInline />
+      <div
+        className={`relative h-full w-full flex flex-col items-center justify-center bg-[#0B0E12] ${
+          isDesktop ? 'rounded-3xl border border-white/10 shadow-2xl' : ''
+        }`}
+      >
+        {isDesktop && (
+          <button
+            onClick={() => setIsCompact(prev => !prev)}
+            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+            aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
+          >
+            {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+          </button>
         )}
-      </div>
+        <div className="text-center space-y-4 px-4">
+          <div
+            className={`rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto animate-pulse ${
+              isCompact ? 'w-16 h-16' : 'w-32 h-32'
+            }`}
+          >
+            <Phone className={`${isCompact ? 'w-8 h-8' : 'w-16 h-16'} text-[#17E1FF]`} />
+          </div>
+          <h2 className={`${isCompact ? 'text-xl' : 'text-3xl'} font-light text-white`}>
+            {peerName || 'Unknown'}
+          </h2>
+          <p className={`${isCompact ? 'text-sm' : 'text-xl'} text-gray-400`}>
+            {getStatusText()}
+          </p>
+          {call.error && (
+            <p className="text-xs text-red-400 max-w-sm mx-auto">{call.error}</p>
+          )}
+          {call.status === CALL_STATUS.ACCEPTED && (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm text-emerald-500">Connected</span>
+            </div>
+          )}
+        </div>
 
-      <div className="absolute bottom-12 left-0 right-0 flex justify-center space-x-8">
-        <button
-          onClick={handleMuteToggle}
-          className={`p-6 rounded-full ${call.isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+        <div
+          className={`absolute left-0 right-0 flex justify-center ${
+            isCompact ? 'bottom-4 space-x-4' : 'bottom-12 space-x-8'
+          }`}
         >
-          {call.isMuted ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-        </button>
+          <button
+            onClick={handleMuteToggle}
+            className={`rounded-full ${
+              call.isMuted ? 'bg-red-600' : 'bg-white/10'
+            } text-white hover:opacity-90 transition-all ${isCompact ? 'p-3' : 'p-6'}`}
+          >
+            {call.isMuted ? (
+              <MicOff className={isCompact ? 'w-5 h-5' : 'w-8 h-8'} />
+            ) : (
+              <Mic className={isCompact ? 'w-5 h-5' : 'w-8 h-8'} />
+            )}
+          </button>
 
-        <button
-          onClick={handleEndCall}
-          className="p-6 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-600/40 transition-all"
-        >
-          <PhoneOff className="w-8 h-8" />
-        </button>
+          <button
+            onClick={handleEndCall}
+            className={`rounded-full bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-600/40 transition-all ${
+              isCompact ? 'p-3' : 'p-6'
+            }`}
+          >
+            <PhoneOff className={isCompact ? 'w-5 h-5' : 'w-8 h-8'} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -122,8 +212,16 @@ export const VideoCallPage = ({ onEnd }) => {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const callDuration = useCallDuration(call.status);
+  const isDesktop = useIsDesktop();
+  const [isCompact, setIsCompact] = useState(false);
 
   const peerName = call.direction === 'incoming' ? call.caller : call.receiver;
+
+  useEffect(() => {
+    if (!isDesktop) {
+      setIsCompact(false);
+    }
+  }, [isDesktop]);
 
   useEffect(() => {
     if (remoteVideoRef.current && call.remoteStream) {
@@ -159,18 +257,55 @@ export const VideoCallPage = ({ onEnd }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black z-50 flex flex-col"
+      className={`fixed z-50 transition-all duration-300 ${
+        isDesktop
+          ? isCompact
+            ? 'bottom-6 right-6'
+            : 'top-6 left-1/2 -translate-x-1/2'
+          : 'inset-0'
+      }`}
+      style={
+        isDesktop
+          ? {
+              width: isCompact ? '360px' : 'min(1200px, calc(100vw - 4rem))',
+              height: isCompact ? '240px' : 'min(720px, calc(100vh - 4rem))',
+              minWidth: isCompact ? '280px' : '640px',
+              minHeight: isCompact ? '200px' : '420px',
+              maxWidth: 'calc(100vw - 2.5rem)',
+              maxHeight: 'calc(100vh - 2.5rem)',
+              resize: 'both',
+              overflow: 'hidden',
+            }
+          : undefined
+      }
     >
       {/* Remote Video */}
-      <div className="absolute inset-0 flex items-center justify-center bg-[#0B0E12]">
+      <div
+        className={`absolute inset-0 flex items-center justify-center bg-[#0B0E12] ${
+          isDesktop ? 'rounded-3xl border border-white/10 shadow-2xl' : ''
+        }`}
+      >
+        {isDesktop && (
+          <button
+            onClick={() => setIsCompact(prev => !prev)}
+            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+            aria-label={isCompact ? 'Expand call window' : 'Minimize call window'}
+          >
+            {isCompact ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+          </button>
+        )}
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
         {call.status !== CALL_STATUS.ACCEPTED && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-32 h-32 rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <Video className="w-16 h-16 text-[#17E1FF]" />
+              <div
+                className={`rounded-full bg-[#17E1FF]/10 flex items-center justify-center mx-auto mb-4 animate-pulse ${
+                  isCompact ? 'w-16 h-16' : 'w-32 h-32'
+                }`}
+              >
+                <Video className={`${isCompact ? 'w-8 h-8' : 'w-16 h-16'} text-[#17E1FF]`} />
               </div>
-              <p className="text-white text-xl">
+              <p className={`${isCompact ? 'text-sm' : 'text-xl'} text-white`}>
                 {call.status === CALL_STATUS.CALLING ? 'Calling...' : 'Connecting...'}
               </p>
               {call.error && <p className="text-sm text-red-400 mt-2 max-w-xs">{call.error}</p>}
@@ -181,16 +316,22 @@ export const VideoCallPage = ({ onEnd }) => {
 
       {/* Local Video PIP */}
       {!call.isVideoOff && (
-        <div className="absolute top-6 right-6 w-48 h-64 bg-black rounded-xl overflow-hidden border-2 border-[#17E1FF]/30 shadow-2xl">
+        <div
+          className={`absolute bg-black rounded-xl overflow-hidden border-2 border-[#17E1FF]/30 shadow-2xl ${
+            isCompact ? 'top-3 right-3 w-24 h-32' : 'top-6 right-6 w-48 h-64'
+          }`}
+        >
           <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
         </div>
       )}
 
       {/* Top Info */}
-      <div className="absolute top-6 left-6 text-white z-10">
-        <h2 className="text-2xl font-light">{peerName || 'Unknown'}</h2>
+      <div className={`absolute text-white z-10 ${isCompact ? 'top-3 left-3' : 'top-6 left-6'}`}>
+        <h2 className={`${isCompact ? 'text-lg' : 'text-2xl'} font-light`}>
+          {peerName || 'Unknown'}
+        </h2>
         <div className="flex items-center space-x-3 mt-1">
-          <p className="text-lg text-gray-300">
+          <p className={`${isCompact ? 'text-xs' : 'text-lg'} text-gray-300`}>
             {call.status === CALL_STATUS.ACCEPTED ? formatDuration(callDuration) : '00:00'}
           </p>
           {call.status === CALL_STATUS.ACCEPTED && (
@@ -203,26 +344,44 @@ export const VideoCallPage = ({ onEnd }) => {
       </div>
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-6 z-10">
+      <div
+        className={`absolute left-0 right-0 flex justify-center z-10 ${
+          isCompact ? 'bottom-3 space-x-3' : 'bottom-8 space-x-6'
+        }`}
+      >
         <button
           onClick={handleMuteToggle}
-          className={`p-5 rounded-full ${call.isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+          className={`rounded-full ${call.isMuted ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all ${
+            isCompact ? 'p-3' : 'p-5'
+          }`}
         >
-          {call.isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+          {call.isMuted ? (
+            <MicOff className={isCompact ? 'w-5 h-5' : 'w-7 h-7'} />
+          ) : (
+            <Mic className={isCompact ? 'w-5 h-5' : 'w-7 h-7'} />
+          )}
         </button>
 
         <button
           onClick={handleVideoToggle}
-          className={`p-5 rounded-full ${call.isVideoOff ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all`}
+          className={`rounded-full ${call.isVideoOff ? 'bg-red-600' : 'bg-white/10'} text-white hover:opacity-90 transition-all ${
+            isCompact ? 'p-3' : 'p-5'
+          }`}
         >
-          {call.isVideoOff ? <VideoOff className="w-7 h-7" /> : <Video className="w-7 h-7" />}
+          {call.isVideoOff ? (
+            <VideoOff className={isCompact ? 'w-5 h-5' : 'w-7 h-7'} />
+          ) : (
+            <Video className={isCompact ? 'w-5 h-5' : 'w-7 h-7'} />
+          )}
         </button>
 
         <button
           onClick={handleEndCall}
-          className="p-5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-600/50 transition-all"
+          className={`rounded-full bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-600/50 transition-all ${
+            isCompact ? 'p-3' : 'p-5'
+          }`}
         >
-          <PhoneOff className="w-7 h-7" />
+          <PhoneOff className={isCompact ? 'w-5 h-5' : 'w-7 h-7'} />
         </button>
       </div>
     </motion.div>

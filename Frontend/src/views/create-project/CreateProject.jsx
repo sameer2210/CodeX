@@ -175,7 +175,7 @@ const CreateProject = () => {
               <LEDIndicator active={true} />
               <span
                 className={`text-[10px] md:text-[11px] font-mono tracking-[0.3em] md:tracking-[0.4em] uppercase font-bold transition-colors ${
-                  isDarkMode ? 'text-white/40' : 'text-gray-900/40'
+                  isDarkMode ? 'text-white/40' : 'text-gray-900/60'
                 }`}
               >
                 Project // Sequence 01
@@ -208,7 +208,7 @@ const CreateProject = () => {
                       : 'text-[#17E1FF]'
                     : isDarkMode
                       ? 'text-white/40'
-                      : 'text-gray-900/40'
+                      : 'text-gray-900/60'
                 }`}
               >
                 Project Identifier*
@@ -221,18 +221,18 @@ const CreateProject = () => {
                   onChange={e => setFormData({ ...formData, projectName: e.target.value })}
                   onFocus={() => setFocusedField('projectName')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="E.G. NEBULA DASHBOARD"
+                  placeholder="ENTER YOUR NEW PROJECT NAME"
                   className={`w-full bg-transparent py-3 md:py-4 text-lg md:text-2xl lg:text-3xl font-light tracking-tight focus:outline-none uppercase transition-colors ${
                     isDarkMode
                       ? 'text-white placeholder:text-white/10'
-                      : 'text-gray-900 placeholder:text-gray-900/10'
+                      : 'text-gray-900 placeholder:text-gray-900/40'
                   }`}
                   autoComplete="off"
                 />
 
                 {/* Animated Line */}
                 <div
-                  className={`absolute bottom-0 left-0 right-0 h-[1px] ${isDarkMode ? 'bg-white/10' : 'bg-gray-900/10'}`}
+                  className={`absolute bottom-0 left-0 right-0 h-[1px] ${isDarkMode ? 'bg-white/10' : 'bg-gray-900/40'}`}
                 />
                 <motion.div
                   variants={lineVariants}
@@ -254,7 +254,7 @@ const CreateProject = () => {
                       : 'text-[#17E1FF]'
                     : isDarkMode
                       ? 'text-white/40'
-                      : 'text-gray-900/40'
+                      : 'text-gray-900/60'
                 }`}
               >
                 Brief Description
@@ -271,12 +271,12 @@ const CreateProject = () => {
                   className={`w-full bg-transparent py-3 md:py-4 text-lg md:text-2xl lg:text-3xl font-light tracking-tight focus:outline-none uppercase transition-colors ${
                     isDarkMode
                       ? 'text-white placeholder:text-white/10'
-                      : 'text-gray-900 placeholder:text-gray-900/10'
+                      : 'text-gray-900 placeholder:text-gray-900/40'
                   }`}
                   autoComplete="off"
                 />
                 <div
-                  className={`absolute bottom-0 left-0 right-0 h-[1px] ${isDarkMode ? 'bg-white/10' : 'bg-gray-900/10'}`}
+                  className={`absolute bottom-0 left-0 right-0 h-[1px] ${isDarkMode ? 'bg-white/10' : 'bg-gray-900/40'}`}
                 />
                 <motion.div
                   variants={lineVariants}
@@ -291,7 +291,7 @@ const CreateProject = () => {
             <motion.div variants={itemVariants} className="space-y-4 md:space-y-6 pt-2 md:pt-4">
               <label
                 className={`block text-[10px] md:text-[12px] uppercase tracking-[0.2em] font-mono font-bold transition-colors ${
-                  isDarkMode ? 'text-white/40' : 'text-gray-900/40'
+                  isDarkMode ? 'text-white/40' : 'text-gray-900/60'
                 }`}
               >
                 Tech Stack Environment
@@ -312,7 +312,7 @@ const CreateProject = () => {
                             : 'bg-gray-900 text-white border-gray-900'
                           : isDarkMode
                             ? 'bg-transparent text-white/40 border-white/10 hover:border-[#17E1FF] hover:text-[#17E1FF]'
-                            : 'bg-transparent text-gray-900/40 border-gray-900/10 hover:border-[#17E1FF] hover:text-[#17E1FF]'
+                            : 'bg-transparent text-gray-900/60 border-gray-900/40 hover:border-[#17E1FF] hover:text-[#17E1FF]'
                       }`}
                     >
                       <IconComponent className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -398,7 +398,7 @@ const CreateProject = () => {
       >
         <div
           className={`flex flex-col md:flex-row items-center gap-4 md:gap-8 lg:gap-16 text-[10px] font-mono tracking-widest uppercase transition-colors ${
-            isDarkMode ? 'text-white/40' : 'text-gray-900/40'
+            isDarkMode ? 'text-white/40' : 'text-gray-900/60'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ const CreateProject = () => {
           </div>
           <span
             className={`hidden md:inline border-l pl-8 lg:pl-16 ${
-              isDarkMode ? 'border-white/10' : 'border-gray-900/10'
+              isDarkMode ? 'border-white/10' : 'border-gray-900/40'
             }`}
           >
             Designed for Excellence

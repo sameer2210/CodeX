@@ -29,9 +29,9 @@ const Sidebar = ({
   const collapsedWidth = 80;
   const sidebarWidth = isMobile ? expandedWidth : isCollapsed ? collapsedWidth : expandedWidth;
 
-  const handleLogout = () => {
+  const handleLogout = (redirectTo = '/login') => {
     dispatch(logout());
-    navigate('/login');
+    navigate(redirectTo);
     if (isMobile && onClose) {
       onClose();
     }
@@ -56,6 +56,8 @@ const Sidebar = ({
     { name: 'Help', path: '/help', icon: QuestionMarkCircleIcon },
   ];
 
+  const isCollapsedView = !isMobile && isCollapsed;
+
   return (
     <motion.aside
       initial={false}
@@ -75,25 +77,36 @@ const Sidebar = ({
       {/* Subtle glow effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#17E1FF]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-      <div className="p-6 h-full flex flex-col relative z-10">
+      <div
+        className={`h-full flex flex-col relative z-10 ${
+          isCollapsedView ? 'px-4 py-4' : 'p-4'
+        }`}
+      >
         {/* Brand Header */}
-        <div className="mb-12 flex items-center justify-between">
-          <motion.div
+        <div
+          className={`mb-10 ${
+            isCollapsedView
+              ? 'flex flex-col items-center gap-4'
+              : 'flex items-center justify-between'
+          }`}
+        >
+          <motion.button
             initial={false}
             animate={{
-              opacity: isCollapsed ? 0 : 1,
-              x: isCollapsed ? -20 : 0,
+              opacity: 1,
+              x: 0,
+              scale: isCollapsedView ? 0.95 : 1,
             }}
-            className="group-hover:opacity-100 group-hover:x-0"
+            onClick={() => handleLogout('/')}
+            className={`flex items-center justify-center rounded-2xl transition-all ${
+              isDarkMode
+                ? 'bg-white/5 hover:bg-white/10 border border-white/10'
+                : 'bg-white/90 hover:bg-white border border-[#0B0E11]/15'
+            } ${isCollapsedView ? 'w-12 h-12' : 'w-11 h-11'}`}
+            aria-label="Logout and return to landing page"
           >
-            <h1
-              className={`text-2xl font-black uppercase tracking-tighter ${
-                isDarkMode ? 'text-[#E6E8E5]' : 'text-[#0B0E11]'
-              }`}
-            >
-              CODEX
-            </h1>
-          </motion.div>
+            <img src="/logo.png" alt="CodeX logo" className="w-7 h-7 object-contain" />
+          </motion.button>
           {isMobile ? (
             <button
               onClick={onClose}
@@ -132,7 +145,7 @@ const Sidebar = ({
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+        <nav className={`flex-1 space-y-1 overflow-y-auto scrollbar-hide`}>
           {navItems.map((item, i) => (
             <motion.div
               key={item.path}
@@ -143,7 +156,8 @@ const Sidebar = ({
               <NavLink
                 to={item.path}
                 className={({ isActive }) => `
-                  flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all group/item relative overflow-hidden
+                  flex items-center py-3 rounded-2xl transition-all group/item relative
+                  ${isCollapsedView ? 'justify-center' : ' px-4'}
                   ${
                     isActive
                       ? isDarkMode
@@ -160,17 +174,37 @@ const Sidebar = ({
                 {/* Hover glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#17E1FF]/0 via-[#17E1FF]/5 to-[#17E1FF]/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-500" />
 
-                <item.icon className="w-5 h-5 flex-shrink-0 relative z-10" />
-                <motion.span
-                  initial={false}
-                  animate={{
-                    opacity: isCollapsed ? 0 : 1,
-                    x: isCollapsed ? -10 : 0,
-                  }}
-                  className="text-sm relative z-10 whitespace-nowrap group-hover:opacity-100 group-hover:x-0"
+                <div
+                  className={`relative z-10 flex items-center ${
+                    isCollapsedView ? 'justify-center w-full' : 'gap-3'
+                  }`}
                 >
-                  {item.name}
-                </motion.span>
+                  <div
+                    className={`flex items-center justify-center ${
+                      isCollapsedView
+                        ? isDarkMode
+                          ? 'w-11 h-11 rounded-2xl bg-white/5 border border-white/10 group-hover/item:bg-white/10'
+                          : 'w-11 h-11 rounded-2xl bg-white/90 border border-[#0B0E11]/10 group-hover/item:bg-white'
+                        : ''
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                  </div>
+                  {isCollapsedView ? (
+                    <span className="sr-only">{item.name}</span>
+                  ) : (
+                    <motion.span
+                      initial={false}
+                      animate={{
+                        opacity: isCollapsed ? 0 : 1,
+                        x: isCollapsed ? -10 : 0,
+                      }}
+                      className="text-sm relative z-10 whitespace-nowrap group-hover:opacity-100 group-hover:x-0"
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </div>
               </NavLink>
             </motion.div>
           ))}
@@ -212,7 +246,7 @@ const Sidebar = ({
 
           {/* Logout Button */}
           <button
-            onClick={handleLogout}
+            onClick={() => handleLogout('/login')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition-all ${
               isDarkMode
                 ? 'text-[#E6E8E5]/50 hover:bg-red-500/10 hover:text-red-400'
@@ -225,53 +259,56 @@ const Sidebar = ({
         </motion.div>
 
         {/* CTA Card */}
-        <motion.div
-          initial={false}
-          animate={{
-            opacity: isCollapsed ? 0 : 1,
-            y: isCollapsed ? 20 : 0,
-          }}
-          className="relative overflow-hidden rounded-3xl border p-6 backdrop-blur-sm group-hover:opacity-100 group-hover:y-0 transition-all duration-500"
-          style={{
-            borderColor: isDarkMode ? 'rgba(23, 225, 255, 0.1)' : 'rgba(11, 14, 17, 0.1)',
-            backgroundColor: isDarkMode ? 'rgba(23, 225, 255, 0.05)' : 'rgba(11, 14, 17, 0.03)',
-          }}
-        >
-          {/* Decorative Background */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#17E1FF] blur-3xl opacity-10" />
-          <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-[#17E1FF] blur-2xl opacity-5" />
+        {!isCollapsedView && (
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition-all duration-500"
+            style={{
+              borderColor: isDarkMode ? 'rgba(23, 225, 255, 0.1)' : 'rgba(11, 14, 17, 0.1)',
+              backgroundColor: isDarkMode ? 'rgba(23, 225, 255, 0.05)' : 'rgba(11, 14, 17, 0.03)',
+            }}
+          >
+            {/* Decorative Background */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#17E1FF] blur-3xl opacity-10" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-[#17E1FF] blur-2xl opacity-5" />
 
-          <div className="relative z-10">
-            <div className="w-10 h-10 rounded-full bg-[#17E1FF]/20 flex items-center justify-center mb-4">
-              <svg
-                className="w-5 h-5 text-[#17E1FF]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+            <div className="relative z-10">
+              <div className="w-10 h-10 rounded-full bg-[#17E1FF]/20 flex items-center justify-center mb-4">
+                <svg
+                  className="w-5 h-5 text-[#17E1FF]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <h4
+                className={`font-black text-sm mb-1 uppercase tracking-tight ${
+                  isDarkMode ? 'text-[#E6E8E5]' : 'text-[#0B0E11]'
+                }`}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+                Upgrade Pro
+              </h4>
+              <p
+                className={`text-xs mb-4 leading-relaxed font-light ${
+                  isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
+                }`}
+              >
+                Unlock advanced features and unlimited projects.
+              </p>
+              <button className="w-full py-2.5 rounded-2xl bg-[#E6E8E5] text-[#0B0E11] text-sm font-black border uppercase tracking-wide hover:scale-[1.02] transition-transform shadow-lg">
+                Upgrade Now
+              </button>
             </div>
-            <h4
-              className={`font-black text-sm mb-1 uppercase tracking-tight ${
-                isDarkMode ? 'text-[#E6E8E5]' : 'text-[#0B0E11]'
-              }`}
-            >
-              Upgrade Pro
-            </h4>
-            <p
-              className={`text-xs mb-4 leading-relaxed font-light ${
-                isDarkMode ? 'text-[#E6E8E5]/50' : 'text-[#0B0E11]/70'
-              }`}
-            >
-              Unlock advanced features and unlimited projects.
-            </p>
-            <button className="w-full py-2.5 rounded-2xl bg-[#E6E8E5] text-[#0B0E11] text-sm font-black border uppercase tracking-wide hover:scale-[1.02] transition-transform shadow-lg">
-              Upgrade Now
-            </button>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Collapsed State Indicator */}
         <motion.div
@@ -302,4 +339,3 @@ const Sidebar = ({
 };
 
 export default Sidebar;
-

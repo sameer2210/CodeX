@@ -51,7 +51,9 @@ const Toggle = ({ enabled, onChange, isDarkMode }) => (
 const Settings = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
   const [isLargeScreen, setIsLargeScreen] = useState(
     window.matchMedia('(min-width: 1024px)').matches
   );
@@ -93,6 +95,14 @@ const Settings = () => {
       setIsMobileSidebarOpen(false);
     }
   }, [isLargeScreen, isMobileSidebarOpen]);
+
+  useEffect(() => {
+    if (isLargeScreen) {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isLargeScreen]);
 
   const resolveMemberStatus = member => {
     if (!member) return 'offline';
@@ -156,7 +166,8 @@ const Settings = () => {
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
         <Sidebar
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onHoverExpand={() => setIsSidebarCollapsed(false)}
+          onHoverCollapse={() => setIsSidebarCollapsed(true)}
         />
       </div>
 

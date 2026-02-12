@@ -35,7 +35,9 @@ const Dashboard = () => {
   const [time, setTime] = useState(5048);
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, toggleTheme } = useTheme();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(
     window.matchMedia('(min-width: 1024px)').matches
@@ -105,9 +107,18 @@ const Dashboard = () => {
     { name: 'Pending', value: 24, color: isDarkMode ? '#E6E8E5' : '#0B0E11' },
   ];
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const expandSidebar = () => setIsSidebarCollapsed(false);
+  const collapseSidebar = () => setIsSidebarCollapsed(true);
   const openMobileSidebar = () => setIsMobileSidebarOpen(true);
   const closeMobileSidebar = () => setIsMobileSidebarOpen(false);
+
+  useEffect(() => {
+    if (isLargeScreen) {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isLargeScreen]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -193,7 +204,11 @@ const Dashboard = () => {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
-        <Sidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={toggleSidebar} />
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onHoverExpand={expandSidebar}
+          onHoverCollapse={collapseSidebar}
+        />
       </div>
 
       {/* Main Content Area */}
@@ -251,7 +266,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/notifications')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
+                className={`relative p-3 rounded-full transition-all backdrop-blur-xl border-2 ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
                     : 'hover:bg-white/95 border-[#0B0E11]/15'
@@ -266,7 +281,7 @@ const Dashboard = () => {
                 whileHover={{ scale: 1.05, rotate: 180 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className={`p-3 rounded-2xl transition-all backdrop-blur-xl border ${
+                className={`p-3 rounded-full transition-all backdrop-blur-xl border-2 ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
                     : 'hover:bg-white/95 border-[#0B0E11]/15'
@@ -278,7 +293,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/meeting')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`relative p-3 rounded-2xl transition-all backdrop-blur-xl border ${
+                className={`relative p-3 rounded-full transition-all backdrop-blur-xl border-2 ${
                   isDarkMode
                     ? 'hover:bg-white/5 border-white/5'
                     : 'hover:bg-white/95 border-[#0B0E11]/15'
@@ -692,5 +707,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-

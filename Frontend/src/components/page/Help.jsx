@@ -73,7 +73,9 @@ const Help = () => {
   const inputRef = useRef(null);
   const idRef = useRef(1);
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
   const [isLargeScreen, setIsLargeScreen] = useState(true);
 
   const cyclePlaceholder = () => {
@@ -88,6 +90,14 @@ const Help = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (isLargeScreen) {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isLargeScreen]);
 
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_BACKEND_URL;
@@ -204,7 +214,8 @@ const Help = () => {
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
         <Sidebar
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onHoverExpand={() => setIsSidebarCollapsed(false)}
+          onHoverCollapse={() => setIsSidebarCollapsed(true)}
         />
       </div>
 

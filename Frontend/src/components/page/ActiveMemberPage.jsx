@@ -12,7 +12,9 @@ const EASE = [0.22, 1, 0.36, 1];
 
 const ActiveMemberPage = () => {
   const { isDarkMode } = useTheme();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches
+  );
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(
     window.matchMedia('(min-width: 1024px)').matches
@@ -31,9 +33,18 @@ const ActiveMemberPage = () => {
     }
   }, [isLargeScreen, isMobileSidebarOpen]);
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const expandSidebar = () => setIsSidebarCollapsed(false);
+  const collapseSidebar = () => setIsSidebarCollapsed(true);
   const openMobileSidebar = () => setIsMobileSidebarOpen(true);
   const closeMobileSidebar = () => setIsMobileSidebarOpen(false);
+
+  useEffect(() => {
+    if (isLargeScreen) {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isLargeScreen]);
 
   return (
     <div
@@ -80,7 +91,11 @@ const ActiveMemberPage = () => {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
-        <Sidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={toggleSidebar} />
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onHoverExpand={expandSidebar}
+          onHoverCollapse={collapseSidebar}
+        />
       </div>
 
       <motion.main

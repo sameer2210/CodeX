@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+node_modules/
+*.log
+.env
+coverage/
+playwright-report/
+test-results/

@@ -1,13 +1,27 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export const HUDLabel = ({ label, value }) => (
-  <div className="flex flex-col gap-1">
-    <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono font-medium">
+export const HUDLabel = ({
+  label,
+  value,
+  className = '',
+  labelClassName = '',
+  valueClassName = '',
+  color,
+}) => (
+  <div className={`flex flex-col gap-1 ${className}`}>
+    <span
+      className={`text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono font-medium ${labelClassName}`}
+    >
       {label}
     </span>
     {value && (
-      <span className="text-[11px] uppercase tracking-wider text-white/80 font-mono">{value}</span>
+      <span
+        className={`text-[11px] uppercase tracking-wider text-white/80 font-mono ${valueClassName}`}
+        style={color ? { color } : undefined}
+      >
+        {value}
+      </span>
     )}
   </div>
 );

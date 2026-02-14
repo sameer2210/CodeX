@@ -23,6 +23,15 @@ const ReviewPanel = ({ projectId }) => {
   const socketConnected = useAppSelector(state => state.socket.connected);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const accentText = isDarkMode ? 'text-[#17E1FF]' : 'text-[#0F6E88]';
+  const mutedText = isDarkMode ? 'text-white/50' : 'text-[#0B0E11]/60';
+  const secondaryText = isDarkMode ? 'text-white/70' : 'text-[#0B0E11]/70';
+  const headerBorder = isDarkMode ? 'border-white/10' : 'border-[#0B0E11]/10';
+  const iconShell = isDarkMode
+    ? 'bg-white/5 border-white/10'
+    : 'bg-[#0B0E11]/5 border-[#0B0E11]/10';
+  const proseClass = `prose max-w-none ${isDarkMode ? 'prose-invert' : 'prose-slate'}`;
+  const emptyTitleText = isDarkMode ? 'text-white' : 'text-[#0B0E11]';
 
   /* ========== GENERATE REVIEW ========== */
   const getReview = useCallback(async () => {
@@ -179,21 +188,31 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
       <div className="absolute -top-20 -right-20 w-96 h-96 bg-[#17E1FF]/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Header */}
-      <div className="relative p-3  border-b border-white/10 flex items-center justify-between">
+      <div className={`relative p-3 border-b flex items-center justify-between ${headerBorder}`}>
         <div className="flex items-center gap-4">
-          <div className="relative flex items-center justify-center w-9 h- bg-white/5 rounded-xl border border-white/10">
-            <Terminal className="w-5 h-5 text-[#17E1FF]" />
+          <div
+            className={`relative flex items-center justify-center w-9 h-9 rounded-xl border ${iconShell}`}
+          >
+            <Terminal className={`w-5 h-5 ${accentText}`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <LEDIndicator />
-              <span className="text-[11px] font-mono tracking-[0.3em] text-white/50 uppercase">
+              <span className={`text-[11px] font-mono tracking-[0.3em] uppercase ${mutedText}`}>
                 AI ANALYSIS CODE REVIEW
               </span>
             </div>
 
           </div>
-          {!socketConnected && <HUDLabel label="MODE" value="OFFLINE" color="#F59E0B" />}
+          {!socketConnected && (
+            <HUDLabel
+              label="MODE"
+              value="OFFLINE"
+              color={isDarkMode ? '#F59E0B' : '#B45309'}
+              labelClassName={mutedText}
+              valueClassName={secondaryText}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -203,7 +222,9 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={copyReview}
-                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                className={`p-2.5 transition-colors ${secondaryText} ${
+                  isDarkMode ? 'hover:text-[#17E1FF]' : 'hover:text-[#0F6E88]'
+                }`}
                 title="Copy"
               >
                 <Copy size={18} />
@@ -212,7 +233,9 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={downloadReview}
-                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                className={`p-2.5 transition-colors ${secondaryText} ${
+                  isDarkMode ? 'hover:text-[#17E1FF]' : 'hover:text-[#0F6E88]'
+                }`}
                 title="Download"
               >
                 <Download size={18} />
@@ -221,7 +244,9 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={clearReview}
-                className="p-2.5 text-white/70 hover:text-[#17E1FF] transition-colors"
+                className={`p-2.5 transition-colors ${secondaryText} ${
+                  isDarkMode ? 'hover:text-[#17E1FF]' : 'hover:text-[#0F6E88]'
+                }`}
                 title="Clear"
               >
                 <RefreshCw size={18} />
@@ -234,13 +259,29 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
             disabled={!code.trim() || isGenerating}
             whileHover={!isGenerating ? { scale: 1.05 } : {}}
             whileTap={!isGenerating ? { scale: 0.95 } : {}}
-            className="group relative h-11 px-8 rounded-full border border-white/20 hover:border-[#17E1FF] overflow-hidden font-mono uppercase tracking-wider text-sm font-medium disabled:opacity-40"
+            className={`group relative h-11 px-8 rounded-full border overflow-hidden font-mono uppercase tracking-wider text-sm font-medium disabled:opacity-40 ${
+              isDarkMode
+                ? 'border-white/20 hover:border-[#17E1FF] text-white'
+                : 'border-[#0B0E11]/20 hover:border-[#0F6E88] text-[#0B0E11]'
+            }`}
           >
-            <motion.div className="absolute inset-0 bg-[#c6c6c6] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-            <span className="relative z-10 group-hover:text-black transition-colors">
+            <motion.div
+              className={`absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ${
+                isDarkMode ? 'bg-[#c6c6c6]' : 'bg-[#0B0E11]'
+              }`}
+            />
+            <span
+              className={`relative z-10 transition-colors ${
+                isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'
+              }`}
+            >
               {isGenerating ? (
                 <span className="flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  <div
+                    className={`w-3 h-3 border-2 rounded-full animate-spin ${
+                      isDarkMode ? 'border-white/30 border-t-white' : 'border-black/30 border-t-black'
+                    }`}
+                  />
                   ANALYZING
                 </span>
               ) : (
@@ -259,30 +300,33 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="prose prose-invert max-w-none"
+              className={proseClass}
             >
               <ReactMarkdown
                 components={{
                   h1: ({ ...props }) => (
                     <h1
-                      className="text-3xl font-black tracking-tighter text-white mb-4"
+                      className={`text-3xl font-black tracking-tighter mb-4 ${
+                        isDarkMode ? 'text-white' : 'text-[#0B0E11]'
+                      }`}
                       {...props}
                     />
                   ),
                   h2: ({ ...props }) => (
-                    <h2 className="text-2xl font-bold text-[#17E1FF] mt-8 mb-3" {...props} />
+                    <h2 className={`text-2xl font-bold mt-8 mb-3 ${accentText}`} {...props} />
                   ),
                   code: ({ inline, ...props }) =>
                     inline ? (
                       <code
-                        className="bg-white/10 px-2 py-0.5 rounded text-[#17E1FF] font-mono"
+                        className={`px-2 py-0.5 rounded font-mono ${
+                          isDarkMode
+                            ? 'bg-white/10 text-[#17E1FF]'
+                            : 'bg-[#0B0E11]/5 text-[#0B0E11]'
+                        }`}
                         {...props}
                       />
                     ) : (
-                      <code
-                        className="block font-mono text-sm overflow-x-auto"
-                        {...props}
-                      />
+                      <code className="block font-mono text-sm overflow-x-auto" {...props} />
                     ),
                 }}
               >
@@ -296,12 +340,12 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
               className="flex flex-col items-center justify-center h-full text-center"
             >
 
-              <Sparkles className="w-10 h-10 " />
+              <Sparkles className={`w-10 h-10 ${accentText}`} />
 
-              <h3 className="text-2xl font-bold tracking-tight text-white mb-2">
+              <h3 className={`text-2xl font-bold tracking-tight mb-2 ${emptyTitleText}`}>
                 Ready for Analysis
               </h3>
-              <p className="text-white/50 max-w-xs">
+              <p className={`max-w-xs ${mutedText}`}>
                 Write code and press "Generate Review" to get advanced AI feedback powered by Gemini
               </p>
             </motion.div>

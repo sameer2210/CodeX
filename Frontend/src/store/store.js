@@ -1,6 +1,6 @@
 // store.js
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import { persistReducer, persistStore } from 'redux-persist';
+import { createTransform, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { notify } from '../lib/notify';
 import authSlice from './slices/authSlice';
@@ -10,10 +10,24 @@ import socketSlice from './slices/socketSlice';
 import { socketMiddleware } from './socketMiddleware';
 
 // Root reducer with persistence config
+const authTransform = createTransform(
+  (inboundState, key) => {
+    if (key !== 'auth') return inboundState;
+    const { isLoading, error, ...rest } = inboundState || {};
+    return rest;
+  },
+  (outboundState, key) => {
+    if (key !== 'auth') return outboundState;
+    return { ...outboundState, isLoading: false, error: null };
+  },
+  { whitelist: ['auth'] }
+);
+
 const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['auth'], // Persist only auth slice (add others if needed, e.g., ['auth', 'projects'])
+  transforms: [authTransform],
 };
 
 const rootReducer = combineReducers({

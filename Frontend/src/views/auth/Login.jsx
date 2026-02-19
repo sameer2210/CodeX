@@ -49,18 +49,30 @@ const Login = () => {
   const handleSubmit = async e => {
     e.preventDefault();
 
+    if (isLoading) {
+      return;
+    }
+
     // Clear previous errors
     setLocalError(null);
     dispatch(clearError());
 
     // Validation
-    if (!formData.username.trim() || !formData.teamName.trim() || !formData.password) {
+    const trimmedUsername = (formData.username || '').trim();
+    const trimmedTeamName = (formData.teamName || '').trim();
+    if (!trimmedUsername || !trimmedTeamName || !formData.password) {
       setLocalError('Please complete all required fields.');
       return;
     }
 
     try {
-      const result = await dispatch(loginUser(formData));
+      const result = await dispatch(
+        loginUser({
+          ...formData,
+          username: trimmedUsername,
+          teamName: trimmedTeamName,
+        })
+      );
 
       if (loginUser.fulfilled.match(result)) {
         notify('Login successful', 'success');
@@ -88,10 +100,11 @@ const Login = () => {
   };
 
   const handleDemoFill = () => {
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       teamName: 'DemoTeam',
       password: 'Demo123',
-    });
+    }));
     setLocalError(null);
     dispatch(clearError());
   };
@@ -235,7 +248,7 @@ const Login = () => {
             </motion.h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-12">
+          <form onSubmit={handleSubmit} className="space-y-12" aria-busy={isLoading}>
             {/* Input Groups */}
             <div className="space-y-16">
               <motion.div variants={itemVariants} className="relative group">
@@ -385,7 +398,7 @@ const Login = () => {
                           : 'border-[#0B0E11]/20 hover:border-[#17E1FF] hover:bg-[#0B0E11]/5'
                       }`}
                     >
-                      JOHN
+                      Demo Credentials
                     </button>
                   </div>
                 </div>
@@ -408,6 +421,9 @@ const Login = () => {
               <motion.button
                 type="submit"
                 disabled={isLoading}
+                aria-disabled={isLoading}
+                aria-busy={isLoading}
+                tabIndex={isLoading ? -1 : 0}
                 whileHover={!isLoading ? { scale: 1.05 } : {}}
                 whileTap={!isLoading ? { scale: 0.95 } : {}}
                 className={`group relative w-full md:w-56 h-16 flex items-center justify-center overflow-hidden rounded-full border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${

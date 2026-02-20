@@ -246,6 +246,15 @@ const Login = () => {
                 Project Special
               </span>
             </motion.h2>
+            <motion.p
+              variants={itemVariants}
+              className={`max-w-2xl text-sm md:text-base leading-relaxed ${
+                isDarkMode ? 'text-white/50' : 'text-[#0B0E11]/70'
+              }`}
+            >
+              Enter your team name, username, and password to access your workspace. Use the demo
+              button to auto-fill sample credentials. Need a new team? Use the register link below.
+            </motion.p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-12" aria-busy={isLoading}>

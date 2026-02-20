@@ -13,7 +13,7 @@ import {
   VideoCameraIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import Sidebar from '../components/layout/Sidebar';
@@ -27,7 +27,7 @@ const EASE = [0.22, 1, 0.36, 1];
 const Dashboard = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { stats, projects } = useAppSelector(state => state.projects);
+  const { stats, projects, teamMembers } = useAppSelector(state => state.projects);
   const { user, isAuthenticated } = useAppSelector(state => state.auth);
   const socketConnected = useAppSelector(state => state.socket.connected);
 
@@ -43,6 +43,8 @@ const Dashboard = () => {
   const [isLargeScreen, setIsLargeScreen] = useState(
     window.matchMedia('(min-width: 1024px)').matches
   );
+  const recentProjectsRef = useRef(null);
+  const activeTeamRef = useRef(null);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
@@ -158,6 +160,21 @@ const Dashboard = () => {
       );
     }
     return null;
+  };
+
+  const isMemberOnline = member => {
+    if (member?.isActive === true) return true;
+    const status = (member?.status || '').toString().trim().toLowerCase();
+    return ['online', 'active', 'active now', 'available'].includes(status);
+  };
+
+  const activeMemberCount = useMemo(() => {
+    const members = Array.isArray(teamMembers) ? teamMembers : [];
+    return members.filter(isMemberOnline).length;
+  }, [teamMembers]);
+
+  const scrollToSection = ref => {
+    ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
@@ -386,11 +403,20 @@ const Dashboard = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3, ease: EASE } }}
+              onClick={() => scrollToSection(recentProjectsRef)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  scrollToSection(recentProjectsRef);
+                }
+              }}
               className={`rounded-3xl p-8 relative overflow-hidden group backdrop-blur-2xl border ${
                 isDarkMode
                   ? 'bg-[#17E1FF]/10 border-[#17E1FF]/20'
                   : 'bg-[#17E1FF]/5 border-[#17E1FF]/10'
-              }`}
+              } cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17E1FF]/60`}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-[#17E1FF]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#17E1FF] rounded-full blur-3xl opacity-20 -mr-16 -mt-16 group-hover:opacity-40 transition-opacity duration-700" />
@@ -412,19 +438,42 @@ const Dashboard = () => {
             </motion.div>
 
             {[
-              { label: 'Completed', value: stats?.endedProjects || 0, trend: '+6%' },
-              { label: 'Active', value: stats?.runningProjects || 0, trend: '+2%' },
+              {
+                label: 'Completed',
+                value: stats?.endedProjects || 0,
+                trend: '+6%',
+                onClick: () => scrollToSection(recentProjectsRef),
+              },
+              {
+                label: 'Active Team',
+                value: activeMemberCount,
+                trend: `${activeMemberCount} Online`,
+                onClick: () => scrollToSection(activeTeamRef),
+              },
               { label: 'Pending', value: stats?.pendingProjects || 0, trend: '—' },
             ].map((card, idx) => (
               <motion.div
                 key={idx}
                 variants={itemVariants}
                 whileHover={{ y: -8, transition: { duration: 0.3, ease: EASE } }}
+                onClick={card.onClick}
+                role={card.onClick ? 'button' : undefined}
+                tabIndex={card.onClick ? 0 : undefined}
+                onKeyDown={
+                  card.onClick
+                    ? event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          card.onClick();
+                        }
+                      }
+                    : undefined
+                }
                 className={`rounded-3xl p-8 relative group backdrop-blur-2xl border transition-all ${
                   isDarkMode
                     ? 'bg-white/5 border-white/10 hover:border-white/20'
                     : 'bg-white/90 border-[#0B0E11]/15 hover:border-[#0B0E11]/20'
-                }`}
+                } ${card.onClick ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17E1FF]/60' : ''}`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -454,6 +503,7 @@ const Dashboard = () => {
             {/* Recent Projects */}
             <motion.div
               variants={itemVariants}
+              ref={recentProjectsRef}
               className={`lg:col-span-8 lg:h-[520px] rounded-3xl p-10 backdrop-blur-2xl border flex flex-col min-h-0 ${
                 isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/90 border-[#0B0E11]/15'
               }`}
@@ -479,15 +529,15 @@ const Dashboard = () => {
                     transition={{ delay: i * 0.1, ease: EASE }}
                     onClick={() => navigate(`/project/${proj._id}`)}
                     whileHover={{ x: 8 }}
-                    className={`group flex items-center justify-between p-6 rounded-2xl transition-all cursor-pointer border ${
+                    className={`group flex items-center justify-between p-2 sm:p-3 rounded-xl transition-all cursor-pointer border ${
                       isDarkMode
-                        ? 'hover:bg-white/5 border-transparent hover:border-[#17E1FF]/20'
-                        : 'hover:bg-white border-transparent hover:border-[#0B0E11]/15'
+                        ? 'hover:bg-white/5 border-[#17E1FF]/30 hover:border-[#17E1FF]/20'
+                        : 'hover:bg-white border-[#0B0E11]/30 hover:border-[#0B0E11]/15'
                     }`}
                   >
                     <div className="flex items-center gap-5">
                       <div
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                        className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
                           isDarkMode
                             ? 'bg-[#17E1FF]/10 group-hover:bg-[#17E1FF]/20'
                             : 'bg-[#0B0E11]/10 group-hover:bg-[#0B0E11]/15'
@@ -521,7 +571,11 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Active Team */}
-            <motion.div variants={itemVariants} className="lg:col-span-4 lg:h-[520px]">
+            <motion.div
+              variants={itemVariants}
+              ref={activeTeamRef}
+              className="lg:col-span-4 lg:h-[520px]"
+            >
               <ActiveMember className="h-full" onClick={() => navigate('/active-members')} />
             </motion.div>
           </div>

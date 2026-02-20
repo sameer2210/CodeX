@@ -188,6 +188,15 @@ const Register = () => {
                 DOMAIN Legacy
               </span>
             </motion.h2>
+            <motion.p
+              variants={itemVariants}
+              className={`max-w-2xl text-sm md:text-base leading-relaxed ${
+                isDarkMode ? 'text-white/50' : 'text-[#0B0E11]/70'
+              }`}
+            >
+              Create your team workspace by choosing a team name, username, and secure password.
+              You can invite others after registration send them credentials. Already registered? Use the login link below.
+            </motion.p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-12">

@@ -1,5 +1,36 @@
 // src/webrtc/peer.js
-// Enterprise-grade WebRTC Peer Connection Manager
+import api from '../api/config';
+
+const DEFAULT_STUN_URLS = [
+  'stun:stun.l.google.com:19302',
+  'stun:stun1.l.google.com:19302',
+  'stun:stun2.l.google.com:19302',
+];
+
+const normalizeUrls = value =>
+  (value || '')
+    .split(',')
+    .map(url => url.trim())
+    .filter(Boolean);
+
+const buildIceServersFromEnv = () => {
+  const stunUrls = normalizeUrls(import.meta.env.VITE_STUN_URLS);
+  const iceServers = [{ urls: stunUrls.length > 0 ? stunUrls : DEFAULT_STUN_URLS }];
+
+  const turnUrls = normalizeUrls(import.meta.env.VITE_TURN_URLS);
+  if (turnUrls.length > 0) {
+    const turnServer = { urls: turnUrls };
+    const username = import.meta.env.VITE_TURN_USERNAME || undefined;
+    const credential = import.meta.env.VITE_TURN_CREDENTIAL || undefined;
+    if (username) turnServer.username = username;
+    if (credential) turnServer.credential = credential;
+    iceServers.push(turnServer);
+  }
+
+  return iceServers;
+};
+
+const hasTurnEnv = () => normalizeUrls(import.meta.env.VITE_TURN_URLS).length > 0;
 
 class PeerManager {
   constructor() {
@@ -8,45 +39,21 @@ class PeerManager {
     this.prePeerCandidateQueue = [];
     this.remoteDescriptionSet = false;
     this.isProcessingCandidates = false;
+    this.iceServers = null;
+    this.iceServersPromise = null;
   }
 
   /**
    * Create a new RTCPeerConnection with robust configuration
    */
-  createPeer() {
+  async createPeer() {
     if (this.peer) {
       console.warn('Peer already exists, cleaning up before creating new one');
       this.closePeer();
     }
 
     // STUN/TURN server configuration for NAT traversal
-    const iceServers = [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-    ];
-
-    const extraStunUrls = (import.meta.env.VITE_STUN_URLS || '')
-      .split(',')
-      .map(url => url.trim())
-      .filter(Boolean);
-
-    if (extraStunUrls.length > 0) {
-      iceServers.push({ urls: extraStunUrls });
-    }
-
-    const turnUrls = (import.meta.env.VITE_TURN_URLS || '')
-      .split(',')
-      .map(url => url.trim())
-      .filter(Boolean);
-
-    if (turnUrls.length > 0) {
-      iceServers.push({
-        urls: turnUrls,
-        username: import.meta.env.VITE_TURN_USERNAME || undefined,
-        credential: import.meta.env.VITE_TURN_CREDENTIAL || undefined,
-      });
-    }
+    const iceServers = await this.getIceServers();
 
     const configuration = {
       iceServers,
@@ -67,6 +74,35 @@ class PeerManager {
 
     console.log('Peer connection created');
     return this.peer;
+  }
+
+  async getIceServers() {
+    if (this.iceServers) return this.iceServers;
+    if (!this.iceServersPromise) {
+      this.iceServersPromise = this.fetchIceServers();
+    }
+    this.iceServers = await this.iceServersPromise;
+    return this.iceServers;
+  }
+
+  async fetchIceServers() {
+    const envIceServers = buildIceServersFromEnv();
+    if (hasTurnEnv()) {
+      return envIceServers;
+    }
+
+    try {
+      const response = await api.get('/webrtc/turn');
+      const iceServers = response?.data?.iceServers;
+      if (Array.isArray(iceServers) && iceServers.length > 0) {
+        console.log('Using ICE servers from backend');
+        return iceServers;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch TURN config, using STUN only', error?.message || error);
+    }
+
+    return envIceServers;
   }
 
   /**

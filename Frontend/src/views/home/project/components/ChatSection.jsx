@@ -510,7 +510,7 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
 
         {/* COMPOSER */}
         <div
-          className={`px-4 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shrink-0 sticky bottom-0 z-20 backdrop-blur-md border-t ${
+          className={`px-4 sm:px-6 sm:pb-[max(1rem,env(safe-area-inset-bottom))] pb-[max(rem,env(safe-area-inset-bottom))] sm:pt-2 shrink-0 sticky bottom-0 z-20 backdrop-blur-md border-t ${
             isDarkMode ? 'bg-[#0B0E12]/95 border-white/10' : 'bg-white/90 border-black/15'
           }`}
         >
@@ -696,4 +696,3 @@ const ChatSection = ({ projectId, onStartCall, onStartGroupCall }) => {
 };
 
 export default ChatSection;
-

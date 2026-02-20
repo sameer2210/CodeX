@@ -23,8 +23,8 @@ const cleanup = () => {
   remoteStream = null;
 };
 
-const attachRemoteTrackHandler = onRemoteStream => {
-  const peer = createPeer();
+const attachRemoteTrackHandler = async onRemoteStream => {
+  const peer = await createPeer();
   peer.ontrack = event => {
     if (event.streams?.[0]) {
       remoteStream = event.streams[0];
@@ -45,7 +45,7 @@ const attachRemoteTrackHandler = onRemoteStream => {
 const startOutgoing = async (type, onRemoteStream) => {
   cleanup();
   localStream = await getMedia({ audio: true, video: type === 'video' });
-  const peer = attachRemoteTrackHandler(onRemoteStream);
+  const peer = await attachRemoteTrackHandler(onRemoteStream);
   localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
   const offer = await createOffer();
   return { offer, localStream, peer };
@@ -54,7 +54,7 @@ const startOutgoing = async (type, onRemoteStream) => {
 const acceptIncoming = async (type, offer, onRemoteStream) => {
   cleanup();
   localStream = await getMedia({ audio: true, video: type === 'video' });
-  const peer = attachRemoteTrackHandler(onRemoteStream);
+  const peer = await attachRemoteTrackHandler(onRemoteStream);
   localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
   await setRemoteDescription(offer);
   const answer = await createAnswer();
@@ -93,10 +93,10 @@ export {
   acceptIncoming,
   addRemoteIceCandidate,
   applyAnswer,
-  handleRemoteOffer,
   cleanup,
   getLocalStream,
   getRemoteStream,
+  handleRemoteOffer,
   startOutgoing,
   toggleAudio,
   toggleVideo,

@@ -7,6 +7,7 @@ import config from './config/config.js';
 import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import webrtcRoutes from './routes/webrtc.routes.js';
 
 const app = express();
 app.use(helmet());
@@ -54,5 +55,6 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/webrtc', webrtcRoutes);
 
 export default app;

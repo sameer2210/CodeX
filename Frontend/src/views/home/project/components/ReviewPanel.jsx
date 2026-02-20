@@ -180,7 +180,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
   /* ========== RENDER ========== */
   return (
     <div
-      className={`relative flex flex-col h-full rounded-2xl overflow-hidden border transition-colors duration-500
+      className={`relative flex flex-col h-full w-full min-w-0 min-h-0 rounded-2xl overflow-hidden border transition-colors duration-500
       ${isDarkMode ? 'bg-[#0B0E11] border-white/10' : 'bg-[#F4F6F5] border-[#10120F]/10'}`}
     >
       {/* Background Effects */}
@@ -188,8 +188,10 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
       <div className="absolute -top-20 -right-20 w-96 h-96 bg-[#17E1FF]/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Header */}
-      <div className={`relative p-3 border-b flex items-center justify-between ${headerBorder}`}>
-        <div className="flex items-center gap-4">
+      <div
+        className={`relative p-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${headerBorder}`}
+      >
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
           <div
             className={`relative flex items-center justify-center w-9 h-9 rounded-xl border ${iconShell}`}
           >
@@ -215,9 +217,9 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full min-w-0">
           {review && (
-            <>
+            <div className="flex items-center gap-2 shrink-0">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -251,7 +253,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
               >
                 <RefreshCw size={18} />
               </motion.button>
-            </>
+            </div>
           )}
 
           <motion.button
@@ -259,7 +261,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
             disabled={!code.trim() || isGenerating}
             whileHover={!isGenerating ? { scale: 1.05 } : {}}
             whileTap={!isGenerating ? { scale: 0.95 } : {}}
-            className={`group relative h-11 px-8 rounded-full border overflow-hidden font-mono uppercase tracking-wider text-sm font-medium disabled:opacity-40 ${
+            className={`group relative h-10 sm:h-11 w-full sm:w-auto sm:ml-auto px-4 sm:px-8 rounded-full border overflow-hidden font-mono uppercase tracking-wide sm:tracking-wider text-xs sm:text-sm font-medium disabled:opacity-40 ${
               isDarkMode
                 ? 'border-white/20 hover:border-[#17E1FF] text-white'
                 : 'border-[#0B0E11]/20 hover:border-[#0F6E88] text-[#0B0E11]'
@@ -276,7 +278,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
               }`}
             >
               {isGenerating ? (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 justify-center">
                   <div
                     className={`w-3 h-3 border-2 rounded-full animate-spin ${
                       isDarkMode ? 'border-white/30 border-t-white' : 'border-black/30 border-t-black'
@@ -285,7 +287,11 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                   ANALYZING
                 </span>
               ) : (
-                'GENERATE REVIEW'
+                <span className="flex items-center justify-center gap-2 whitespace-nowrap">
+                  <Sparkles size={16} />
+                  <span className="sm:hidden">GENERATE</span>
+                  <span className="hidden sm:inline">GENERATE REVIEW</span>
+                </span>
               )}
             </span>
           </motion.button>
@@ -293,14 +299,14 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
       </div>
 
       {/* Review Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 custom-scrollbar">
         <AnimatePresence mode="wait">
           {review ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={proseClass}
+              className={`${proseClass} min-w-0 break-words w-[90dvw] max-w-full sm:w-full`}
             >
               <ReactMarkdown
                 components={{
@@ -315,10 +321,18 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                   h2: ({ ...props }) => (
                     <h2 className={`text-2xl font-bold mt-8 mb-3 ${accentText}`} {...props} />
                   ),
+                  pre: ({ ...props }) => (
+                    <pre
+                      className={`max-w-full overflow-x-auto rounded-lg p-3 ${
+                        isDarkMode ? 'bg-white/5' : 'bg-[#0B0E11]/5'
+                      }`}
+                      {...props}
+                    />
+                  ),
                   code: ({ inline, ...props }) =>
                     inline ? (
                       <code
-                        className={`px-2 py-0.5 rounded font-mono ${
+                        className={`px-2 py-0.5 rounded font-mono break-all ${
                           isDarkMode
                             ? 'bg-white/10 text-[#17E1FF]'
                             : 'bg-[#0B0E11]/5 text-[#0B0E11]'
@@ -326,7 +340,7 @@ ${!hasFunctions ? '- Consider breaking code into reusable functions' : ''}
                         {...props}
                       />
                     ) : (
-                      <code className="block font-mono text-sm overflow-x-auto" {...props} />
+                      <code className="block font-mono text-sm whitespace-pre" {...props} />
                     ),
                 }}
               >

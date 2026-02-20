@@ -8,6 +8,7 @@ import {
   Minimize2,
   RotateCcw,
   Settings,
+  Sparkles,
   Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import {
   selectIsExecuting,
   setLanguage,
   updateProjectCode,
+  updateProjectReview,
 } from '../../../../store/slices/projectSlice';
 
 const CodeEditor = ({ projectId }) => {
@@ -65,7 +67,15 @@ const CodeEditor = ({ projectId }) => {
     {
       value: 'javascript',
       label: 'JavaScript',
-      template: '// JavaScript\nconsole.log("Hello World!");',
+      template: `// javascript Example
+  
+const numbers = [1, 2, 3, 4, 5];
+
+const squared = numbers.map(n => n * n);
+const even = numbers.filter(n => n % 2 === 0);
+
+console.log("Squared:", squared);
+console.log("Even:", even);`,
     },
     {
       value: 'typescript',
@@ -239,7 +249,10 @@ const CodeEditor = ({ projectId }) => {
       return;
     }
     if (execLanguage !== 'javascript') {
-      notify({ message: 'Only JavaScript execution is supported currently', type: 'warning' });
+      notify({
+        message: 'Execution is available only for JavaScript. Use AI Review for other languages.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -248,7 +261,46 @@ const CodeEditor = ({ projectId }) => {
       return;
     }
     dispatch(executeProjectCode({ projectId, code: latestCode, language: execLanguage }));
+    navigate(`/project/${projectId}?tab=output`);
   };
+
+  const requestReview = useCallback(() => {
+    const latestCode = editorRef.current?.getValue() ?? code;
+
+    if (!projectId) {
+      notify({ message: 'Project is not ready yet', type: 'error' });
+      return;
+    }
+
+    if (!latestCode.trim()) {
+      notify({ message: 'Please write some code first!', type: 'warning' });
+      return;
+    }
+
+    dispatch(
+      updateProjectReview({
+        projectId,
+        review:
+          '🔄 **Analyzing your code with AI...**\n\nPlease wait while our AI reviews your code. This may take a few moments.',
+      })
+    );
+
+    if (socketConnected) {
+      dispatch({
+        type: 'socket/getReview',
+        payload: {
+          projectId,
+          code: latestCode,
+          language,
+        },
+      });
+      notify({ message: 'AI review requested...', type: 'info' });
+    } else {
+      notify({ message: 'Server disconnected. Unable to generate review.', type: 'warning' });
+    }
+
+    navigate(`/project/${projectId}?tab=review`);
+  }, [code, dispatch, language, navigate, projectId, socketConnected]);
 
   /* ========== LANGUAGE CHANGE ========== */
   const changeLanguage = useCallback(
@@ -383,7 +435,7 @@ const CodeEditor = ({ projectId }) => {
             {/* Mobile-optimized buttons */}
             <button
               onClick={executeCode}
-              disabled={isExecuting || language !== 'javascript'}
+              disabled={isExecuting}
               className={`p-2 rounded-lg transition-all cursor-pointer ${
                 isExecuting
                   ? 'bg-gray-400 cursor-not-allowed text-white'
@@ -396,6 +448,21 @@ const CodeEditor = ({ projectId }) => {
               ) : (
                 <Zap className="w-4 h-4" />
               )}
+            </button>
+
+            <button
+              onClick={requestReview}
+              disabled={!code.trim()}
+              className={`p-2 rounded-lg transition-all cursor-pointer ${
+                !code.trim()
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : isDarkMode
+                    ? 'bg-white/10 text-white hover:bg-[#17E1FF]/20 hover:text-[#17E1FF]'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Generate AI Review"
+            >
+              <Sparkles className="w-4 h-4" />
             </button>
 
             {!isMobile && (

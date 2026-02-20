@@ -17,6 +17,10 @@ const _config = {
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/codex',
   JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',
   GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+  TURN_URLS: process.env.TURN_URLS || '',
+  TURN_USERNAME: process.env.TURN_USERNAME || '',
+  TURN_CREDENTIAL: process.env.TURN_CREDENTIAL || '',
+  STUN_URLS: process.env.STUN_URLS || 'stun:stun.l.google.com:19302',
 };
 
 export default Object.freeze(_config);

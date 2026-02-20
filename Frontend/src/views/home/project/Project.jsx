@@ -7,7 +7,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AudioCallPage, VideoCallPage } from '../../../components/CallingPage';
 import Sidebar from '../../../components/layout/Sidebar';
 import ResizableContainer from '../../../components/ui/ResizableContainer';
@@ -38,6 +38,7 @@ const DEFAULT_EDITOR_SPLIT = 70;
 const Project = () => {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
 
   // Selectors
@@ -112,6 +113,26 @@ const Project = () => {
       setIsSidebarCollapsed(false);
     }
   }, [layoutMode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (!tab) return;
+
+    if (tab === 'review') {
+      setActiveBottomTab('review');
+      setActiveTab('review');
+    } else if (tab === 'output') {
+      setActiveBottomTab('output');
+      setActiveTab('output');
+    } else if (tab === 'chat') {
+      setActiveTab('chat');
+    } else if (tab === 'code') {
+      setActiveTab('code');
+    }
+
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate]);
 
   useEffect(() => {
     ringtoneRef.current = createRingtoneLoop();

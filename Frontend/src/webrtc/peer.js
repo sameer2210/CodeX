@@ -20,12 +20,36 @@ class PeerManager {
     }
 
     // STUN/TURN server configuration for NAT traversal
+    const iceServers = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ];
+
+    const extraStunUrls = (import.meta.env.VITE_STUN_URLS || '')
+      .split(',')
+      .map(url => url.trim())
+      .filter(Boolean);
+
+    if (extraStunUrls.length > 0) {
+      iceServers.push({ urls: extraStunUrls });
+    }
+
+    const turnUrls = (import.meta.env.VITE_TURN_URLS || '')
+      .split(',')
+      .map(url => url.trim())
+      .filter(Boolean);
+
+    if (turnUrls.length > 0) {
+      iceServers.push({
+        urls: turnUrls,
+        username: import.meta.env.VITE_TURN_USERNAME || undefined,
+        credential: import.meta.env.VITE_TURN_CREDENTIAL || undefined,
+      });
+    }
+
     const configuration = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-      ],
+      iceServers,
       iceCandidatePoolSize: 10,
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',

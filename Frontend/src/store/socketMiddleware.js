@@ -60,6 +60,8 @@ let callResetId = null;
 let iceCandidateListener = null;
 let peerStateListener = null;
 let iceRestartListener = null;
+let peerDisconnectTimer = null;
+let lastPeerState = null;
 
 const clearCallTimers = () => {
   if (callTimeoutId) {
@@ -69,6 +71,10 @@ const clearCallTimers = () => {
   if (callResetId) {
     clearTimeout(callResetId);
     callResetId = null;
+  }
+  if (peerDisconnectTimer) {
+    clearTimeout(peerDisconnectTimer);
+    peerDisconnectTimer = null;
   }
 };
 
@@ -90,6 +96,11 @@ const removeCallListeners = () => {
     window.removeEventListener('ice-restart-offer', iceRestartListener);
     iceRestartListener = null;
   }
+  if (peerDisconnectTimer) {
+    clearTimeout(peerDisconnectTimer);
+    peerDisconnectTimer = null;
+  }
+  lastPeerState = null;
 };
 
 const attachCallListeners = store => {
@@ -106,7 +117,29 @@ const attachCallListeners = store => {
     peerStateListener = event => {
       const state = event.detail?.state;
       if (!state) return;
-      if (['failed', 'closed', 'disconnected'].includes(state)) {
+      lastPeerState = state;
+
+      if (state === 'disconnected') {
+        if (!peerDisconnectTimer) {
+          peerDisconnectTimer = setTimeout(() => {
+            const current = store.getState().call;
+            if (current.status !== CALL_STATUS.IDLE && lastPeerState === 'disconnected') {
+              store.dispatch(
+                setCallEnded({ status: CALL_STATUS.FAILED, reason: 'peer-disconnected' })
+              );
+              cleanupCall(store);
+            }
+          }, 8000);
+        }
+        return;
+      }
+
+      if (peerDisconnectTimer) {
+        clearTimeout(peerDisconnectTimer);
+        peerDisconnectTimer = null;
+      }
+
+      if (['failed', 'closed'].includes(state)) {
         store.dispatch(
           setCallEnded({ status: CALL_STATUS.FAILED, reason: `peer-${state}` })
         );

@@ -1,24 +1,35 @@
 # CodeX - Collaborative AI-Powered Code Editor
 
-##  Project Overview
+<p align="center">
+  <img src="public/logo.png" alt="CodeX Logo" width="140"/>
+</p>
 
-CodeX is a real-time collaborative code editor with AI-powered code review capabilities. It allows multiple developers to work together on the same codebase simultaneously, with features like live chat, real-time code synchronization, and intelligent code analysis using Google's Gemini AI.
+## Project Overview
+
+CodeX is a real-time collaborative code editor with AI-assisted reviews, live chat, team presence, and WebRTC calling. Teams can edit code together, run JavaScript snippets, and get instant feedback in shared project rooms.
 
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Node](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Socket.IO](https://img.shields.io/badge/Realtime-Socket.IO-010101?style=for-the-badge&logo=socket.io&logoColor=white)](https://socket.io/)
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 
+## Live link - https://codex-psi-murex.vercel.app/
 
-## Live link -  https://codex-psi-murex.vercel.app/
-
-## 📱 App Screens (Mobile)
+## 🎥 Demo Video
 
 <p align="center">
-  <img src="" alt="Home Screen" width="200"/>
-  <img src="" alt="Register Screen" width="200"/>
-  <img src="" alt="User Dashboard" width="200"/>
-  <img src="" alt="Rewards Screen" width="200"/>
+  <video src="public/codeXDemo.mp4" controls width="800" poster="public/demo.png"></video>
+</p>
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="public/demo.png" alt="Landing Page" width="420"/>
+  <img src="public/dashboard.png" alt="Dashboard" width="420"/>
+</p>
+<p align="center">
+  <img src="public/code.png" alt="Editor & Review" width="420"/>
+  <img src="public/logout.png" alt="Logout" width="420"/>
 </p>
 
 ## 🏗️ Project Architecture
@@ -26,7 +37,6 @@ CodeX is a real-time collaborative code editor with AI-powered code review capab
 ```
 CodeX/
 ├── Backend/                  # Node.js + Express server
-│   ├── package.json
 │   ├── server.js
 │   └── src/
 │       ├── app.js
@@ -34,6 +44,7 @@ CodeX/
 │       │   └── config.js
 │       ├── controllers/
 │       │   ├── auth.controllers.js
+│       │   ├── message.controllers.js
 │       │   └── project.controllers.js
 │       ├── db/
 │       │   └── db.js
@@ -45,124 +56,258 @@ CodeX/
 │       │   └── team.model.js
 │       ├── routes/
 │       │   ├── auth.routes.js
-│       │   └── project.routes.js
-│       └── services/
-│           ├── ai.service.js
-│           ├── auth.service.js
-│           └── project.service.js
+│       │   ├── message.routes.js
+│       │   ├── project.routes.js
+│       │   └── webrtc.routes.js
+│       ├── services/
+│       │   ├── ai.service.js
+│       │   ├── auth.service.js
+│       │   ├── call.service.js
+│       │   ├── message.service.js
+│       │   └── project.service.js
+│       └── tests/
+│           ├── auth.test.js
+│           └── project.test.js
 ├── Frontend/                 # React + Vite application
-│   ├── package.json
-│   ├── vite.config.js
 │   ├── index.html
-│   ├── eslint.config.js
+│   ├── vite.config.js
 │   └── src/
 │       ├── App.jsx
 │       ├── main.jsx
 │       ├── index.css
 │       ├── api/
-│       │   └── config.jsx
+│       │   ├── config.jsx
+│       │   └── project.api.js
 │       ├── components/
+│       │   ├── CallingPage.jsx
+│       │   ├── ErrorBoundary.jsx
+│       │   ├── HUD.jsx
 │       │   ├── layout/
-│       │   │   ├── Navigation.jsx
 │       │   │   ├── Layout.jsx
+│       │   │   ├── Navigation.jsx
 │       │   │   └── Sidebar.jsx
+│       │   ├── page/
+│       │   │   ├── ActiveMember.jsx
+│       │   │   ├── ActiveMemberPage.jsx
+│       │   │   ├── Help.jsx
+│       │   │   ├── Meeting.jsx
+│       │   │   ├── Notification.jsx
+│       │   │   └── Settings.jsx
+│       │   └── ui/
+│       │       ├── Button.jsx
+│       │       └── ResizableContainer.jsx
+│       ├── context/
+│       │   └── ThemeContext.jsx
+│       ├── lib/
+│       │   ├── notify.js
+│       │   └── sounds.js
 │       ├── routes/
 │       │   └── Routes.jsx
-|       |── store/
-│       |        ├── store.js                # configureStore + middleware
-│       |        ├── socketMiddleware.js     # socket.io client + event handling
-│       |        └── slices/
-│       |              ├── socketSlice.js      # connection state (connected/error)
-│       |              ├── projectSlice.js     # project data + chat messages
-│       |              ├── authSlice.js
-│       |              └── uiSlice.js
-│       └── views/
-│           ├── NotFound.jsx
-│           ├── auth/
-│           │   ├── Login.jsx
-│           │   └── Register.jsx
-│           ├── create-project/
-│           │   └── CreateProject.jsx
-│           |──── home/
-|           |      └── project/
-|           |          ├── Project.jsx
-|           |          └── components/
-|           |              ├── ChatSection.jsx    # uses Redux (messages + socket actions)
-|           |              ├── CodeEditor.jsx
-|           |              └── ReviewPanel.jsx
-│           ├── Dashboard.jsx
-│           ├── Landing.jsx
-
-
+│       ├── services/
+│       │   └── dashboardService.jsx
+│       ├── store/
+│       │   ├── hooks.js
+│       │   ├── socketMiddleware.js
+│       │   ├── store.js
+│       │   └── slices/
+│       │       ├── authSlice.js
+│       │       ├── callSlice.js
+│       │       ├── projectSlice.js
+│       │       └── socketSlice.js
+│       ├── tests/
+│       │   ├── Login.test.jsx
+│       │   └── setup.js
+│       ├── views/
+│       │   ├── Dashboard.jsx
+│       │   ├── Landing.jsx
+│       │   ├── NotFound.jsx
+│       │   ├── auth/
+│       │   │   ├── Login.jsx
+│       │   │   └── Register.jsx
+│       │   ├── create-project/
+│       │   │   └── CreateProject.jsx
+│       │   └── home/
+│       │       └── project/
+│       │           ├── Project.jsx
+│       │           └── components/
+│       │               ├── ChatSection.jsx
+│       │               ├── CodeEditor.jsx
+│       │               ├── OutputPanel.jsx
+│       │               └── ReviewPanel.jsx
+│       └── webrtc/
+│           ├── callManager.js
+│           ├── media.js
+│           └── peer.js
+├── public/
+│   ├── code.png
+│   ├── codeXDemo.mp4
+│   ├── dashboard.png
+│   ├── demo.png
+│   ├── logo.png
+│   ├── logout.png
+│   └── og-image.png
+├── tests/
+│   ├── playwright.config.js
+│   ├── e2e/
+│   │   └── flow.spec.js
+│   └── load/
+│       └── simulation.js
+├── package.json
+└── Readme.md
 ```
 
-##  Technology Stack
+## Technology Stack
 
 ### Backend Technologies
 
-- **Node.js** - JavaScript runtime environment
-- **Express.js** - Web application framework
-- **Socket.io** - Real-time bidirectional communication
-- **MongoDB** - NoSQL database with Mongoose ODM
-- **Google Gemini AI** - AI-powered code review service
-- **CORS** - Cross-origin resource sharing
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- Socket.io
+- Google Generative AI (Gemini)
+- JWT authentication
+- WebRTC signaling + STUN/TURN discovery
+- Helmet, CORS, Morgan
 
 ### Frontend Technologies
 
-- **React 19** - Modern React with latest features
-- **Vite** - Fast build tool and development server
-- **Tailwind CSS** - Utility-first CSS framework
-- **Framer Motion** - Animation library
-- **Monaco Editor** - Professional code editor (VS Code-like)
-- **Socket.io Client** - Real-time communication
-- **React Router DOM** - Client-side routing
+- React 19 + Vite
+- Tailwind CSS
+- Redux Toolkit + Redux Persist
+- React Router DOM
+- Monaco Editor
+- Socket.io Client
+- Framer Motion
+- React Hook Form + Yup
+- Recharts
+- WebRTC (peer connections, media devices)
+
+### Testing
+
+- Jest + Supertest (Backend)
+- Vitest + Testing Library (Frontend)
+- Playwright (E2E)
+
+## 💡 Key Features
+
+### 1. Real-time Collaboration
+
+- Live code sync across project rooms
+- Instant updates using Socket.io
+- Team presence with active user lists
+
+### 2. AI-Powered Code Review
+
+- Google Gemini AI analysis
+- Best-practice suggestions and feedback
+- Review panel with markdown output
+
+### 3. Built-in Code Execution
+
+- Run JavaScript snippets in a sandboxed VM
+- Output panel for stdout and errors
+
+### 4. WebRTC Audio/Video Calls
+
+- Team-to-team or 1:1 calls
+- ICE server discovery via `/api/webrtc/turn`
+- Live call status and notifications
+
+### 5. Team Communication
+
+- Live chat with history
+- Typing indicators
+- Notifications and activity tracking
 
 ## 🔄 How It Works
 
-### 1. Project Creation Flow
+### 1. Project Creation & Access
 
 ```
-User → Create Project → Backend API → MongoDB → Project Created
+User → /api/auth/login → JWT → /api/projects/create → Project Created
 ```
 
-### 2. Real-time Collaboration Flow
+### 2. Real-time Collaboration
 
 ```
-Developer A writes code → Socket.io → Developer B sees changes instantly
-Developer B sends message → Socket.io → Developer A receives message
+Editor changes → Socket.io (code-change) → Synced to project room
+Chat message → Socket.io (chat-message) → Stored in MongoDB
 ```
 
-### 3. AI Code Review Flow
+### 3. AI Code Review
 
 ```
-Developer requests review → AI Service → Gemini AI → Code analysis → Review displayed
+Get Review → /api/projects/:id/review or socket event → Gemini → Review Panel
+```
+
+### 4. Code Execution
+
+```
+Run Code → /api/projects/:id/execute → Node VM → Output Panel
+```
+
+### 5. WebRTC Calls
+
+```
+Start Call → Socket.io signaling → /api/webrtc/turn → Peer connection
 ```
 
 ## 🛣️ API Routes & Endpoints
 
-### Backend Routes (`/projects`)
+### Auth (`/api/auth`)
 
-- **POST** `/create` - Create a new project
-- **GET** `/get-all` - Retrieve all projects
+- **POST** `/register` - Team registration
+- **POST** `/login` - Login
+- **GET** `/verify` - Verify token
+- **POST** `/logout` - Logout
+- **GET** `/team/:teamName/members` - Team members
+- **PUT** `/team/:teamName/member/:username/activity` - Update member activity
+- **GET** `/team/:teamName/messages` - Team messages
 
-### Socket.io Events
+### Projects (`/api/projects`)
 
-- `chat-history` - Get chat messages for a project
-- `chat-message` - Send/receive chat messages
-- `code-change` - Sync code changes across users
-- `get-project-code` - Retrieve project code
-- `get-review` - Request AI code review
+- **POST** `/create` - Create project
+- **GET** `/get-all` - List projects
+- **GET** `/:id` - Get project
+- **PUT** `/:id` - Update project (code)
+- **POST** `/:id/execute` - Execute JavaScript code
+- **POST** `/:id/review` - AI review
+
+### Messages (`/api/messages`)
+
+- **GET** `/project/:projectId` - Project chat history
+- **GET** `/project/:projectId/unread` - Unread count
+
+### WebRTC (`/api/webrtc`)
+
+- **GET** `/turn` - ICE server configuration
+
+### Socket.io Events (Selected)
+
+- `join-project`, `leave-project`
+- `chat-history`, `chat-message`
+- `typing-start`, `typing-stop`
+- `code-change`
+- `get-review`, `code-review`
+- `user-online`, `user-offline`, `team-presence`, `active-users`
+- `call:initiate`, `call:accept`, `call:reject`, `call:end`, `call:ice-candidate`
 
 ## 📱 Frontend Routes
 
-### React Router Configuration
-
-- `/` - Home page (project list)
-- `/create-project` - Create new project form
-- `/project/:id` - Individual project workspace
-- `/login` - User login
-- `/register` - User registration
-- `*` - NotFound page
+- `/` - Landing
+- `/login` - Login
+- `/register` - Register
+- `/dashboard` - Dashboard
+- `/projects` - Project list
+- `/create-project` - Create project
+- `/project/:id` - Project workspace
+- `/meeting` - Meeting lobby
+- `/meeting/:projectId` - Project meeting
+- `/active-members` - Active members
+- `/settings` - Settings
+- `/help` - Help
+- `/notifications` - Notifications
+- `/not-found` - 404 page
 
 ## 🔌 Database Models
 
@@ -171,6 +316,7 @@ Developer requests review → AI Service → Gemini AI → Code analysis → Rev
 ```javascript
 {
   name: String (required),
+  teamName: String (required),
   code: String (default: ""),
   review: String (default: ""),
   timestamps: true
@@ -181,9 +327,25 @@ Developer requests review → AI Service → Gemini AI → Code analysis → Rev
 
 ```javascript
 {
-  project: ObjectId (reference to project),
-  text: String (message content),
+  projectId: ObjectId (Project),
+  teamName: String,
+  username: String,
+  message: String,
+  type: "user" | "system" | "notification",
+  metadata: { edited, editedAt, replyTo },
   timestamps: true
+}
+```
+
+### Team Model
+
+```javascript
+{
+  teamName: String (unique),
+  password: String (hashed),
+  members: [{ username, isAdmin, lastLogin, joinedAt, isActive }],
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
@@ -193,14 +355,13 @@ Developer requests review → AI Service → Gemini AI → Code analysis → Rev
 
 - Node.js (v18 or higher)
 - MongoDB database
-- Google Gemini AI API key
+- Google Gemini API key
 
 ### Backend Setup
 
 ```bash
 cd Backend
 npm install
-# Create .env file with GOOGLE_API_KEY
 npm start
 ```
 
@@ -214,38 +375,25 @@ npm run dev
 
 ### Environment Variables
 
-Create a `.env` file in the Backend directory:
+Create a `.env` file in `Backend/`:
 
 ```env
-GOOGLE_API_KEY=your_gemini_api_key_here
+PORT=8000
 MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+GOOGLE_API_KEY=your_gemini_api_key
+FRONTEND_URLS=http://localhost:5173,https://your-frontend-domain.com
+STUN_URLS=stun:stun.l.google.com:19302
+TURN_URLS=turn:your-turn-host:3478?transport=udp,turn:your-turn-host:3478?transport=tcp
+TURN_USERNAME=your_turn_username
+TURN_CREDENTIAL=your_turn_credential
 ```
 
-## 💡 Key Features
+Create a `.env` file in `Frontend/`:
 
-### 1. Real-time Collaboration
-
-- **Live Code Sync**: Multiple developers can edit code simultaneously
-- **Instant Updates**: Changes appear in real-time across all connected users
-- **Project Rooms**: Each project has its own isolated collaboration space
-
-### 2. AI-Powered Code Review
-
-- **Intelligent Analysis**: Google Gemini AI analyzes code quality
-- **Best Practices**: Suggests improvements and best practices
-- **Code Optimization**: Identifies potential issues and optimizations
-
-### 3. Professional Code Editor
-
-- **Monaco Editor**: Industry-standard code editor (same as VS Code)
-- **Syntax Highlighting**: Support for multiple programming languages
-- **Auto-completion**: Intelligent code suggestions
-
-### 4. Team Communication
-
-- **Live Chat**: Real-time messaging within projects
-- **Message History**: Persistent chat logs for each project
-- **User Presence**: See who's currently working on the project
+```env
+VITE_BACKEND_URL=http://localhost:8000
+```
 
 ## 🔧 Development Workflow
 
@@ -265,68 +413,38 @@ MONGODB_URI=your_mongodb_connection_string
 
 ### 3. AI Code Review
 
-1. Developer clicks "Get Review" button
+1. Developer clicks "Get Review"
 2. Current code is sent to Gemini AI service
 3. AI analyzes code and provides feedback
-4. Review is displayed in markdown format
+4. Review is displayed in markdown
 
-## 🌟 Why Choose This Architecture?
+## 🧪 Testing
 
-### 1. **Scalability**
-
-- Microservices architecture with separate frontend/backend
-- MongoDB for flexible data storage
-- Socket.io for efficient real-time communication
-
-### 2. **Developer Experience**
-
-- Modern React with latest features
-- Hot reloading with Vite
-- Professional code editor experience
-- Real-time collaboration without page refreshes
-
-### 3. **AI Integration**
-
-- Google Gemini AI for intelligent code analysis
-- Structured feedback with actionable improvements
-- Professional-grade code review capabilities
-
-### 4. **Real-time Capabilities**
-
-- Instant code synchronization
-- Live chat functionality
-- Real-time user presence
-- Efficient WebSocket communication
+- Backend: `cd Backend && npm test`
+- Frontend: `cd Frontend && npm run test`
+- E2E: `npx playwright test` (from repo root)
 
 ## 🚀 Deployment
 
 ### Backend Deployment
 
-- Deploy to platforms like Render, Heroku, or AWS
-- Set environment variables for production
+- Deploy to Render, Railway, Heroku, or AWS
+- Set production environment variables
 - Ensure MongoDB connection is accessible
 
 ### Frontend Deployment
 
 - Build with `npm run build`
-- Deploy static files to Vercel, Netlify, or any static hosting
-- Configure API endpoints for production backend
+- Deploy to Vercel, Netlify, or any static hosting
+- Point `VITE_BACKEND_URL` to production API
 
 ## 🔒 Security Considerations
 
-- CORS configuration for cross-origin requests
-- Input validation on backend APIs
+- JWT-based authentication
+- CORS allow-list configuration
+- Input validation in controllers
 - Secure API key storage in environment variables
-- MongoDB injection protection with Mongoose
 
-## 📈 Future Enhancements
-
-- User authentication and authorization
-- Project sharing and permissions
-- Multiple programming language support
-- Git integration for version control
-- Advanced AI features (code generation, debugging)
-- Team management and collaboration tools
 
 ## 🤝 Contributing
 
@@ -335,7 +453,6 @@ MONGODB_URI=your_mongodb_connection_string
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
-
 
 ## 👨‍💻 Developer
 
@@ -350,14 +467,10 @@ _Full Stack Developer (MERN)_
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sameer2210)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:sameerkhan27560@gmail.com)
 
-📱 **Mobile:** +91 9691709556
+
 
 </div>
 
-### 🎓 Education
-
-- **B.Tech in Computer Science** - RGPV, Bhopal (2022-2025) | CGPA: 7.3/10
-- **Polytechnic Diploma** - Computer Science (2019-2022) | CGPA: 7.1/10
 
 ### 💼 Technical Skills
 
@@ -372,9 +485,7 @@ _Full Stack Developer (MERN)_
 - MERN Full Stack Development
 - Core Java
 - Data Structures & Algorithms
-- DBMS with SQL
 
 ---
 
-
-**Happy Coding with CodeX! 🚀💻**
+**Happy Coding with CodeX! **

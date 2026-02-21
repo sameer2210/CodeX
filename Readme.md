@@ -18,7 +18,15 @@ CodeX is a real-time collaborative code editor with AI-assisted reviews, live ch
 ## 🎥 Demo Video
 
 <p align="center">
-  <video src="public/codeXDemo.mp4" controls width="800" poster="public/demo.png"></video>
+  <iframe
+    width="800"
+    height="450"
+    src="https://www.youtube.com/embed/gB7qztH9BIg"
+    title="CodeX Demo Video"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen
+  ></iframe>
 </p>
 
 ## 📸 Screenshots

@@ -6,7 +6,17 @@
 
 ## Project Overview
 
-CodeX is a real-time collaborative code editor with AI-assisted reviews, live chat, team presence, and WebRTC calling. Teams can edit code together, run JavaScript snippets, and get instant feedback in shared project rooms.
+CodeX is a collaborative code workspace built for teams that need shared editing, live communication, and AI-powered feedback. It pairs a React + Vite frontend with an Express backend, MongoDB storage, Socket.IO collaboration, and Google Gemini code review integration.
+
+Teams can create projects, join shared rooms, collaborate on code in real time, send messages inside project rooms, execute JavaScript code on the server, and request AI review for project code.
+
+The app includes authenticated dashboards, project rooms, live presence tracking, and WebRTC signaling support for audio/video call workflows.
+
+## Notes from repository scan
+
+- The repository contains screenshot and demo assets in `public/`.
+- A hosted live deployment URL is not confirmed in source files.
+- The existing README referenced a YouTube demo and deployment link that are not verifiable from the codebase.
 
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Node](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -15,19 +25,11 @@ CodeX is a real-time collaborative code editor with AI-assisted reviews, live ch
 
 ## Live link - https://codex-psi-murex.vercel.app/
 
-## 🎥 Demo Video
+## Demo video asset
 
-<p align="center">
-  <iframe
-    width="800"
-    height="450"
-    src="https://www.youtube.com/embed/gB7qztH9BIg"
-    title="CodeX Demo Video"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowfullscreen
-  ></iframe>
-</p>
+[![Watch the demo video](https://img.youtube.com/vi/gB7qztH9BIg/maxresdefault.jpg)](https://youtu.be/gB7qztH9BIg?si=hfeuMXsqUXkxoAHT)
+
+Direct link: https://youtu.be/gB7qztH9BIg?si=hfeuMXsqUXkxoAHT
 
 ## 📸 Screenshots
 
@@ -40,11 +42,66 @@ CodeX is a real-time collaborative code editor with AI-assisted reviews, live ch
   <img src="public/logout.png" alt="Logout" width="420"/>
 </p>
 
-## 🏗️ Project Architecture
+## Tech Stack
+
+### Frontend
+
+| Technology           | Purpose                |
+| -------------------- | ---------------------- |
+| React 19             | UI framework           |
+| Vite                 | Build tooling          |
+| Tailwind CSS         | Styling                |
+| Redux Toolkit        | State management       |
+| React Router DOM     | Client-side routing    |
+| @monaco-editor/react | Code editor UI         |
+| Socket.IO Client     | Realtime collaboration |
+| Framer Motion        | Animations             |
+| React Hook Form      | Form handling          |
+| Yup                  | Validation             |
+| axios                | HTTP client            |
+| Sonner               | Notifications          |
+| Recharts             | Dashboard visuals      |
+
+### Backend
+
+| Technology            | Purpose                 |
+| --------------------- | ----------------------- |
+| Node.js               | Server runtime          |
+| Express.js            | HTTP API framework      |
+| Mongoose              | MongoDB object modeling |
+| Socket.IO             | Realtime socket server  |
+| JSON Web Tokens       | Authentication          |
+| Helmet                | Security headers        |
+| Morgan                | HTTP request logging    |
+| @google/generative-ai | Gemini AI code review   |
+| node:vm               | Sandboxed JS execution  |
+
+### Database & Storage
+
+| Technology | Purpose            |
+| ---------- | ------------------ |
+| MongoDB    | Primary data store |
+| Mongoose   | Schema enforcement |
+
+### Dev Tools & Deployment
+
+| Tool       | Purpose                    |
+| ---------- | -------------------------- |
+| Vite       | Frontend development       |
+| nodemon    | Backend reload             |
+| ESLint     | Linting                    |
+| Prettier   | Formatting                 |
+| Jest       | Backend tests              |
+| Vitest     | Frontend tests             |
+| Playwright | E2E testing                |
+| cross-env  | Cross-platform env scripts |
+
+## Project Structure
 
 ```
 CodeX/
-├── Backend/                  # Node.js + Express server
+├── Backend/
+│   ├── package.json
 │   ├── server.js
 │   └── src/
 │       ├── app.js
@@ -76,7 +133,8 @@ CodeX/
 │       └── tests/
 │           ├── auth.test.js
 │           └── project.test.js
-├── Frontend/                 # React + Vite application
+├── Frontend/
+│   ├── package.json
 │   ├── index.html
 │   ├── vite.config.js
 │   └── src/
@@ -164,158 +222,115 @@ CodeX/
 └── Readme.md
 ```
 
-## Technology Stack
+## Database Models
 
-### Backend Technologies
+### Project
 
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- Socket.io
-- Google Generative AI (Gemini)
-- JWT authentication
-- WebRTC signaling + STUN/TURN discovery
-- Helmet, CORS, Morgan
+| Field    | Type   | Notes               |
+| -------- | ------ | ------------------- |
+| name     | String | Required            |
+| teamName | String | Required, lowercase |
+| code     | String | Project source text |
+| review   | String | AI review output    |
 
-### Frontend Technologies
+### Message
 
-- React 19 + Vite
-- Tailwind CSS
-- Redux Toolkit + Redux Persist
-- React Router DOM
-- Monaco Editor
-- Socket.io Client
-- Framer Motion
-- React Hook Form + Yup
-- Recharts
-- WebRTC (peer connections, media devices)
+| Field     | Type     | Notes                               |
+| --------- | -------- | ----------------------------------- |
+| projectId | ObjectId | References `Project`                |
+| teamName  | String   | Required                            |
+| username  | String   | Required                            |
+| message   | String   | Required                            |
+| type      | String   | `user`, `system`, or `notification` |
+| metadata  | Object   | Optional edit/reply tracking        |
 
-### Testing
+### Team
 
-- Jest + Supertest (Backend)
-- Vitest + Testing Library (Frontend)
-- Playwright (E2E)
+| Field    | Type   | Notes                              |
+| -------- | ------ | ---------------------------------- |
+| teamName | String | Required, unique, lowercase        |
+| password | String | Hashed                             |
+| members  | Array  | Member objects with activity state |
 
-## 💡 Key Features
+## API Reference
 
-### 1. Real-time Collaboration
+### Auth — `/api/auth`
 
-- Live code sync across project rooms
-- Instant updates using Socket.io
-- Team presence with active user lists
+| Method | Endpoint                                    | Description                        |
+| ------ | ------------------------------------------- | ---------------------------------- |
+| POST   | `/register`                                 | Register a new team and admin user |
+| POST   | `/login`                                    | Login and receive JWT              |
+| GET    | `/verify`                                   | Verify current token               |
+| POST   | `/logout`                                   | Logout and mark member inactive    |
+| GET    | `/team/:teamName/members`                   | Get team member list               |
+| PUT    | `/team/:teamName/member/:username/activity` | Update member active status        |
+| GET    | `/team/:teamName/messages`                  | Fetch team messages                |
 
-### 2. AI-Powered Code Review
+### Projects — `/api/projects`
 
-- Google Gemini AI analysis
-- Best-practice suggestions and feedback
-- Review panel with markdown output
+| Method | Endpoint       | Description                    |
+| ------ | -------------- | ------------------------------ |
+| POST   | `/create`      | Create a new project           |
+| GET    | `/get-all`     | List all team projects         |
+| GET    | `/:id`         | Get project details            |
+| PUT    | `/:id`         | Update project code            |
+| POST   | `/:id/execute` | Execute JavaScript code        |
+| POST   | `/:id/review`  | Run AI review for project code |
 
-### 3. Built-in Code Execution
+### Messages — `/api/messages`
 
-- Run JavaScript snippets in a sandboxed VM
-- Output panel for stdout and errors
+| Method | Endpoint                     | Description                 |
+| ------ | ---------------------------- | --------------------------- |
+| GET    | `/project/:projectId`        | Fetch project chat messages |
+| GET    | `/project/:projectId/unread` | Get unread message count    |
 
-### 4. WebRTC Audio/Video Calls
+### WebRTC — `/api/webrtc`
 
-- Team-to-team or 1:1 calls
-- ICE server discovery via `/api/webrtc/turn`
-- Live call status and notifications
+| Method | Endpoint | Description                       |
+| ------ | -------- | --------------------------------- |
+| GET    | `/turn`  | Fetch STUN/TURN ICE server config |
 
-### 5. Team Communication
+## Pages & Routes
 
-- Live chat with history
-- Typing indicators
-- Notifications and activity tracking
+| Page           | Route                                           | Description                           |
+| -------------- | ----------------------------------------------- | ------------------------------------- |
+| Landing        | `/`                                             | Public landing page                   |
+| Login          | `/login`                                        | Team login form                       |
+| Register       | `/register`                                     | Team signup form                      |
+| Dashboard      | `/dashboard`, `/projects`, `/team`, `/activity` | Main authenticated workspace          |
+| Create Project | `/create-project`                               | New project creation page             |
+| Project Room   | `/project/:id`                                  | Project collaboration and editor room |
+| Meeting        | `/meeting`, `/meeting/:projectId`               | Call / meeting interface              |
+| Active Members | `/active-members`                               | Team presence view                    |
+| Settings       | `/settings`                                     | User settings page                    |
+| Help           | `/help`                                         | Help and documentation page           |
+| Notifications  | `/notifications`                                | Team notification feed                |
+| Not Found      | `/not-found`                                    | 404 fallback page                     |
 
-## 🔄 How It Works
+## Authentication & Authorization
 
-### 1. Project Creation & Access
+- Auth strategy: JWT bearer tokens
+- Token storage: `localStorage` under `codex_token`
+- Protected frontend routes: `PrivateRoute` in `Frontend/src/routes/Routes.jsx`
+- Backend protection: `verifyToken` middleware in `Backend/src/middlewares/authMiddleware.js`
+- Team-scoped checks: `checkTeamAccess` middleware for team-specific auth routes
+- Admin flag: `isAdmin` included in JWT payload
 
-```
-User → /api/auth/login → JWT → /api/projects/create → Project Created
-```
+## Third-Party Integrations
 
-### 2. Real-time Collaboration
+| Service       | Purpose                              | Library                         |
+| ------------- | ------------------------------------ | ------------------------------- |
+| Google Gemini | AI code review generation            | `@google/generative-ai`         |
+| Socket.IO     | Realtime collaboration and signaling | `socket.io`, `socket.io-client` |
+| Monaco Editor | Code editor UX                       | `@monaco-editor/react`          |
+| STUN/TURN     | WebRTC NAT traversal                 | Browser RTC + backend config    |
+| axios         | HTTP API requests                    | `axios`                         |
 
-```
-Editor changes → Socket.io (code-change) → Synced to project room
-Chat message → Socket.io (chat-message) → Stored in MongoDB
-```
+## Repository Notes
 
-### 3. AI Code Review
-
-```
-Get Review → /api/projects/:id/review or socket event → Gemini → Review Panel
-```
-
-### 4. Code Execution
-
-```
-Run Code → /api/projects/:id/execute → Node VM → Output Panel
-```
-
-### 5. WebRTC Calls
-
-```
-Start Call → Socket.io signaling → /api/webrtc/turn → Peer connection
-```
-
-## 🛣️ API Routes & Endpoints
-
-### Auth (`/api/auth`)
-
-- **POST** `/register` - Team registration
-- **POST** `/login` - Login
-- **GET** `/verify` - Verify token
-- **POST** `/logout` - Logout
-- **GET** `/team/:teamName/members` - Team members
-- **PUT** `/team/:teamName/member/:username/activity` - Update member activity
-- **GET** `/team/:teamName/messages` - Team messages
-
-### Projects (`/api/projects`)
-
-- **POST** `/create` - Create project
-- **GET** `/get-all` - List projects
-- **GET** `/:id` - Get project
-- **PUT** `/:id` - Update project (code)
-- **POST** `/:id/execute` - Execute JavaScript code
-- **POST** `/:id/review` - AI review
-
-### Messages (`/api/messages`)
-
-- **GET** `/project/:projectId` - Project chat history
-- **GET** `/project/:projectId/unread` - Unread count
-
-### WebRTC (`/api/webrtc`)
-
-- **GET** `/turn` - ICE server configuration
-
-### Socket.io Events (Selected)
-
-- `join-project`, `leave-project`
-- `chat-history`, `chat-message`
-- `typing-start`, `typing-stop`
-- `code-change`
-- `get-review`, `code-review`
-- `user-online`, `user-offline`, `team-presence`, `active-users`
-- `call:initiate`, `call:accept`, `call:reject`, `call:end`, `call:ice-candidate`
-
-## 📱 Frontend Routes
-
-- `/` - Landing
-- `/login` - Login
-- `/register` - Register
-- `/dashboard` - Dashboard
-- `/projects` - Project list
-- `/create-project` - Create project
-- `/project/:id` - Project workspace
-- `/meeting` - Meeting lobby
-- `/meeting/:projectId` - Project meeting
-- `/active-members` - Active members
-- `/settings` - Settings
-- `/help` - Help
-- `/notifications` - Notifications
-- `/not-found` - 404 page
+- Demo and screenshot assets exist under `public/` (`demo.png`, `dashboard.png`, `code.png`, `logout.png`, `codeXDemo.mp4`).
+- The old README referenced a live deployment URL and YouTube embed; those are not verifiable from repository source files and are noted as not found in code.
+- The root `package.json` contains only runtime dependencies for `jsonwebtoken` and `socket.io-client`.
 
 ## 🔌 Database Models
 
@@ -403,6 +418,30 @@ Create a `.env` file in `Frontend/`:
 VITE_BACKEND_URL=http://localhost:8000
 ```
 
+Node VM sandboxed code execution: Present
+
+Uses node:vm and runs user code inside a VM context with timeout in project.service.js (line 3), project.service.js (line 37), project.service.js (line 65), project.service.js (line 68), project.service.js (line 70).
+
+STUN/TURN config for WebRTC: Present
+
+Backend exposes ICE config in webrtc.routes.js (line 13), reads env in config.js (line 20), config.js (line 23).
+
+Frontend uses STUN/TURN and RTCPeerConnection in peer.js (line 17), peer.js (line 20), peer.js (line 65), and fetches backend TURN config at peer.js (line 95).
+
+Playwright + Jest + Vitest: Present
+
+Playwright config/spec in playwright.config.js (line 1), flow.spec.js (line 1).
+
+Jest in backend test setup/deps: package.json (line 12), package.json (line 42).
+
+Vitest in frontend scripts/deps: package.json (line 12), package.json (line 51), setup file setup.js (line 3).
+
+Monaco Editor: Present
+
+Dependency in package.json (line 16).
+
+Editor component usage and mount/commands in CodeEditor.jsx (line 2), CodeEditor.jsx (line 182), CodeEditor.jsx (line 575).
+
 ## 🔧 Development Workflow
 
 ### 1. Project Creation
@@ -453,15 +492,6 @@ VITE_BACKEND_URL=http://localhost:8000
 - Input validation in controllers
 - Secure API key storage in environment variables
 
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
 ## 👨‍💻 Developer
 
 <div align="center">
@@ -475,24 +505,7 @@ _Full Stack Developer (MERN)_
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sameer2210)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:sameerkhan27560@gmail.com)
 
-
-
 </div>
-
-
-### 💼 Technical Skills
-
-**Frontend:** React.js, Next.js, Redux, Tailwind CSS, Bootstrap, Framer Motion, Recharts
-
-**Backend:** Node.js, Express.js, MongoDB, MySQL, JWT, Socket.io, Redis
-
-**DevOps:** Docker, Git, Postman, Vercel, Render, Cloudinary
-
-### 🏆 Certifications
-
-- MERN Full Stack Development
-- Core Java
-- Data Structures & Algorithms
 
 ---
 

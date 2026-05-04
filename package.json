@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
+  },
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "socket.io-client": "^4.8.3"

@@ -9,7 +9,7 @@
     "start": "node server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules MONGODB_URI=mongodb://localhost:27017/codex-test jest"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules MONGODB_URI=mongodb://localhost:27017/codex-test jest --runInBand"
   },
   "keywords": [
     "express",

@@ -2,13 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
-import { ThemeProvider } from '../../context/ThemeContext';
-import { loginUser } from '../../store/slices/authSlice';
-import Login from '../../views/auth/Login';
+import { ThemeProvider } from '../context/ThemeContext';
+import { loginUser } from '../store/slices/authSlice';
+import Login from '../views/auth/Login';
 
 // Mock the loginUser async thunk
-vi.mock('../../store/slices/authSlice', async () => {
-  const actual = await vi.importActual('../../store/slices/authSlice');
+vi.mock('../store/slices/authSlice', async () => {
+  const actual = await vi.importActual('../store/slices/authSlice');
   return {
     ...actual,
     loginUser: vi.fn(),
@@ -90,6 +90,16 @@ describe('Login Component', () => {
 
   it('shows error when submitting empty form', async () => {
     renderComponent();
+
+    fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR NAME/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/eg. ALPHA \/ OMEGA/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/SECURE ACCESS KEY/i), {
+      target: { value: '   ' },
+    });
 
     const submitButton = screen.getByRole('button', { name: /Confirm Access/i });
     fireEvent.click(submitButton);

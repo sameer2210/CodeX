@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   timeout: 30000,
   expect: {
     timeout: 5000,
@@ -16,6 +16,28 @@ export default defineConfig({
     trace: 'on-first-retry',
     baseURL: 'http://localhost:5173',
   },
+  webServer: [
+    {
+      command: 'npm run start',
+      cwd: './Backend',
+      port: 5001,
+      env: {
+        PORT: '5001',
+      },
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+    {
+      command: 'npx vite --host 127.0.0.1 --port 5173',
+      cwd: './Frontend',
+      port: 5173,
+      env: {
+        VITE_BACKEND_URL: 'http://127.0.0.1:5001',
+      },
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+  ],
   projects: [
     {
       name: 'chromium',

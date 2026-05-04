@@ -39,12 +39,13 @@ describe('Project Endpoints', () => {
                 .post('/api/projects/create')
                 .set('Authorization', `Bearer ${token}`)
                 .send({
-                    name: 'Test Project'
+                    projectName: 'Test Project'
                 });
 
             expect(res.statusCode).toEqual(201);
-            expect(res.body.project.name).toBe('Test Project');
-            expect(res.body.project.teamName).toBe(mockTeam.teamName);
+            expect(res.body.success).toBe(true);
+            expect(res.body.data.name).toBe('Test Project');
+            expect(res.body.data.teamName).toBe(mockTeam.teamName);
         });
 
         it('should fail if name is missing', async () => {
@@ -63,15 +64,16 @@ describe('Project Endpoints', () => {
             await request(app)
                 .post('/api/projects/create')
                 .set('Authorization', `Bearer ${token}`)
-                .send({ name: 'Project 1' });
+                .send({ projectName: 'Project 1' });
 
             const res = await request(app)
                 .get('/api/projects/get-all')
                 .set('Authorization', `Bearer ${token}`);
 
             expect(res.statusCode).toEqual(200);
-            expect(res.body.projects.length).toBeGreaterThan(0);
-            expect(res.body.projects[0].name).toBe('Project 1');
+            expect(Array.isArray(res.body.data)).toBe(true);
+            expect(res.body.data.length).toBeGreaterThan(0);
+            expect(res.body.data[0].name).toBe('Project 1');
         });
     });
 });
